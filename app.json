@@ -36,6 +36,13 @@
     "experiments": {
       "typedRoutes": true
     },
-    "newArchEnabled": true
+    "newArchEnabled": true,
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "7f5297a9-967f-4074-b420-76acb73da94d"
+      }
+    },
+    "owner": "yacoub89"
   }
 }
