@@ -1,0 +1,86 @@
+import { mutation, query } from "./_generated/server";
+import { v } from "convex/values";
+import { Doc } from "./_generated/dataModel";
+import { requireCoachOrAdmin } from "./helpers";
+
+export const getByDate = query({
+  args: { date: v.string() },
+  handler: async (ctx, { date }) => {
+    const classes = await ctx.db
+      .query("classes")
+      .withIndex("by_date", (q) => q.eq("date", date))
+      .collect();
+    return classes.sort((a, b) => a.startTime.localeCompare(b.startTime));
+  },
+});
+
+export const getUpcoming = query({
+  args: { startDate: v.optional(v.string()), days: v.optional(v.number()) },
+  handler: async (ctx, { startDate, days = 7 }) => {
+    const [y, mo, d] = (startDate ?? new Date().toISOString().split("T")[0])
+      .split("-")
+      .map(Number);
+    const perDay = await Promise.all(
+      Array.from({ length: days }, (_, i) => {
+        const dt = new Date(y, mo - 1, d + i);
+        const date = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+        return ctx.db
+          .query("classes")
+          .withIndex("by_date", (q) => q.eq("date", date))
+          .collect();
+      })
+    );
+    const flat = perDay.flat().sort((a, b) => {
+      const dc = a.date.localeCompare(b.date);
+      return dc !== 0 ? dc : a.startTime.localeCompare(b.startTime);
+    });
+
+    // Enrich with coach name and WOD info
+    return Promise.all(
+      flat.map(async (cls) => {
+        const coach = await ctx.db.get(cls.coachId);
+        const wod = cls.wodId ? await ctx.db.get(cls.wodId) : null;
+        return {
+          ...cls,
+          coachName: coach?.name ?? "TBD",
+          wodTitle: wod?.title ?? null,
+          wodType: wod?.type ?? null,
+        };
+      })
+    );
+  },
+});
+
+export const create = mutation({
+  args: {
+    date: v.string(),
+    startTime: v.string(),
+    capacity: v.number(),
+    wodId: v.optional(v.id("wods")),
+  },
+  handler: async (ctx, args) => {
+    const coachId = await requireCoachOrAdmin(ctx);
+    return await ctx.db.insert("classes", {
+      ...args,
+      coachId,
+      bookedCount: 0,
+    });
+  },
+});
+
+export const remove = mutation({
+  args: { id: v.id("classes") },
+  handler: async (ctx, { id }) => {
+    await requireCoachOrAdmin(ctx);
+    const bookings = await ctx.db
+      .query("bookings")
+      .withIndex("by_class", (q) => q.eq("classId", id))
+      .collect();
+    await Promise.all(
+      bookings
+        .filter((b) => b.status !== "cancelled")
+        .map((b) => ctx.db.patch(b._id, { status: "cancelled" }))
+    );
+    await ctx.db.delete(id);
+  },
+});
