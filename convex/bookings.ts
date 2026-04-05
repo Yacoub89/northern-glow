@@ -123,6 +123,53 @@ export const book = mutation({
     const cls = await ctx.db.get(classId);
     if (!cls) throw new Error("Class not found");
 
+    // Membership gate — coaches and admins always bypass
+    const user = await ctx.db.get(userId);
+    if (user?.role !== "coach" && user?.role !== "admin") {
+      const membership = await ctx.db
+        .query("memberships")
+        .withIndex("by_user", (q) => q.eq("userId", userId))
+        .first();
+
+      if (!membership || (membership.status !== "active" && membership.status !== "trialing")) {
+        throw new Error("An active membership is required to book classes");
+      }
+
+      // 2x/week cap: count booked classes in the same calendar week as the target class
+      if (membership.plan === "twice_weekly") {
+        const classDate = new Date(cls.date + "T00:00:00Z");
+        const dow = classDate.getUTCDay(); // 0=Sun
+        const daysToMon = dow === 0 ? 6 : dow - 1;
+        const mon = new Date(classDate);
+        mon.setUTCDate(classDate.getUTCDate() - daysToMon);
+        const sun = new Date(mon);
+        sun.setUTCDate(mon.getUTCDate() + 7);
+        const weekStart = mon.toISOString().split("T")[0];
+        const weekEnd = sun.toISOString().split("T")[0]; // exclusive
+
+        const userBookings = await ctx.db
+          .query("bookings")
+          .withIndex("by_user", (q) => q.eq("userId", userId))
+          .take(100);
+
+        const bookedClasses = await Promise.all(
+          userBookings
+            .filter((b) => b.status === "booked" && b.classId !== classId)
+            .map((b) => ctx.db.get(b.classId))
+        );
+
+        const weekCount = bookedClasses.filter(
+          (c) => c && c.date >= weekStart && c.date < weekEnd
+        ).length;
+
+        if (weekCount >= 2) {
+          throw new Error(
+            "You've reached your 2 classes/week limit for this week"
+          );
+        }
+      }
+    }
+
     const existing = await ctx.db
       .query("bookings")
       .withIndex("by_class_user", (q) =>

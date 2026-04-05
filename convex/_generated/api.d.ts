@@ -13,9 +13,11 @@ import type * as bookings from "../bookings.js";
 import type * as classes from "../classes.js";
 import type * as helpers from "../helpers.js";
 import type * as http from "../http.js";
+import type * as memberships from "../memberships.js";
 import type * as personalRecords from "../personalRecords.js";
 import type * as results from "../results.js";
 import type * as seed from "../seed.js";
+import type * as stripe from "../stripe.js";
 import type * as users from "../users.js";
 import type * as wods from "../wods.js";
 
@@ -31,9 +33,11 @@ declare const fullApi: ApiFromModules<{
   classes: typeof classes;
   helpers: typeof helpers;
   http: typeof http;
+  memberships: typeof memberships;
   personalRecords: typeof personalRecords;
   results: typeof results;
   seed: typeof seed;
+  stripe: typeof stripe;
   users: typeof users;
   wods: typeof wods;
 }>;

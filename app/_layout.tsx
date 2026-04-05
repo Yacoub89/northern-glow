@@ -36,6 +36,10 @@ export default function RootLayout() {
             headerTitleStyle: { fontWeight: "700" },
           }}
         />
+        <Stack.Screen
+          name="membership"
+          options={{ headerShown: false }}
+        />
       </Stack>
     </ConvexAuthProvider>
   );

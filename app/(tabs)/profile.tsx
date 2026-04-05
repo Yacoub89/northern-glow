@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import { api } from "../../convex/_generated/api";
 import { Doc } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
@@ -28,9 +29,11 @@ function formatMemberSince(ts: number) {
 }
 
 export default function ProfileScreen() {
+  const router = useRouter();
   const { signOut } = useAuthActions();
   const me = useQuery(api.users.getMe);
   const stats = useQuery(api.users.getMyStats);
+  const membership = useQuery(api.memberships.getMyMembership);
   const prs = useQuery(api.personalRecords.getMyPRs);
   const upcomingBookings = useQuery(api.bookings.getMyUpcoming);
   const cancelBooking = useMutation(api.bookings.cancel);
@@ -125,6 +128,61 @@ export default function ProfileScreen() {
             <Ionicons name="log-out-outline" size={22} color={Colors.textSecondary} />
           </Pressable>
         </View>
+
+        {/* Membership */}
+        {me?.role !== "coach" && me?.role !== "admin" && (
+          <Pressable
+            style={[
+              styles.membershipCard,
+              membership?.status === "active" || membership?.status === "trialing"
+                ? styles.membershipCardActive
+                : styles.membershipCardInactive,
+            ]}
+            onPress={() => router.push("/membership")}
+          >
+            <View style={styles.membershipCardLeft}>
+              <Ionicons
+                name={
+                  membership?.status === "active" || membership?.status === "trialing"
+                    ? "shield-checkmark"
+                    : "shield-outline"
+                }
+                size={22}
+                color={
+                  membership?.status === "active" || membership?.status === "trialing"
+                    ? Colors.success
+                    : Colors.warning
+                }
+              />
+              <View style={{ marginLeft: 12 }}>
+                {membership?.status === "active" || membership?.status === "trialing" ? (
+                  <>
+                    <Text style={styles.membershipTitle}>
+                      {membership.plan === "unlimited" ? "Unlimited" : "2× per Week"} ·{" "}
+                      {membership.billingPeriod === "monthly" ? "Monthly" : "3-Month"}
+                    </Text>
+                    <Text style={styles.membershipSub}>
+                      Renews{" "}
+                      {new Date(membership.currentPeriodEnd).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Text style={[styles.membershipTitle, { color: Colors.warning }]}>
+                      No active membership
+                    </Text>
+                    <Text style={styles.membershipSub}>Tap to subscribe</Text>
+                  </>
+                )}
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={Colors.textSecondary} />
+          </Pressable>
+        )}
 
         {/* Stats */}
         <View style={styles.statsRow}>
@@ -289,6 +347,28 @@ const styles = StyleSheet.create({
   name: { fontSize: 20, fontWeight: "700", color: Colors.text, marginBottom: 2 },
   memberSince: { fontSize: 13, color: Colors.textSecondary },
   signOutIcon: { padding: 4 },
+
+  // Membership card
+  membershipCard: {
+    borderRadius: 14,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 20,
+    borderWidth: 1,
+  },
+  membershipCardActive: {
+    backgroundColor: Colors.surface,
+    borderColor: Colors.success + "55",
+  },
+  membershipCardInactive: {
+    backgroundColor: Colors.surface,
+    borderColor: Colors.warning + "55",
+  },
+  membershipCardLeft: { flexDirection: "row", alignItems: "center", flex: 1 },
+  membershipTitle: { fontSize: 15, fontWeight: "700", color: Colors.text, marginBottom: 2 },
+  membershipSub: { fontSize: 12, color: Colors.textSecondary },
 
   // Stats
   statsRow: {

@@ -80,4 +80,24 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_wod", ["wodId"])
     .index("by_user_wod", ["userId", "wodId"]),
+
+  memberships: defineTable({
+    userId: v.id("users"),
+    stripeCustomerId: v.string(),
+    stripeSubscriptionId: v.string(),
+    stripePriceId: v.string(),
+    plan: v.union(v.literal("unlimited"), v.literal("twice_weekly")),
+    billingPeriod: v.union(v.literal("monthly"), v.literal("annual")),
+    status: v.union(
+      v.literal("active"),
+      v.literal("trialing"),
+      v.literal("past_due"),
+      v.literal("cancelled"),
+      v.literal("incomplete")
+    ),
+    currentPeriodEnd: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_stripe_customer", ["stripeCustomerId"])
+    .index("by_stripe_subscription", ["stripeSubscriptionId"]),
 });
