@@ -81,6 +81,24 @@ export default defineSchema({
     .index("by_wod", ["wodId"])
     .index("by_user_wod", ["userId", "wodId"]),
 
+  documents: defineTable({
+    title: v.string(),
+    description: v.optional(v.string()),
+    content: v.string(),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  }).index("by_createdAt", ["createdAt"]),
+
+  documentSignatures: defineTable({
+    documentId: v.id("documents"),
+    userId: v.id("users"),
+    signatureName: v.string(),
+    signedAt: v.number(),
+  })
+    .index("by_document", ["documentId"])
+    .index("by_user", ["userId"])
+    .index("by_document_user", ["documentId", "userId"]),
+
   memberships: defineTable({
     userId: v.id("users"),
     stripeCustomerId: v.string(),

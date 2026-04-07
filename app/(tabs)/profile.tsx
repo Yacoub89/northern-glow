@@ -200,6 +200,18 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Coach Tools */}
+        {(me?.role === "coach" || me?.role === "admin") && (
+          <Pressable
+            style={styles.settingsRow}
+            onPress={() => router.push("/(tabs)/members")}
+          >
+            <Ionicons name="people" size={20} color={Colors.primary} style={{ marginRight: 12 }} />
+            <Text style={styles.settingsRowText}>Members</Text>
+            <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+          </Pressable>
+        )}
+
         {/* Personal Records */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionLabel}>Personal Records</Text>
@@ -422,6 +434,23 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   addBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+
+  settingsRow: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  settingsRowText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "600",
+    color: Colors.text,
+  },
 
   // PRs
   prList: {

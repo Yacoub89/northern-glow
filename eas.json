@@ -9,7 +9,10 @@
       "distribution": "internal"
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_CONVEX_URL": "https://resolute-woodpecker-795.convex.cloud"
+      }
     },
     "production": {
       "autoIncrement": true

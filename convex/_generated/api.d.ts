@@ -11,6 +11,7 @@
 import type * as auth from "../auth.js";
 import type * as bookings from "../bookings.js";
 import type * as classes from "../classes.js";
+import type * as documents from "../documents.js";
 import type * as helpers from "../helpers.js";
 import type * as http from "../http.js";
 import type * as memberships from "../memberships.js";
@@ -31,6 +32,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   bookings: typeof bookings;
   classes: typeof classes;
+  documents: typeof documents;
   helpers: typeof helpers;
   http: typeof http;
   memberships: typeof memberships;

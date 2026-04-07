@@ -57,6 +57,21 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="members"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="documents"
+        options={{
+          tabBarLabel: "Documents",
+          tabBarIcon: ({ color, size }) => (
+            <Ionicons name="document-text" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="schedule"
         options={{
           tabBarLabel: "Schedule",

@@ -43,7 +43,16 @@ type EnrichedClass = Doc<"classes"> & {
   coachName: string;
   wodTitle: string | null;
   wodType: string | null;
+  wodDescription: string | null;
+  wodMovements: string[] | null;
+  wodScalingNotes: string | null;
 };
+
+function parseMovement(text: string): { num: string | null; label: string } {
+  const match = text.match(/^(\d+(?:\+\d+)?)\s+(.+)/);
+  if (match) return { num: match[1], label: match[2] };
+  return { num: null, label: text };
+}
 
 function ClassCard({
   cls,
@@ -54,7 +63,6 @@ function ClassCard({
 }) {
   const book = useMutation(api.bookings.book);
   const cancel = useMutation(api.bookings.cancel);
-
   const myBooking = myBookings.find(
     (b) => b.classId === cls._id && b.status !== "cancelled"
   );
@@ -98,36 +106,40 @@ function ClassCard({
 
   return (
     <View style={styles.classCard}>
-      <View style={styles.classInfo}>
-        <Text style={styles.classTime}>{formatTime(cls.startTime)}</Text>
-        <Text style={styles.classCoach}>
-          {cls.coachName}
-          {" · "}
-          <Text style={[styles.classSpots, isFull && !myBooking && styles.classFull]}>
-            {isFull ? "Full" : `${cls.bookedCount}/${cls.capacity} spots`}
+      {/* Main row */}
+      <View style={styles.classRow}>
+        <View style={styles.classInfo}>
+          <Text style={styles.classTime}>{formatTime(cls.startTime)}</Text>
+          <Text style={styles.classCoach}>
+            {cls.coachName}
+            {" · "}
+            <Text style={[styles.classSpots, isFull && !myBooking && styles.classFull]}>
+              {isFull ? "Full" : `${cls.bookedCount}/${cls.capacity} spots`}
+            </Text>
           </Text>
-        </Text>
+        </View>
+
+        {!myBooking ? (
+          <Pressable
+            style={[styles.bookBtn, isFull && styles.fullBtn]}
+            onPress={isFull ? undefined : handleBook}
+            disabled={isFull}
+          >
+            <Text style={[styles.bookBtnText, isFull && styles.fullBtnText]}>
+              {isFull ? "Full" : "Book"}
+            </Text>
+          </Pressable>
+        ) : (
+          <Pressable style={styles.bookedBtn} onPress={handleCancel}>
+            <Text style={styles.bookedBtnText}>
+              {myBooking.status === "waitlist"
+                ? `#${myBooking.waitlistPosition} waitlist`
+                : "Booked"}
+            </Text>
+          </Pressable>
+        )}
       </View>
 
-      {!myBooking ? (
-        <Pressable
-          style={[styles.bookBtn, isFull && styles.fullBtn]}
-          onPress={isFull ? undefined : handleBook}
-          disabled={isFull}
-        >
-          <Text style={[styles.bookBtnText, isFull && styles.fullBtnText]}>
-            {isFull ? "Full" : "Book"}
-          </Text>
-        </Pressable>
-      ) : (
-        <Pressable style={styles.bookedBtn} onPress={handleCancel}>
-          <Text style={styles.bookedBtnText}>
-            {myBooking.status === "waitlist"
-              ? `#${myBooking.waitlistPosition} waitlist`
-              : "Booked"}
-          </Text>
-        </Pressable>
-      )}
     </View>
   );
 }
@@ -139,6 +151,7 @@ export default function ScheduleScreen() {
 
   const classes = useQuery(api.classes.getUpcoming, { startDate: today, days: 7 });
   const myBookings = useQuery(api.bookings.getMyBookings);
+  const wod = useQuery(api.wods.getByDate, { date: selectedDate });
 
   const dayClasses = useMemo(() => {
     if (!classes) return [];
@@ -186,24 +199,55 @@ export default function ScheduleScreen() {
         })}
       </ScrollView>
 
-      {/* Classes for selected day */}
+      {/* Classes + WOD for selected day */}
       <ScrollView
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       >
+        {/* WOD of the day */}
+        {wod ? (
+          <View style={styles.wodCard}>
+            <Text style={styles.wodCardLabel}>WOD</Text>
+            <Text style={styles.wodCardTitle}>{wod.title}</Text>
+            <Text style={styles.wodCardMeta}>
+              {wod.type.toUpperCase()}
+              {wod.description ? ` · ${wod.description}` : ""}
+            </Text>
+            {wod.movements.length > 0 && (
+              <View style={styles.wodMovements}>
+                {wod.movements.map((m, i) => {
+                  const { num, label } = parseMovement(m);
+                  return (
+                    <View key={i} style={styles.wodMovementRow}>
+                      <Text style={styles.wodMovementNum}>{num ?? "·"}</Text>
+                      <Text style={styles.wodMovementLabel}>{label}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+            {wod.scalingNotes ? (
+              <Text style={styles.wodScaling}>Scaling: {wod.scalingNotes}</Text>
+            ) : null}
+          </View>
+        ) : (
+          <View style={styles.noWodCard}>
+            <Text style={styles.noWodText}>No WOD posted for this day</Text>
+          </View>
+        )}
+
+        {/* Classes */}
+        <Text style={[styles.dayHeader, { marginTop: 20 }]}>
+          {selectedDate === today ? "TODAY" : getDayName(selectedDate)} CLASSES
+        </Text>
         {dayClasses.length === 0 ? (
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>No classes scheduled</Text>
           </View>
         ) : (
-          <>
-            <Text style={styles.dayHeader}>
-              {selectedDate === today ? "TODAY" : getDayName(selectedDate)} CLASSES
-            </Text>
-            {dayClasses.map((c) => (
-              <ClassCard key={c._id} cls={c} myBookings={myBookings} />
-            ))}
-          </>
+          dayClasses.map((c) => (
+            <ClassCard key={c._id} cls={c} myBookings={myBookings} />
+          ))
         )}
       </ScrollView>
     </SafeAreaView>
@@ -247,11 +291,12 @@ const styles = StyleSheet.create({
   },
   dayPill: {
     backgroundColor: Colors.surface,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 46,
     alignItems: "center",
-    minWidth: 58,
+    justifyContent: "center",
+    minWidth: 48,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -260,14 +305,14 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary,
   },
   dayPillName: {
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "700",
     color: Colors.textSecondary,
     letterSpacing: 0.5,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   dayPillNum: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: "800",
     color: Colors.text,
   },
@@ -284,23 +329,97 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
+  // WOD card
+  wodCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  wodCardLabel: {
+    fontSize: 10,
+    fontWeight: "800",
+    color: Colors.primary,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    marginBottom: 6,
+  },
+  wodCardTitle: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: Colors.text,
+    marginBottom: 3,
+  },
+  wodCardMeta: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: Colors.primary,
+    letterSpacing: 0.5,
+    marginBottom: 12,
+  },
+  noWodCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 14,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  noWodText: { color: Colors.textSecondary, fontSize: 13 },
+
   // Class card
   classCard: {
     backgroundColor: Colors.surface,
     borderRadius: 14,
     padding: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
     marginBottom: 8,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  classRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   classInfo: { flex: 1, marginRight: 12 },
   classTime: { fontSize: 22, fontWeight: "800", color: Colors.text, marginBottom: 3 },
   classCoach: { fontSize: 13, color: Colors.textSecondary },
   classSpots: { fontSize: 13, color: Colors.textSecondary },
   classFull: { color: Colors.error },
+
+  // WOD detail
+  wodDetail: { marginTop: 0 },
+  wodDetailDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginTop: 14,
+    marginBottom: 14,
+  },
+  wodDetailTitle: { fontSize: 16, fontWeight: "800", color: Colors.text, marginBottom: 3 },
+  wodDetailMeta: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: Colors.primary,
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  wodMovements: { gap: 7 },
+  wodMovementRow: { flexDirection: "row", alignItems: "baseline", gap: 12 },
+  wodMovementNum: {
+    width: 26,
+    fontSize: 14,
+    fontWeight: "800",
+    color: Colors.primary,
+    textAlign: "right",
+  },
+  wodMovementLabel: { fontSize: 14, color: Colors.text, fontWeight: "500", flex: 1 },
+  wodScaling: {
+    marginTop: 10,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontStyle: "italic",
+  },
 
   bookBtn: {
     backgroundColor: Colors.primary,

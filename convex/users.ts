@@ -40,6 +40,17 @@ export const getMyStats = query({
   },
 });
 
+export const listMembers = query({
+  args: {},
+  handler: async (ctx) => {
+    const callerId = await getAuthUserId(ctx);
+    if (!callerId) throw new Error("Unauthenticated");
+    const caller = await ctx.db.get(callerId);
+    if (caller?.role !== "coach" && caller?.role !== "admin") throw new Error("Unauthorized");
+    return await ctx.db.query("users").order("asc").take(200);
+  },
+});
+
 export const promoteToCoach = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {

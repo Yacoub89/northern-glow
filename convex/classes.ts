@@ -45,6 +45,9 @@ export const getUpcoming = query({
           coachName: coach?.name ?? "TBD",
           wodTitle: wod?.title ?? null,
           wodType: wod?.type ?? null,
+          wodDescription: wod?.description ?? null,
+          wodMovements: wod?.movements ?? null,
+          wodScalingNotes: wod?.scalingNotes ?? null,
         };
       })
     );
