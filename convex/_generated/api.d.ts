@@ -8,13 +8,18 @@
  * @module
  */
 
+import type * as appointments from "../appointments.js";
 import type * as auth from "../auth.js";
 import type * as bookings from "../bookings.js";
 import type * as classes from "../classes.js";
+import type * as crons from "../crons.js";
 import type * as documents from "../documents.js";
+import type * as gymConfig from "../gymConfig.js";
 import type * as helpers from "../helpers.js";
 import type * as http from "../http.js";
 import type * as memberships from "../memberships.js";
+import type * as notificationQueries from "../notificationQueries.js";
+import type * as notifications from "../notifications.js";
 import type * as personalRecords from "../personalRecords.js";
 import type * as results from "../results.js";
 import type * as seed from "../seed.js";
@@ -29,13 +34,18 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  appointments: typeof appointments;
   auth: typeof auth;
   bookings: typeof bookings;
   classes: typeof classes;
+  crons: typeof crons;
   documents: typeof documents;
+  gymConfig: typeof gymConfig;
   helpers: typeof helpers;
   http: typeof http;
   memberships: typeof memberships;
+  notificationQueries: typeof notificationQueries;
+  notifications: typeof notifications;
   personalRecords: typeof personalRecords;
   results: typeof results;
   seed: typeof seed;

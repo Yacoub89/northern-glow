@@ -4,6 +4,7 @@ import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { DatabaseReader } from "./_generated/server";
 import { requireCoachOrAdmin } from "./helpers";
+import { internal } from "./_generated/api";
 
 async function getWaitlisted(db: DatabaseReader, classId: Id<"classes">) {
   const waitlisted = await db
@@ -111,6 +112,27 @@ export const getClassRoster = query({
     return await Promise.all(
       bookings.map(async (b) => ({ ...b, user: await ctx.db.get(b.userId) }))
     );
+  },
+});
+
+export const checkIn = mutation({
+  args: { bookingId: v.id("bookings") },
+  handler: async (ctx, { bookingId }) => {
+    await requireCoachOrAdmin(ctx);
+    const booking = await ctx.db.get(bookingId);
+    if (!booking) throw new Error("Booking not found");
+    if (booking.status !== "booked") throw new Error("Athlete is not booked");
+    await ctx.db.patch(bookingId, { checkedInAt: Date.now() });
+  },
+});
+
+export const uncheckIn = mutation({
+  args: { bookingId: v.id("bookings") },
+  handler: async (ctx, { bookingId }) => {
+    await requireCoachOrAdmin(ctx);
+    const booking = await ctx.db.get(bookingId);
+    if (!booking) throw new Error("Booking not found");
+    await ctx.db.patch(bookingId, { checkedInAt: undefined });
   },
 });
 
@@ -258,6 +280,19 @@ export const cancel = mutation({
           ctx.db.patch(classId, { bookedCount: newCount + 1 }),
           ...rest.map((b, i) => ctx.db.patch(b._id, { waitlistPosition: i + 1 })),
         ]);
+        // Notify promoted athlete
+        const promotedUser = await ctx.db.get(first.userId);
+        if (promotedUser?.pushToken) {
+          const cls = await ctx.db.get(classId);
+          await ctx.scheduler.runAfter(0, internal.notifications.sendPush, {
+            tokens: [promotedUser.pushToken],
+            title: "You're off the waitlist!",
+            body: cls
+              ? `A spot opened up for the ${cls.startTime} class on ${cls.date}. You're booked!`
+              : "A spot opened up — you're now booked!",
+            data: { type: "waitlist_promoted", classId },
+          });
+        }
       }
     } else if (prevStatus === "waitlist" && prevPosition !== undefined) {
       const waitlisted = await getWaitlisted(ctx.db, classId);

@@ -1,4 +1,5 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
+// @ts-ignore — web-only import
 import { useMutation, useQuery } from "convex/react";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -18,10 +19,9 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../convex/_generated/api";
 import { Id } from "../convex/_generated/dataModel";
 import { Colors } from "../constants/Colors";
+import { useGymConfig } from "../constants/GymConfig";
 import { WOD_TYPES, type WodType } from "../constants/wod";
 import { getTodayDate } from "../utils/date";
-
-const GYM_NAME = "ORLEANS CROSSFIT";
 
 const TYPE_LABELS: Record<WodType, string> = {
   AMRAP: "AMRAP",
@@ -32,6 +32,7 @@ const TYPE_LABELS: Record<WodType, string> = {
 };
 
 export default function WodFormScreen() {
+  const gym = useGymConfig();
   const router = useRouter();
   const navigation = useNavigation();
   const { wodId, date: dateParam } = useLocalSearchParams<{ wodId?: string; date?: string }>();
@@ -117,7 +118,7 @@ export default function WodFormScreen() {
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.gymName}>{GYM_NAME}</Text>
+            <Text style={styles.gymName}>{gym.name.toUpperCase()}</Text>
             <Text style={styles.title}>{editingId ? "Edit WOD" : "Set WOD"}</Text>
           </View>
 
@@ -125,65 +126,93 @@ export default function WodFormScreen() {
           {!editingId && (
             <View style={styles.section}>
               <Text style={styles.sectionLabel}>DATE</Text>
-              <Pressable style={styles.dateButton} onPress={() => setShowPicker(true)}>
-                <Text style={styles.dateButtonText}>
-                  {new Date(pickerDate.getFullYear(), pickerDate.getMonth(), pickerDate.getDate()).toLocaleDateString("en-US", {
-                    weekday: "long",
-                    month: "long",
-                    day: "numeric",
-                    year: "numeric",
-                  })}
-                </Text>
-                <Text style={styles.dateButtonIcon}>📅</Text>
-              </Pressable>
-              {showPicker && Platform.OS === "android" && (
-                <DateTimePicker
-                  value={pickerDate}
-                  mode="date"
-                  display="calendar"
-                  onChange={(_, selected) => {
-                    setShowPicker(false);
-                    if (selected) {
-                      setPickerDate(selected);
-                      const y = selected.getFullYear();
-                      const m = String(selected.getMonth() + 1).padStart(2, "0");
-                      const d = String(selected.getDate()).padStart(2, "0");
-                      setDate(`${y}-${m}-${d}`);
-                    }
+              {Platform.OS === "web" ? (
+                // Native HTML date input on web
+                <input
+                  type="date"
+                  value={date}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (!val) return;
+                    setDate(val);
+                    const [y, mo, d] = val.split("-").map(Number);
+                    setPickerDate(new Date(y, mo - 1, d));
                   }}
+                  style={{
+                    backgroundColor: Colors.surfaceElevated,
+                    border: `1px solid ${Colors.border}`,
+                    borderRadius: 10,
+                    padding: 14,
+                    color: Colors.text,
+                    fontSize: 15,
+                    width: "100%",
+                    boxSizing: "border-box",
+                    colorScheme: "dark",
+                  } as any}
                 />
-              )}
-              {showPicker && Platform.OS === "ios" && (
-                <Modal transparent animationType="slide" visible={showPicker}>
-                  <Pressable style={styles.modalOverlay} onPress={() => setShowPicker(false)}>
-                    <View style={styles.modalSheet}>
-                      <View style={styles.modalHandle} />
-                      <DateTimePicker
-                        value={pickerDate}
-                        mode="date"
-                        display="inline"
-                        themeVariant="dark"
-                        accentColor={Colors.primary}
-                        style={{ width: "100%" }}
-                        onChange={(_, selected) => {
-                          if (selected) {
-                            setPickerDate(selected);
-                            const y = selected.getFullYear();
-                            const m = String(selected.getMonth() + 1).padStart(2, "0");
-                            const d = String(selected.getDate()).padStart(2, "0");
-                            setDate(`${y}-${m}-${d}`);
-                          }
-                        }}
-                      />
-                      <Pressable
-                        style={styles.modalDoneBtn}
-                        onPress={() => setShowPicker(false)}
-                      >
-                        <Text style={styles.modalDoneBtnText}>Done</Text>
-                      </Pressable>
-                    </View>
+              ) : (
+                <>
+                  <Pressable style={styles.dateButton} onPress={() => setShowPicker(true)}>
+                    <Text style={styles.dateButtonText}>
+                      {new Date(pickerDate.getFullYear(), pickerDate.getMonth(), pickerDate.getDate()).toLocaleDateString("en-US", {
+                        weekday: "long",
+                        month: "long",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
+                    </Text>
+                    <Text style={styles.dateButtonIcon}>📅</Text>
                   </Pressable>
-                </Modal>
+                  {showPicker && Platform.OS === "android" && (
+                    <DateTimePicker
+                      value={pickerDate}
+                      mode="date"
+                      display="calendar"
+                      onChange={(_, selected) => {
+                        setShowPicker(false);
+                        if (selected) {
+                          setPickerDate(selected);
+                          const y = selected.getFullYear();
+                          const m = String(selected.getMonth() + 1).padStart(2, "0");
+                          const d = String(selected.getDate()).padStart(2, "0");
+                          setDate(`${y}-${m}-${d}`);
+                        }
+                      }}
+                    />
+                  )}
+                  {showPicker && Platform.OS === "ios" && (
+                    <Modal transparent animationType="slide" visible={showPicker}>
+                      <Pressable style={styles.modalOverlay} onPress={() => setShowPicker(false)}>
+                        <View style={styles.modalSheet}>
+                          <View style={styles.modalHandle} />
+                          <DateTimePicker
+                            value={pickerDate}
+                            mode="date"
+                            display="inline"
+                            themeVariant="dark"
+                            accentColor={Colors.primary}
+                            style={{ width: "100%" }}
+                            onChange={(_, selected) => {
+                              if (selected) {
+                                setPickerDate(selected);
+                                const y = selected.getFullYear();
+                                const m = String(selected.getMonth() + 1).padStart(2, "0");
+                                const d = String(selected.getDate()).padStart(2, "0");
+                                setDate(`${y}-${m}-${d}`);
+                              }
+                            }}
+                          />
+                          <Pressable
+                            style={styles.modalDoneBtn}
+                            onPress={() => setShowPicker(false)}
+                          >
+                            <Text style={styles.modalDoneBtnText}>Done</Text>
+                          </Pressable>
+                        </View>
+                      </Pressable>
+                    </Modal>
+                  )}
+                </>
               )}
             </View>
           )}

@@ -12,8 +12,10 @@ import {
   View,
 } from "react-native";
 import { Colors } from "../../constants/Colors";
+import { useGymConfig } from "../../constants/GymConfig";
 
 export default function LoginScreen() {
+  const gym = useGymConfig();
   const { signIn } = useAuthActions();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -41,8 +43,8 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.inner}>
-        <Text style={styles.logo}>OCFit</Text>
-        <Text style={styles.tagline}>Orleans CrossFit</Text>
+        <Text style={styles.logo}>{gym.name}</Text>
+        {gym.tagline ? <Text style={styles.tagline}>{gym.tagline}</Text> : null}
 
         <View style={styles.form}>
           <TextInput

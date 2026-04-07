@@ -3,8 +3,6 @@ import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
-  FlatList,
   Modal,
   Pressable,
   ScrollView,
@@ -21,6 +19,48 @@ import { Doc } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
 import { formatDate, formatTime } from "../../utils/date";
 
+function ConfirmModal({
+  visible,
+  title,
+  message,
+  confirmLabel = "Confirm",
+  destructive = false,
+  onConfirm,
+  onCancel,
+}: {
+  visible: boolean;
+  title: string;
+  message: string;
+  confirmLabel?: string;
+  destructive?: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+      <Pressable style={confirmStyles.overlay} onPress={onCancel}>
+        <View style={confirmStyles.sheet} onStartShouldSetResponder={() => true}>
+          <Text style={confirmStyles.title}>{title}</Text>
+          <Text style={confirmStyles.message}>{message}</Text>
+          <View style={confirmStyles.actions}>
+            <Pressable style={confirmStyles.cancelBtn} onPress={onCancel}>
+              <Text style={confirmStyles.cancelText}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              style={[confirmStyles.confirmBtn, destructive && confirmStyles.confirmBtnDestructive]}
+              onPress={onConfirm}
+            >
+              <Text style={[confirmStyles.confirmText, destructive && confirmStyles.confirmTextDestructive]}>
+                {confirmLabel}
+              </Text>
+            </Pressable>
+          </View>
+        </View>
+      </Pressable>
+    </Modal>
+  );
+}
+
 function formatMemberSince(ts: number) {
   return new Date(ts).toLocaleDateString("en-US", {
     month: "short",
@@ -32,10 +72,11 @@ export default function ProfileScreen() {
   const router = useRouter();
   const { signOut } = useAuthActions();
   const me = useQuery(api.users.getMe);
-  const stats = useQuery(api.users.getMyStats);
+  const isCoachOrAdmin = me?.role === "coach" || me?.role === "admin";
+  const stats = useQuery(api.users.getMyStats, isCoachOrAdmin ? "skip" : undefined);
   const membership = useQuery(api.memberships.getMyMembership);
-  const prs = useQuery(api.personalRecords.getMyPRs);
-  const upcomingBookings = useQuery(api.bookings.getMyUpcoming);
+  const prs = useQuery(api.personalRecords.getMyPRs, isCoachOrAdmin ? "skip" : undefined);
+  const upcomingBookings = useQuery(api.bookings.getMyUpcoming, isCoachOrAdmin ? "skip" : undefined);
   const cancelBooking = useMutation(api.bookings.cancel);
   const upsertPR = useMutation(api.personalRecords.upsert);
   const removePR = useMutation(api.personalRecords.remove);
@@ -44,6 +85,9 @@ export default function ProfileScreen() {
   const [prMovement, setPrMovement] = useState("");
   const [prScore, setPrScore] = useState("");
   const [savingPR, setSavingPR] = useState(false);
+
+  type ConfirmState = { title: string; message: string; confirmLabel: string; destructive: boolean; onConfirm: () => void } | null;
+  const [confirm, setConfirm] = useState<ConfirmState>(null);
 
   if (me === undefined) {
     return (
@@ -61,20 +105,20 @@ export default function ProfileScreen() {
     .slice(0, 2);
 
   const handleCancelBooking = (classId: Doc<"bookings">["classId"], label: string) => {
-    Alert.alert("Cancel Booking", `Cancel your booking for ${label}?`, [
-      { text: "Keep", style: "cancel" },
-      {
-        text: "Cancel Booking",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await cancelBooking({ classId });
-          } catch (e: any) {
-            Alert.alert("Error", e.message);
-          }
-        },
+    setConfirm({
+      title: "Cancel Booking",
+      message: `Cancel your booking for ${label}?`,
+      confirmLabel: "Cancel Booking",
+      destructive: true,
+      onConfirm: async () => {
+        setConfirm(null);
+        try {
+          await cancelBooking({ classId });
+        } catch (e: any) {
+          Alert.alert("Error", e.message);
+        }
       },
-    ]);
+    });
   };
 
   const handleSavePR = async () => {
@@ -93,21 +137,29 @@ export default function ProfileScreen() {
   };
 
   const handleDeletePR = (pr: Doc<"personalRecords">) => {
-    Alert.alert("Delete PR", `Remove ${pr.movement}?`, [
-      { text: "Cancel", style: "cancel" },
-      {
-        text: "Delete",
-        style: "destructive",
-        onPress: () => removePR({ id: pr._id }),
+    setConfirm({
+      title: "Delete PR",
+      message: `Remove ${pr.movement}?`,
+      confirmLabel: "Delete",
+      destructive: true,
+      onConfirm: () => {
+        setConfirm(null);
+        removePR({ id: pr._id });
       },
-    ]);
+    });
   };
 
   const handleSignOut = () => {
-    Alert.alert("Sign Out", "Are you sure?", [
-      { text: "Cancel", style: "cancel" },
-      { text: "Sign Out", style: "destructive", onPress: () => signOut() },
-    ]);
+    setConfirm({
+      title: "Sign Out",
+      message: "Are you sure you want to sign out?",
+      confirmLabel: "Sign Out",
+      destructive: true,
+      onConfirm: () => {
+        setConfirm(null);
+        signOut();
+      },
+    });
   };
 
   return (
@@ -119,7 +171,16 @@ export default function ProfileScreen() {
             <Text style={styles.avatarInitials}>{initials}</Text>
           </View>
           <View style={styles.headerInfo}>
-            <Text style={styles.name}>{me?.name ?? "Unknown"}</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 2 }}>
+              <Text style={styles.name}>{me?.name ?? "Unknown"}</Text>
+              {isCoachOrAdmin && (
+                <View style={styles.roleBadge}>
+                  <Text style={styles.roleBadgeText}>
+                    {me?.role === "admin" ? "Admin" : "Coach"}
+                  </Text>
+                </View>
+              )}
+            </View>
             <Text style={styles.memberSince}>
               Member since {formatMemberSince(me?._creationTime ?? Date.now())}
             </Text>
@@ -184,102 +245,143 @@ export default function ProfileScreen() {
           </Pressable>
         )}
 
-        {/* Stats */}
-        <View style={styles.statsRow}>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{stats?.classesAttended ?? "—"}</Text>
-            <Text style={styles.statLabel}>Classes</Text>
-          </View>
-          <View style={[styles.statBox, styles.statBoxMiddle]}>
-            <Text style={styles.statValue}>{stats?.wodsLogged ?? "—"}</Text>
-            <Text style={styles.statLabel}>WODs logged</Text>
-          </View>
-          <View style={styles.statBox}>
-            <Text style={styles.statValue}>{stats?.prsSet ?? "—"}</Text>
-            <Text style={styles.statLabel}>PRs set</Text>
-          </View>
-        </View>
-
-        {/* Coach Tools */}
-        {(me?.role === "coach" || me?.role === "admin") && (
-          <Pressable
-            style={styles.settingsRow}
-            onPress={() => router.push("/(tabs)/members")}
-          >
-            <Ionicons name="people" size={20} color={Colors.primary} style={{ marginRight: 12 }} />
-            <Text style={styles.settingsRowText}>Members</Text>
-            <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
-          </Pressable>
-        )}
-
-        {/* Personal Records */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionLabel}>Personal Records</Text>
-          <Pressable
-            style={styles.addBtn}
-            onPress={() => setPrModalVisible(true)}
-          >
-            <Text style={styles.addBtnText}>+ Add</Text>
-          </Pressable>
-        </View>
-
-        {prs === undefined ? (
-          <ActivityIndicator color={Colors.primary} style={{ marginBottom: 20 }} />
-        ) : prs.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No PRs yet — add your first one!</Text>
-          </View>
-        ) : (
-          <View style={styles.prList}>
-            {prs.map((pr) => (
-              <Pressable
-                key={pr._id}
-                style={styles.prRow}
-                onLongPress={() => handleDeletePR(pr)}
-              >
-                <Text style={styles.prMovement}>{pr.movement}</Text>
-                <Text style={styles.prScore}>{pr.score}</Text>
-              </Pressable>
-            ))}
+        {/* Stats — athletes only */}
+        {!isCoachOrAdmin && (
+          <View style={styles.statsRow}>
+            <View style={styles.statBox}>
+              <Text style={styles.statValue}>{stats?.classesAttended ?? "—"}</Text>
+              <Text style={styles.statLabel}>Classes</Text>
+            </View>
+            <View style={[styles.statBox, styles.statBoxMiddle]}>
+              <Text style={styles.statValue}>{stats?.wodsLogged ?? "—"}</Text>
+              <Text style={styles.statLabel}>WODs logged</Text>
+            </View>
+            <View style={styles.statBox}>
+              <Text style={styles.statValue}>{stats?.prsSet ?? "—"}</Text>
+              <Text style={styles.statLabel}>PRs set</Text>
+            </View>
           </View>
         )}
 
-        {/* Upcoming Bookings */}
-        <View style={[styles.sectionHeader, { marginTop: 8 }]}>
-          <Text style={styles.sectionLabel}>My Upcoming Bookings</Text>
-        </View>
+        {/* Admin Tools — coaches and admins only */}
+        {isCoachOrAdmin && (
+          <>
+            <Text style={[styles.sectionLabel, { marginBottom: 10 }]}>Admin Tools</Text>
+            <Pressable
+              style={styles.settingsRow}
+              onPress={() => router.push("/(tabs)/members")}
+            >
+              <Ionicons name="people" size={20} color={Colors.primary} style={{ marginRight: 12 }} />
+              <Text style={styles.settingsRowText}>Members</Text>
+              <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+            </Pressable>
+            <Pressable
+              style={styles.settingsRow}
+              onPress={() => router.push("/(tabs)/manage")}
+            >
+              <Ionicons name="calendar" size={20} color={Colors.primary} style={{ marginRight: 12 }} />
+              <Text style={styles.settingsRowText}>Manage Schedule & WODs</Text>
+              <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+            </Pressable>
+            <Pressable
+              style={styles.settingsRow}
+              onPress={() => router.push("/kiosk")}
+            >
+              <Ionicons name="tablet-portrait" size={20} color={Colors.primary} style={{ marginRight: 12 }} />
+              <Text style={styles.settingsRowText}>Kiosk / Check-In</Text>
+              <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+            </Pressable>
+            <Pressable
+              style={[styles.settingsRow, { marginBottom: 28 }]}
+              onPress={() => router.push("/(tabs)/documents")}
+            >
+              <Ionicons name="document-text" size={20} color={Colors.primary} style={{ marginRight: 12 }} />
+              <Text style={styles.settingsRowText}>Documents & Waivers</Text>
+              <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+            </Pressable>
+          </>
+        )}
 
-        {upcomingBookings === undefined ? (
-          <ActivityIndicator color={Colors.primary} style={{ marginBottom: 20 }} />
-        ) : upcomingBookings.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No upcoming bookings</Text>
-          </View>
-        ) : (
-          upcomingBookings.map(({ booking, cls, coachName }) => (
-            <View key={booking._id} style={styles.bookingCard}>
-              <View>
-                <Text style={styles.bookingDate}>
-                  {formatDate(cls.date, { relative: true, weekday: "short" })} · {formatTime(cls.startTime)}
-                  {booking.status === "waitlist" ? " · Waitlist" : ""}
-                </Text>
-                <Text style={styles.bookingCoach}>Coach {coachName}</Text>
-              </View>
-              <Pressable
-                style={styles.cancelBtn}
-                onPress={() =>
-                  handleCancelBooking(
-                    cls._id,
-                    `${formatDate(cls.date, { relative: true, weekday: "short" })} ${formatTime(cls.startTime)}`
-                  )
-                }
-              >
-                <Text style={styles.cancelBtnText}>Cancel</Text>
+        {/* Personal Records — athletes only */}
+        {!isCoachOrAdmin && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionLabel}>Personal Records</Text>
+              <Pressable style={styles.addBtn} onPress={() => setPrModalVisible(true)}>
+                <Text style={styles.addBtnText}>+ Add</Text>
               </Pressable>
             </View>
-          ))
+
+            {prs === undefined ? (
+              <ActivityIndicator color={Colors.primary} style={{ marginBottom: 20 }} />
+            ) : prs.length === 0 ? (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyText}>No PRs yet — add your first one!</Text>
+              </View>
+            ) : (
+              <View style={styles.prList}>
+                {prs.map((pr) => (
+                  <Pressable
+                    key={pr._id}
+                    style={styles.prRow}
+                    onLongPress={() => handleDeletePR(pr)}
+                  >
+                    <Text style={styles.prMovement}>{pr.movement}</Text>
+                    <Text style={styles.prScore}>{pr.score}</Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
+            {/* Upcoming Bookings */}
+            <View style={[styles.sectionHeader, { marginTop: 8 }]}>
+              <Text style={styles.sectionLabel}>My Upcoming Bookings</Text>
+            </View>
+
+            {upcomingBookings === undefined ? (
+              <ActivityIndicator color={Colors.primary} style={{ marginBottom: 20 }} />
+            ) : upcomingBookings.length === 0 ? (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyText}>No upcoming bookings</Text>
+              </View>
+            ) : (
+              upcomingBookings.map(({ booking, cls, coachName }) => (
+                <View key={booking._id} style={styles.bookingCard}>
+                  <View>
+                    <Text style={styles.bookingDate}>
+                      {formatDate(cls.date, { relative: true, weekday: "short" })} · {formatTime(cls.startTime)}
+                      {booking.status === "waitlist" ? " · Waitlist" : ""}
+                    </Text>
+                    <Text style={styles.bookingCoach}>Coach {coachName}</Text>
+                  </View>
+                  <Pressable
+                    style={styles.cancelBtn}
+                    onPress={() =>
+                      handleCancelBooking(
+                        cls._id,
+                        `${formatDate(cls.date, { relative: true, weekday: "short" })} ${formatTime(cls.startTime)}`
+                      )
+                    }
+                  >
+                    <Text style={styles.cancelBtnText}>Cancel</Text>
+                  </Pressable>
+                </View>
+              ))
+            )}
+          </>
         )}
       </ScrollView>
+
+      {/* Confirm Modal */}
+      <ConfirmModal
+        visible={confirm !== null}
+        title={confirm?.title ?? ""}
+        message={confirm?.message ?? ""}
+        confirmLabel={confirm?.confirmLabel ?? "Confirm"}
+        destructive={confirm?.destructive ?? false}
+        onConfirm={confirm?.onConfirm ?? (() => {})}
+        onCancel={() => setConfirm(null)}
+      />
 
       {/* Add PR Modal */}
       <Modal
@@ -359,6 +461,19 @@ const styles = StyleSheet.create({
   name: { fontSize: 20, fontWeight: "700", color: Colors.text, marginBottom: 2 },
   memberSince: { fontSize: 13, color: Colors.textSecondary },
   signOutIcon: { padding: 4 },
+  roleBadge: {
+    backgroundColor: Colors.primary + "22",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  roleBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: Colors.primary,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
 
   // Membership card
   membershipCard: {
@@ -550,4 +665,70 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   modalSaveBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+});
+
+const confirmStyles = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 32,
+  },
+  sheet: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16,
+    padding: 24,
+    width: "100%",
+    maxWidth: 360,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  title: {
+    fontSize: 17,
+    fontWeight: "700",
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  message: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+    marginBottom: 24,
+  },
+  actions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  cancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: "center",
+  },
+  cancelText: {
+    color: Colors.textSecondary,
+    fontWeight: "600",
+    fontSize: 14,
+  },
+  confirmBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: Colors.primary,
+    alignItems: "center",
+  },
+  confirmBtnDestructive: {
+    backgroundColor: Colors.error,
+  },
+  confirmText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+  confirmTextDestructive: {
+    color: "#fff",
+  },
 });

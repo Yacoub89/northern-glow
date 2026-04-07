@@ -11,9 +11,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../convex/_generated/api";
 import { Colors } from "../../constants/Colors";
+import { useGymConfig } from "../../constants/GymConfig";
 import { formatTime, getTodayDate } from "../../utils/date";
-
-const GYM_NAME = "ORLEANS CROSSFIT";
 
 function getGreeting(name?: string): string {
   const h = new Date().getHours();
@@ -47,6 +46,7 @@ function computeStats(scores: string[]): { top: string | null; avg: string | nul
 }
 
 export default function HomeScreen() {
+  const gym = useGymConfig();
   const today = getTodayDate();
   const router = useRouter();
 
@@ -85,7 +85,7 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.gymName}>{GYM_NAME}</Text>
+          <Text style={styles.gymName}>{gym.name.toUpperCase()}</Text>
           <Text style={styles.dateText}>{getTodayLabel()}</Text>
           <Text style={styles.greeting}>{getGreeting(me?.name)}</Text>
           {wod && (

@@ -15,9 +15,8 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../convex/_generated/api";
 import { Colors } from "../../constants/Colors";
+import { useGymConfig } from "../../constants/GymConfig";
 import { getTodayDate } from "../../utils/date";
-
-const GYM_NAME = "ORLEANS CROSSFIT";
 
 const SCALE_OPTIONS = ["Rx", "Scaled", "Rx+"] as const;
 type Scale = (typeof SCALE_OPTIONS)[number];
@@ -29,6 +28,7 @@ function parseMovement(text: string): { num: string | null; label: string } {
 }
 
 export default function LogResultScreen() {
+  const gym = useGymConfig();
   const today = getTodayDate();
 
   const wod = useQuery(api.wods.getByDate, { date: today });
@@ -88,7 +88,7 @@ export default function LogResultScreen() {
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.gymName}>{GYM_NAME}</Text>
+            <Text style={styles.gymName}>{gym.name.toUpperCase()}</Text>
             <Text style={styles.title}>Log Result</Text>
           </View>
 

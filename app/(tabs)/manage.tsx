@@ -5,16 +5,295 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
+  Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../convex/_generated/api";
 import { Doc } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
+import { useGymConfig } from "../../constants/GymConfig";
 import { formatDate, formatTime } from "../../utils/date";
+import { useState } from "react";
+
+const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+const TIME_PRESETS = [
+  "06:00", "07:00", "08:00", "09:00", "10:00", "11:00",
+  "12:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00", "20:00",
+];
+
+const DURATION_OPTIONS = [30, 45, 60, 90];
+
+function AddAvailabilityModal({
+  visible,
+  onClose,
+}: {
+  visible: boolean;
+  onClose: () => void;
+}) {
+  const [dayOfWeek, setDayOfWeek] = useState(1); // Mon
+  const [startTime, setStartTime] = useState("09:00");
+  const [duration, setDuration] = useState(60);
+  const addAvailability = useMutation(api.appointments.addAvailability);
+
+  const handleSave = async () => {
+    try {
+      await addAvailability({ dayOfWeek, startTime, durationMinutes: duration });
+      onClose();
+    } catch (e: any) {
+      Alert.alert("Error", e.message);
+    }
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={modal.overlay}>
+        <View style={modal.sheet}>
+          <Text style={modal.title}>Add Availability Slot</Text>
+
+          <Text style={modal.label}>Day of Week</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={modal.row}>
+            {DAY_NAMES.map((name, i) => (
+              <Pressable
+                key={i}
+                style={[modal.chip, dayOfWeek === i && modal.chipActive]}
+                onPress={() => setDayOfWeek(i)}
+              >
+                <Text style={[modal.chipText, dayOfWeek === i && modal.chipTextActive]}>
+                  {name}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          <Text style={modal.label}>Start Time</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={modal.row}>
+            {TIME_PRESETS.map((t) => (
+              <Pressable
+                key={t}
+                style={[modal.chip, startTime === t && modal.chipActive]}
+                onPress={() => setStartTime(t)}
+              >
+                <Text style={[modal.chipText, startTime === t && modal.chipTextActive]}>
+                  {formatTime(t)}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          <Text style={modal.label}>Duration</Text>
+          <View style={modal.row}>
+            {DURATION_OPTIONS.map((d) => (
+              <Pressable
+                key={d}
+                style={[modal.chip, duration === d && modal.chipActive]}
+                onPress={() => setDuration(d)}
+              >
+                <Text style={[modal.chipText, duration === d && modal.chipTextActive]}>
+                  {d} min
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <View style={modal.actions}>
+            <Pressable style={modal.cancelBtn} onPress={onClose}>
+              <Text style={modal.cancelText}>Cancel</Text>
+            </Pressable>
+            <Pressable style={modal.saveBtn} onPress={handleSave}>
+              <Text style={modal.saveText}>Save Slot</Text>
+            </Pressable>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+function AvailabilitySection() {
+  const [showModal, setShowModal] = useState(false);
+  const availability = useQuery(api.appointments.getMyAvailability);
+  const removeAvailability = useMutation(api.appointments.removeAvailability);
+
+  const handleRemove = (id: string) => {
+    Alert.alert("Remove Slot", "Remove this recurring availability slot?", [
+      { text: "Keep", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await removeAvailability({ availabilityId: id as any });
+          } catch (e: any) {
+            Alert.alert("Error", e.message);
+          }
+        },
+      },
+    ]);
+  };
+
+  // Group by day of week
+  const byDay = (availability ?? []).reduce<Record<number, typeof availability>>((acc, slot) => {
+    if (!slot) return acc;
+    if (!acc[slot.dayOfWeek]) acc[slot.dayOfWeek] = [];
+    acc[slot.dayOfWeek]!.push(slot);
+    return acc;
+  }, {});
+
+  return (
+    <>
+      <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+        <Text style={styles.sectionLabel}>1:1 Availability</Text>
+        <Pressable style={styles.addBtn} onPress={() => setShowModal(true)}>
+          <Text style={styles.addBtnText}>+ Add Slot</Text>
+        </Pressable>
+      </View>
+
+      {availability === undefined ? (
+        <ActivityIndicator color={Colors.primary} style={{ marginTop: 8 }} />
+      ) : availability.length === 0 ? (
+        <View style={styles.emptyCard}>
+          <Text style={styles.emptyText}>No availability set</Text>
+          <Text style={[styles.emptyText, { fontSize: 12, marginTop: 4 }]}>
+            Add slots so athletes can book 1:1 sessions
+          </Text>
+        </View>
+      ) : (
+        [0, 1, 2, 3, 4, 5, 6]
+          .filter((d) => byDay[d]?.length)
+          .map((d) => (
+            <View key={d} style={{ marginBottom: 12 }}>
+              <Text style={styles.availDayLabel}>{DAY_NAMES[d]}</Text>
+              {byDay[d]!
+                .sort((a, b) => a!.startTime.localeCompare(b!.startTime))
+                .map((slot) => (
+                  <View key={slot!._id} style={styles.availSlotRow}>
+                    <Text style={styles.availSlotTime}>{formatTime(slot!.startTime)}</Text>
+                    <Text style={styles.availSlotDuration}>{slot!.durationMinutes} min</Text>
+                    <Pressable
+                      style={styles.removeBtn}
+                      onPress={() => handleRemove(slot!._id)}
+                    >
+                      <Text style={styles.removeBtnText}>Remove</Text>
+                    </Pressable>
+                  </View>
+                ))}
+            </View>
+          ))
+      )}
+
+      <AddAvailabilityModal visible={showModal} onClose={() => setShowModal(false)} />
+    </>
+  );
+}
+
+const COLOR_PRESETS = [
+  "#1BBFBF", "#FF3B30", "#FF9F0A", "#34C759",
+  "#007AFF", "#AF52DE", "#FF2D55", "#5856D6",
+];
+
+function GymSettingsSection() {
+  const gym = useGymConfig();
+  const upsert = useMutation(api.gymConfig.upsert);
+  const me = useQuery(api.users.getMe);
+  const isAdmin = me?.role === "admin";
+
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(gym.name);
+  const [tagline, setTagline] = useState(gym.tagline);
+  const [primaryColor, setPrimaryColor] = useState(gym.primaryColor);
+  const [saving, setSaving] = useState(false);
+
+  if (!isAdmin) return null;
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await upsert({ name: name.trim(), tagline: tagline.trim() || undefined, primaryColor, timezone: gym.timezone });
+      setEditing(false);
+    } catch (e: any) {
+      Alert.alert("Error", e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <>
+      <View style={[styles.sectionHeader, { marginTop: 24 }]}>
+        <Text style={styles.sectionLabel}>Gym Settings</Text>
+        {!editing && (
+          <Pressable style={styles.addBtn} onPress={() => {
+            setName(gym.name);
+            setTagline(gym.tagline);
+            setPrimaryColor(gym.primaryColor);
+            setEditing(true);
+          }}>
+            <Text style={styles.addBtnText}>Edit</Text>
+          </Pressable>
+        )}
+      </View>
+
+      {!editing ? (
+        <View style={styles.gymCard}>
+          <Text style={styles.gymCardName}>{gym.name}</Text>
+          {gym.tagline ? <Text style={styles.gymCardTagline}>{gym.tagline}</Text> : null}
+          <View style={[styles.gymColorDot, { backgroundColor: gym.primaryColor }]} />
+        </View>
+      ) : (
+        <View style={styles.gymEditCard}>
+          <Text style={styles.gymEditLabel}>Gym Name</Text>
+          <TextInput
+            style={styles.gymEditInput}
+            value={name}
+            onChangeText={setName}
+            placeholder="Gym name"
+            placeholderTextColor={Colors.textMuted}
+          />
+
+          <Text style={[styles.gymEditLabel, { marginTop: 12 }]}>Tagline</Text>
+          <TextInput
+            style={styles.gymEditInput}
+            value={tagline}
+            onChangeText={setTagline}
+            placeholder="e.g. Forging Elite Fitness"
+            placeholderTextColor={Colors.textMuted}
+          />
+
+          <Text style={[styles.gymEditLabel, { marginTop: 12 }]}>Brand Color</Text>
+          <View style={styles.colorRow}>
+            {COLOR_PRESETS.map((c) => (
+              <Pressable
+                key={c}
+                style={[styles.colorSwatch, { backgroundColor: c }, primaryColor === c && styles.colorSwatchActive]}
+                onPress={() => setPrimaryColor(c)}
+              />
+            ))}
+          </View>
+
+          <View style={styles.gymEditActions}>
+            <Pressable style={styles.gymCancelBtn} onPress={() => setEditing(false)}>
+              <Text style={styles.gymCancelText}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              style={[styles.gymSaveBtn, { backgroundColor: primaryColor }, (!name.trim() || saving) && { opacity: 0.5 }]}
+              onPress={handleSave}
+              disabled={!name.trim() || saving}
+            >
+              <Text style={styles.gymSaveText}>{saving ? "Saving…" : "Save"}</Text>
+            </Pressable>
+          </View>
+        </View>
+      )}
+    </>
+  );
+}
 
 export default function ManageScreen() {
   const router = useRouter();
@@ -99,9 +378,7 @@ export default function ManageScreen() {
                   onPress={() =>
                     router.push({
                       pathname: "/wod-form",
-                      params: wod
-                        ? { wodId: wod._id }
-                        : { date },
+                      params: wod ? { wodId: wod._id } : { date },
                     })
                   }
                 >
@@ -115,10 +392,7 @@ export default function ManageScreen() {
             {/* Upcoming Classes */}
             <View style={[styles.sectionHeader, { marginTop: 16 }]}>
               <Text style={styles.sectionLabel}>Upcoming Classes</Text>
-              <Pressable
-                style={styles.addBtn}
-                onPress={() => router.push("/class-form")}
-              >
+              <Pressable style={styles.addBtn} onPress={() => router.push("/class-form")}>
                 <Text style={styles.addBtnText}>+ Add</Text>
               </Pressable>
             </View>
@@ -131,7 +405,7 @@ export default function ManageScreen() {
         }
         renderItem={({ item }) => (
           <View style={styles.classCard}>
-            <View>
+            <View style={{ flex: 1 }}>
               <Text style={styles.classDate}>{formatDate(item.date, { relative: true, weekday: "short" })}</Text>
               <Text style={styles.classTime}>{formatTime(item.startTime)}</Text>
               <Text style={styles.classCapacity}>
@@ -139,14 +413,20 @@ export default function ManageScreen() {
                 {item.bookedCount >= item.capacity ? " · Full" : ""}
               </Text>
             </View>
-            <Pressable
-              style={styles.deleteBtn}
-              onPress={() => handleDeleteClass(item)}
-            >
-              <Text style={styles.deleteBtnText}>Cancel</Text>
-            </Pressable>
+            <View style={styles.classActions}>
+              <Pressable
+                style={styles.rosterBtn}
+                onPress={() => router.push({ pathname: "/roster", params: { classId: item._id } })}
+              >
+                <Text style={styles.rosterBtnText}>Roster</Text>
+              </Pressable>
+              <Pressable style={styles.deleteBtn} onPress={() => handleDeleteClass(item)}>
+                <Text style={styles.deleteBtnText}>Cancel</Text>
+              </Pressable>
+            </View>
           </View>
         )}
+        ListFooterComponent={<><AvailabilitySection /><GymSettingsSection /></>}
       />
     </SafeAreaView>
   );
@@ -190,14 +470,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     gap: 8,
   },
-  wodDateCol: {
-    width: 72,
-  },
-  wodDayLabel: {
-    fontSize: 13,
-    fontWeight: "600",
-    color: Colors.textSecondary,
-  },
+  wodDateCol: { width: 72 },
+  wodDayLabel: { fontSize: 13, fontWeight: "600", color: Colors.textSecondary },
   wodCardInline: {
     flex: 1,
     backgroundColor: Colors.surface,
@@ -206,16 +480,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  wodCardEmpty: {
-    borderStyle: "dashed",
-    borderColor: Colors.border,
-  },
-  wodCardTop: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 2,
-  },
+  wodCardEmpty: { borderStyle: "dashed", borderColor: Colors.border },
+  wodCardTop: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 },
   wodBadge: {
     backgroundColor: Colors.primary,
     color: "#fff",
@@ -270,6 +536,15 @@ const styles = StyleSheet.create({
   classDate: { fontSize: 12, color: Colors.textSecondary, marginBottom: 2 },
   classTime: { fontSize: 18, fontWeight: "700", color: Colors.text },
   classCapacity: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
+  classActions: { flexDirection: "row", gap: 8, alignItems: "center" },
+  rosterBtn: {
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderWidth: 1,
+    borderColor: Colors.primary + "66",
+  },
+  rosterBtnText: { color: Colors.primary, fontWeight: "600", fontSize: 13 },
   deleteBtn: {
     borderRadius: 8,
     paddingHorizontal: 14,
@@ -278,4 +553,156 @@ const styles = StyleSheet.create({
     borderColor: Colors.error + "55",
   },
   deleteBtnText: { color: Colors.error, fontWeight: "600", fontSize: 13 },
+  // Availability
+  availDayLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: Colors.textSecondary,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: 6,
+  },
+  availSlotRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.surface,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: 8,
+  },
+  availSlotTime: { fontSize: 16, fontWeight: "700", color: Colors.text, flex: 1 },
+  availSlotDuration: { fontSize: 13, color: Colors.textSecondary },
+  removeBtn: {
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderWidth: 1,
+    borderColor: Colors.error + "55",
+  },
+  removeBtnText: { color: Colors.error, fontWeight: "600", fontSize: 12 },
+  // Gym settings
+  gymCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  gymCardName: { fontSize: 16, fontWeight: "700", color: Colors.text, flex: 1 },
+  gymCardTagline: { fontSize: 12, color: Colors.textSecondary, flex: 1 },
+  gymColorDot: { width: 24, height: 24, borderRadius: 12 },
+  gymEditCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  gymEditLabel: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: Colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginBottom: 8,
+  },
+  gymEditInput: {
+    backgroundColor: Colors.background,
+    borderRadius: 10,
+    padding: 12,
+    color: Colors.text,
+    fontSize: 15,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  colorRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 4 },
+  colorSwatch: { width: 32, height: 32, borderRadius: 16 },
+  colorSwatchActive: { borderWidth: 3, borderColor: "#fff" },
+  gymEditActions: { flexDirection: "row", gap: 10, marginTop: 16 },
+  gymCancelBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  gymCancelText: { color: Colors.textSecondary, fontWeight: "600" },
+  gymSaveBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: "center" },
+  gymSaveText: { color: "#fff", fontWeight: "700" },
+});
+
+const modal = StyleSheet.create({
+  overlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.7)",
+    justifyContent: "flex-end",
+  },
+  sheet: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: 24,
+    paddingBottom: 40,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: "800",
+    color: Colors.text,
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 11,
+    fontWeight: "700",
+    color: Colors.textSecondary,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: 8,
+    marginTop: 16,
+  },
+  row: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  chip: {
+    backgroundColor: Colors.surfaceElevated,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  chipActive: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  chipText: { color: Colors.textSecondary, fontWeight: "600", fontSize: 13 },
+  chipTextActive: { color: "#fff" },
+  actions: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 28,
+  },
+  cancelBtn: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: "center",
+  },
+  cancelText: { color: Colors.textSecondary, fontWeight: "700" },
+  saveBtn: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 10,
+    backgroundColor: Colors.primary,
+    alignItems: "center",
+  },
+  saveText: { color: "#fff", fontWeight: "700" },
 });

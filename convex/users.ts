@@ -51,6 +51,29 @@ export const listMembers = query({
   },
 });
 
+export const savePushToken = mutation({
+  args: { token: v.string() },
+  handler: async (ctx, { token }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return;
+    await ctx.db.patch(userId, { pushToken: token });
+  },
+});
+
+export const setRole = mutation({
+  args: {
+    userId: v.id("users"),
+    role: v.union(v.literal("athlete"), v.literal("coach"), v.literal("admin")),
+  },
+  handler: async (ctx, { userId, role }) => {
+    const callerId = await getAuthUserId(ctx);
+    if (!callerId) throw new Error("Unauthenticated");
+    const caller = await ctx.db.get(callerId);
+    if (caller?.role !== "admin") throw new Error("Only admins can change roles");
+    await ctx.db.patch(userId, { role });
+  },
+});
+
 export const promoteToCoach = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {

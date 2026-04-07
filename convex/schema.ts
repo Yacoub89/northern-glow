@@ -14,6 +14,7 @@ export default defineSchema({
     role: v.optional(
       v.union(v.literal("athlete"), v.literal("coach"), v.literal("admin"))
     ),
+    pushToken: v.optional(v.string()),
   }).index("email", ["email"]),
 
   wods: defineTable({
@@ -53,6 +54,7 @@ export default defineSchema({
     ),
     waitlistPosition: v.optional(v.number()),
     bookedAt: v.number(),
+    checkedInAt: v.optional(v.number()),
   })
     .index("by_class", ["classId"])
     .index("by_user", ["userId"])
@@ -84,7 +86,8 @@ export default defineSchema({
   documents: defineTable({
     title: v.string(),
     description: v.optional(v.string()),
-    content: v.string(),
+    content: v.optional(v.string()),
+    fileStorageId: v.optional(v.id("_storage")),
     createdBy: v.id("users"),
     createdAt: v.number(),
   }).index("by_createdAt", ["createdAt"]),
@@ -93,11 +96,46 @@ export default defineSchema({
     documentId: v.id("documents"),
     userId: v.id("users"),
     signatureName: v.string(),
+    signatureData: v.optional(v.string()),
     signedAt: v.number(),
   })
     .index("by_document", ["documentId"])
     .index("by_user", ["userId"])
     .index("by_document_user", ["documentId", "userId"]),
+
+  coachAvailability: defineTable({
+    coachId: v.id("users"),
+    dayOfWeek: v.number(), // 0=Sun, 1=Mon, ..., 6=Sat
+    startTime: v.string(), // HH:MM (24h)
+    durationMinutes: v.number(),
+  })
+    .index("by_coach", ["coachId"])
+    .index("by_coach_day", ["coachId", "dayOfWeek"]),
+
+  appointments: defineTable({
+    coachId: v.id("users"),
+    athleteId: v.id("users"),
+    date: v.string(), // YYYY-MM-DD
+    startTime: v.string(), // HH:MM (24h)
+    durationMinutes: v.number(),
+    status: v.union(
+      v.literal("pending"),
+      v.literal("confirmed"),
+      v.literal("cancelled")
+    ),
+    notes: v.optional(v.string()),
+  })
+    .index("by_coach", ["coachId"])
+    .index("by_athlete", ["athleteId"])
+    .index("by_coach_date", ["coachId", "date"])
+    .index("by_athlete_status", ["athleteId", "status"]),
+
+  gymConfig: defineTable({
+    name: v.string(),
+    tagline: v.optional(v.string()),
+    primaryColor: v.string(),
+    timezone: v.optional(v.string()),
+  }),
 
   memberships: defineTable({
     userId: v.id("users"),

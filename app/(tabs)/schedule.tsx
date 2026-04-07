@@ -11,11 +11,11 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../convex/_generated/api";
-import { Doc } from "../../convex/_generated/dataModel";
+import { Doc, Id } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
+import { useGymConfig } from "../../constants/GymConfig";
 import { formatTime, getTodayDate } from "../../utils/date";
 
-const GYM_NAME = "ORLEANS CROSSFIT";
 
 function generateDates(count = 7): string[] {
   const dates: string[] = [];
@@ -53,6 +53,8 @@ function parseMovement(text: string): { num: string | null; label: string } {
   if (match) return { num: match[1], label: match[2] };
   return { num: null, label: text };
 }
+
+// ── Classes tab ───────────────────────────────────────────────────────────────
 
 function ClassCard({
   cls,
@@ -106,7 +108,6 @@ function ClassCard({
 
   return (
     <View style={styles.classCard}>
-      {/* Main row */}
       <View style={styles.classRow}>
         <View style={styles.classInfo}>
           <Text style={styles.classTime}>{formatTime(cls.startTime)}</Text>
@@ -139,14 +140,231 @@ function ClassCard({
           </Pressable>
         )}
       </View>
-
     </View>
   );
 }
 
+// ── 1:1 Appointments tab ──────────────────────────────────────────────────────
+
+type Coach = Doc<"users">;
+type AvailableSlot = {
+  availabilityId: Id<"coachAvailability">;
+  startTime: string;
+  durationMinutes: number;
+};
+
+function CoachInitials({ name }: { name: string }) {
+  const initials = name
+    .split(" ")
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+  return (
+    <View style={styles.coachAvatar}>
+      <Text style={styles.coachAvatarText}>{initials}</Text>
+    </View>
+  );
+}
+
+function AppointmentSlotCard({
+  slot,
+  coachId,
+  date,
+  myAppointmentId,
+  onBooked,
+}: {
+  slot: AvailableSlot;
+  coachId: Id<"users">;
+  date: string;
+  myAppointmentId: Id<"appointments"> | null;
+  onBooked: () => void;
+}) {
+  const bookAppt = useMutation(api.appointments.book);
+  const cancelAppt = useMutation(api.appointments.cancel);
+
+  const isMySlot = myAppointmentId !== null;
+
+  const handleBook = async () => {
+    try {
+      await bookAppt({
+        coachId,
+        date,
+        startTime: slot.startTime,
+        durationMinutes: slot.durationMinutes,
+      });
+      onBooked();
+    } catch (e: any) {
+      Alert.alert("Error", e.message);
+    }
+  };
+
+  const handleCancel = () => {
+    if (!myAppointmentId) return;
+    Alert.alert("Cancel Appointment", "Are you sure?", [
+      { text: "Keep", style: "cancel" },
+      {
+        text: "Cancel",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await cancelAppt({ appointmentId: myAppointmentId });
+          } catch (e: any) {
+            Alert.alert("Error", e.message);
+          }
+        },
+      },
+    ]);
+  };
+
+  return (
+    <View style={styles.classCard}>
+      <View style={styles.classRow}>
+        <View style={styles.classInfo}>
+          <Text style={styles.classTime}>{formatTime(slot.startTime)}</Text>
+          <Text style={styles.classCoach}>{slot.durationMinutes} min session</Text>
+        </View>
+        {isMySlot ? (
+          <Pressable style={styles.bookedBtn} onPress={handleCancel}>
+            <Text style={styles.bookedBtnText}>Booked</Text>
+          </Pressable>
+        ) : (
+          <Pressable style={styles.bookBtn} onPress={handleBook}>
+            <Text style={styles.bookBtnText}>Book</Text>
+          </Pressable>
+        )}
+      </View>
+    </View>
+  );
+}
+
+function AppointmentsPanel({
+  selectedDate,
+  today,
+}: {
+  selectedDate: string;
+  today: string;
+}) {
+  const coaches = useQuery(api.appointments.listCoaches);
+  const [selectedCoachId, setSelectedCoachId] = useState<Id<"users"> | null>(null);
+
+  const validCoachId = selectedCoachId && selectedCoachId.length > 0 ? selectedCoachId : null;
+
+  const slots = useQuery(
+    api.appointments.getCoachAvailableSlots,
+    validCoachId ? { coachId: validCoachId, date: selectedDate } : "skip"
+  );
+
+  const myAppointment = useQuery(
+    api.appointments.getMyAppointmentForDate,
+    validCoachId ? { coachId: validCoachId, date: selectedDate } : "skip"
+  );
+
+  if (coaches === undefined) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator color={Colors.primary} />
+      </View>
+    );
+  }
+
+  if (coaches.length === 0) {
+    return (
+      <View style={styles.emptyCard}>
+        <Text style={styles.emptyText}>No coaches available</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View>
+      {/* Coach picker */}
+      <Text style={styles.dayHeader}>PICK A COACH</Text>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.coachPicker}
+      >
+        {coaches.map((coach) => {
+          const isSelected = coach._id === selectedCoachId;
+          return (
+            <Pressable
+              key={coach._id}
+              style={[styles.coachPill, isSelected && styles.coachPillActive]}
+              onPress={() =>
+                setSelectedCoachId(isSelected || !coach._id ? null : coach._id)
+              }
+            >
+              <CoachInitials name={coach.name ?? "?"} />
+              <Text
+                style={[
+                  styles.coachPillName,
+                  isSelected && styles.coachPillNameActive,
+                ]}
+                numberOfLines={1}
+              >
+                {coach.name?.split(" ")[0] ?? "Coach"}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+
+      {/* Slots for selected coach */}
+      {selectedCoachId && (
+        <View style={{ marginTop: 20 }}>
+          <Text style={styles.dayHeader}>AVAILABLE SLOTS</Text>
+          {slots === undefined ? (
+            <ActivityIndicator color={Colors.primary} style={{ marginTop: 16 }} />
+          ) : slots.length === 0 && myAppointment === null ? (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyText}>No slots available this day</Text>
+            </View>
+          ) : (
+            <>
+              {/* Show booked slot if exists */}
+              {myAppointment && myAppointment.status !== "cancelled" && (
+                <AppointmentSlotCard
+                  key="my-booked"
+                  slot={{
+                    availabilityId: myAppointment._id as any,
+                    startTime: myAppointment.startTime,
+                    durationMinutes: myAppointment.durationMinutes,
+                  }}
+                  coachId={selectedCoachId}
+                  date={selectedDate}
+                  myAppointmentId={myAppointment._id}
+                  onBooked={() => {}}
+                />
+              )}
+              {/* Show available slots */}
+              {slots.map((slot) => (
+                <AppointmentSlotCard
+                  key={slot.startTime}
+                  slot={slot}
+                  coachId={selectedCoachId}
+                  date={selectedDate}
+                  myAppointmentId={null}
+                  onBooked={() => {}}
+                />
+              ))}
+            </>
+          )}
+        </View>
+      )}
+    </View>
+  );
+}
+
+// ── Main screen ───────────────────────────────────────────────────────────────
+
+type TabMode = "classes" | "appointments";
+
 export default function ScheduleScreen() {
+  const gym = useGymConfig();
   const today = getTodayDate();
   const [selectedDate, setSelectedDate] = useState(today);
+  const [mode, setMode] = useState<TabMode>("classes");
   const dates = useMemo(() => generateDates(7), []);
 
   const classes = useQuery(api.classes.getUpcoming, { startDate: today, days: 7 });
@@ -158,7 +376,7 @@ export default function ScheduleScreen() {
     return classes.filter((c) => c.date === selectedDate);
   }, [classes, selectedDate]);
 
-  if (classes === undefined || myBookings === undefined) {
+  if (mode === "classes" && (classes === undefined || myBookings === undefined)) {
     return (
       <View style={styles.centered}>
         <ActivityIndicator color={Colors.primary} size="large" />
@@ -170,8 +388,33 @@ export default function ScheduleScreen() {
     <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.gymName}>{GYM_NAME}</Text>
+        <Text style={styles.gymName}>{gym.name.toUpperCase()}</Text>
         <Text style={styles.title}>Schedule</Text>
+      </View>
+
+      {/* Mode toggle */}
+      <View style={styles.segmentRow}>
+        <Pressable
+          style={[styles.segmentBtn, mode === "classes" && styles.segmentBtnActive]}
+          onPress={() => setMode("classes")}
+        >
+          <Text style={[styles.segmentText, mode === "classes" && styles.segmentTextActive]}>
+            Classes
+          </Text>
+        </Pressable>
+        <Pressable
+          style={[styles.segmentBtn, mode === "appointments" && styles.segmentBtnActive]}
+          onPress={() => setMode("appointments")}
+        >
+          <Text
+            style={[
+              styles.segmentText,
+              mode === "appointments" && styles.segmentTextActive,
+            ]}
+          >
+            1:1 Training
+          </Text>
+        </Pressable>
       </View>
 
       {/* Day picker */}
@@ -199,55 +442,61 @@ export default function ScheduleScreen() {
         })}
       </ScrollView>
 
-      {/* Classes + WOD for selected day */}
+      {/* Content */}
       <ScrollView
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       >
-        {/* WOD of the day */}
-        {wod ? (
-          <View style={styles.wodCard}>
-            <Text style={styles.wodCardLabel}>WOD</Text>
-            <Text style={styles.wodCardTitle}>{wod.title}</Text>
-            <Text style={styles.wodCardMeta}>
-              {wod.type.toUpperCase()}
-              {wod.description ? ` · ${wod.description}` : ""}
-            </Text>
-            {wod.movements.length > 0 && (
-              <View style={styles.wodMovements}>
-                {wod.movements.map((m, i) => {
-                  const { num, label } = parseMovement(m);
-                  return (
-                    <View key={i} style={styles.wodMovementRow}>
-                      <Text style={styles.wodMovementNum}>{num ?? "·"}</Text>
-                      <Text style={styles.wodMovementLabel}>{label}</Text>
-                    </View>
-                  );
-                })}
+        {mode === "classes" ? (
+          <>
+            {/* WOD of the day */}
+            {wod ? (
+              <View style={styles.wodCard}>
+                <Text style={styles.wodCardLabel}>WOD</Text>
+                <Text style={styles.wodCardTitle}>{wod.title}</Text>
+                <Text style={styles.wodCardMeta}>
+                  {wod.type.toUpperCase()}
+                  {wod.description ? ` · ${wod.description}` : ""}
+                </Text>
+                {wod.movements.length > 0 && (
+                  <View style={styles.wodMovements}>
+                    {wod.movements.map((m, i) => {
+                      const { num, label } = parseMovement(m);
+                      return (
+                        <View key={i} style={styles.wodMovementRow}>
+                          <Text style={styles.wodMovementNum}>{num ?? "·"}</Text>
+                          <Text style={styles.wodMovementLabel}>{label}</Text>
+                        </View>
+                      );
+                    })}
+                  </View>
+                )}
+                {wod.scalingNotes ? (
+                  <Text style={styles.wodScaling}>Scaling: {wod.scalingNotes}</Text>
+                ) : null}
+              </View>
+            ) : (
+              <View style={styles.noWodCard}>
+                <Text style={styles.noWodText}>No WOD posted for this day</Text>
               </View>
             )}
-            {wod.scalingNotes ? (
-              <Text style={styles.wodScaling}>Scaling: {wod.scalingNotes}</Text>
-            ) : null}
-          </View>
-        ) : (
-          <View style={styles.noWodCard}>
-            <Text style={styles.noWodText}>No WOD posted for this day</Text>
-          </View>
-        )}
 
-        {/* Classes */}
-        <Text style={[styles.dayHeader, { marginTop: 20 }]}>
-          {selectedDate === today ? "TODAY" : getDayName(selectedDate)} CLASSES
-        </Text>
-        {dayClasses.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No classes scheduled</Text>
-          </View>
+            {/* Classes */}
+            <Text style={[styles.dayHeader, { marginTop: 20 }]}>
+              {selectedDate === today ? "TODAY" : getDayName(selectedDate)} CLASSES
+            </Text>
+            {dayClasses.length === 0 ? (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptyText}>No classes scheduled</Text>
+              </View>
+            ) : (
+              dayClasses.map((c) => (
+                <ClassCard key={c._id} cls={c} myBookings={myBookings ?? []} />
+              ))
+            )}
+          </>
         ) : (
-          dayClasses.map((c) => (
-            <ClassCard key={c._id} cls={c} myBookings={myBookings} />
-          ))
+          <AppointmentsPanel selectedDate={selectedDate} today={today} />
         )}
       </ScrollView>
     </SafeAreaView>
@@ -267,7 +516,7 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 20,
     paddingTop: 12,
-    paddingBottom: 16,
+    paddingBottom: 12,
   },
   gymName: {
     fontSize: 12,
@@ -281,6 +530,35 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "800",
     color: Colors.text,
+  },
+
+  // Segmented control
+  segmentRow: {
+    flexDirection: "row",
+    marginHorizontal: 20,
+    marginBottom: 14,
+    backgroundColor: Colors.surface,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 3,
+  },
+  segmentBtn: {
+    flex: 1,
+    paddingVertical: 8,
+    alignItems: "center",
+    borderRadius: 8,
+  },
+  segmentBtnActive: {
+    backgroundColor: Colors.primary,
+  },
+  segmentText: {
+    fontSize: 13,
+    fontWeight: "700",
+    color: Colors.textSecondary,
+  },
+  segmentTextActive: {
+    color: "#fff",
   },
 
   // Day picker
@@ -388,22 +666,7 @@ const styles = StyleSheet.create({
   classSpots: { fontSize: 13, color: Colors.textSecondary },
   classFull: { color: Colors.error },
 
-  // WOD detail
-  wodDetail: { marginTop: 0 },
-  wodDetailDivider: {
-    height: 1,
-    backgroundColor: Colors.border,
-    marginTop: 14,
-    marginBottom: 14,
-  },
-  wodDetailTitle: { fontSize: 16, fontWeight: "800", color: Colors.text, marginBottom: 3 },
-  wodDetailMeta: {
-    fontSize: 12,
-    fontWeight: "700",
-    color: Colors.primary,
-    letterSpacing: 0.5,
-    marginBottom: 10,
-  },
+  // WOD movements
   wodMovements: { gap: 7 },
   wodMovementRow: { flexDirection: "row", alignItems: "baseline", gap: 12 },
   wodMovementNum: {
@@ -421,6 +684,7 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
   },
 
+  // Book buttons
   bookBtn: {
     backgroundColor: Colors.primary,
     borderRadius: 8,
@@ -442,6 +706,49 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   bookedBtnText: { color: Colors.textSecondary, fontWeight: "600", fontSize: 13 },
+
+  // Coach picker
+  coachPicker: {
+    gap: 10,
+    paddingBottom: 4,
+  },
+  coachPill: {
+    alignItems: "center",
+    gap: 6,
+    padding: 10,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    minWidth: 70,
+  },
+  coachPillActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.surfaceElevated,
+  },
+  coachAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.primary,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  coachAvatarText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  coachPillName: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: Colors.textSecondary,
+    maxWidth: 70,
+    textAlign: "center",
+  },
+  coachPillNameActive: {
+    color: Colors.text,
+  },
 
   // Empty
   emptyCard: {

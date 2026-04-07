@@ -2,6 +2,24 @@ import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 
+export const generateUploadUrl = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Unauthenticated");
+    const caller = await ctx.db.get(userId);
+    if (caller?.role !== "coach" && caller?.role !== "admin") throw new Error("Unauthorized");
+    return await ctx.storage.generateUploadUrl();
+  },
+});
+
+export const getDocumentUrl = query({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, { storageId }) => {
+    return await ctx.storage.getUrl(storageId);
+  },
+});
+
 export const listAll = query({
   args: {},
   handler: async (ctx) => {
@@ -66,13 +84,15 @@ export const create = mutation({
   args: {
     title: v.string(),
     description: v.optional(v.string()),
-    content: v.string(),
+    content: v.optional(v.string()),
+    fileStorageId: v.optional(v.id("_storage")),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Unauthenticated");
     const caller = await ctx.db.get(userId);
     if (caller?.role !== "coach" && caller?.role !== "admin") throw new Error("Unauthorized");
+    if (!args.content && !args.fileStorageId) throw new Error("Provide content or a PDF file");
     return await ctx.db.insert("documents", {
       ...args,
       createdBy: userId,
@@ -85,8 +105,9 @@ export const sign = mutation({
   args: {
     documentId: v.id("documents"),
     signatureName: v.string(),
+    signatureData: v.optional(v.string()),
   },
-  handler: async (ctx, { documentId, signatureName }) => {
+  handler: async (ctx, { documentId, signatureName, signatureData }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Unauthenticated");
     const existing = await ctx.db
@@ -100,6 +121,7 @@ export const sign = mutation({
       documentId,
       userId,
       signatureName,
+      signatureData,
       signedAt: Date.now(),
     });
   },
@@ -112,6 +134,10 @@ export const remove = mutation({
     if (!userId) throw new Error("Unauthenticated");
     const caller = await ctx.db.get(userId);
     if (caller?.role !== "coach" && caller?.role !== "admin") throw new Error("Unauthorized");
+    const doc = await ctx.db.get(documentId);
+    if (doc?.fileStorageId) {
+      await ctx.storage.delete(doc.fileStorageId);
+    }
     await ctx.db.delete(documentId);
   },
 });
