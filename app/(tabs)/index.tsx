@@ -1,4 +1,5 @@
 import { useQuery } from "convex/react";
+import { useState } from "react";
 import { useRouter } from "expo-router";
 import {
   ActivityIndicator,
@@ -9,6 +10,7 @@ import {
   Pressable,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../convex/_generated/api";
 import { Colors } from "../../constants/Colors";
 import { useGymConfig } from "../../constants/GymConfig";
@@ -60,6 +62,13 @@ export default function HomeScreen() {
   );
 
   const isCoach = me?.role === "coach" || me?.role === "admin";
+
+  const attendanceStats = useQuery(
+    api.bookings.getMyAttendanceStats,
+    isCoach || me === undefined ? "skip" : undefined
+  );
+
+  const [showCheckIns, setShowCheckIns] = useState(false);
 
   const isLoading =
     me === undefined ||
@@ -193,6 +202,76 @@ export default function HomeScreen() {
                 </View>
               </View>
             ))}
+          </>
+        )}
+
+        {/* Attendance Stats — athletes only */}
+        {!isCoach && attendanceStats !== undefined && attendanceStats !== null && (
+          <>
+            <Text style={[styles.sectionLabel, { marginTop: 28 }]}>MY ATTENDANCE</Text>
+            <View style={styles.attendanceRow}>
+              <View style={styles.attendanceBox}>
+                <Text style={styles.attendanceValue}>{attendanceStats.thisWeek}</Text>
+                <Text style={styles.attendanceLabel}>This Week</Text>
+              </View>
+              <View style={styles.attendanceBox}>
+                <Text style={styles.attendanceValue}>{attendanceStats.thisMonth}</Text>
+                <Text style={styles.attendanceLabel}>This Month</Text>
+              </View>
+              <View style={styles.attendanceBox}>
+                <Text style={styles.attendanceValue}>{attendanceStats.thisYear}</Text>
+                <Text style={styles.attendanceLabel}>This Year</Text>
+              </View>
+              <View style={styles.attendanceBox}>
+                <Text style={styles.attendanceValue}>{attendanceStats.allTime}</Text>
+                <Text style={styles.attendanceLabel}>All Time</Text>
+              </View>
+            </View>
+
+            {attendanceStats.checkInHistory.length > 0 && (
+              <>
+                <Pressable
+                  style={styles.checkInToggle}
+                  onPress={() => setShowCheckIns((v) => !v)}
+                >
+                  <Ionicons name="time-outline" size={16} color={Colors.primary} style={{ marginRight: 8 }} />
+                  <Text style={styles.checkInToggleText}>Check-in History</Text>
+                  <Ionicons
+                    name={showCheckIns ? "chevron-up" : "chevron-down"}
+                    size={16}
+                    color={Colors.textSecondary}
+                  />
+                </Pressable>
+
+                {showCheckIns && (
+                  <View style={styles.checkInList}>
+                    {attendanceStats.checkInHistory.map((item, i) => (
+                      <View
+                        key={item.classId + i}
+                        style={[
+                          styles.checkInRow,
+                          i === attendanceStats.checkInHistory.length - 1 && { borderBottomWidth: 0 },
+                        ]}
+                      >
+                        <View style={styles.checkInDot} />
+                        <View style={{ flex: 1 }}>
+                          <Text style={styles.checkInDate}>
+                            {new Date(item.date + "T12:00:00").toLocaleDateString("en-US", {
+                              weekday: "short",
+                              month: "short",
+                              day: "numeric",
+                            })}
+                            {" · "}{formatTime(item.startTime)}
+                          </Text>
+                          <Text style={styles.checkInCoach}>Coach {item.coachName}</Text>
+                        </View>
+                        <Ionicons name="checkmark-circle" size={18} color={Colors.success} />
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </>
+            )}
           </>
         )}
 
@@ -406,6 +485,91 @@ const styles = StyleSheet.create({
   classStatusWaitlist: { backgroundColor: Colors.warning + "22" },
   classStatusText: { color: Colors.success, fontWeight: "700", fontSize: 13 },
   classStatusTextWaitlist: { color: Colors.warning },
+
+  // Attendance
+  attendanceRow: {
+    flexDirection: "row",
+    marginHorizontal: 20,
+    gap: 8,
+    marginBottom: 12,
+  },
+  attendanceBox: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 12,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  attendanceValue: {
+    fontSize: 22,
+    fontWeight: "800",
+    color: Colors.primary,
+    marginBottom: 2,
+  },
+  attendanceLabel: {
+    fontSize: 10,
+    fontWeight: "600",
+    color: Colors.textSecondary,
+    textAlign: "center",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+  },
+
+  // Check-in history
+  checkInToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 20,
+    marginTop: 4,
+    marginBottom: 8,
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  checkInToggleText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.text,
+  },
+  checkInList: {
+    marginHorizontal: 20,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 4,
+    overflow: "hidden",
+  },
+  checkInRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+    gap: 12,
+  },
+  checkInDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.success,
+  },
+  checkInDate: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: Colors.text,
+    marginBottom: 2,
+  },
+  checkInCoach: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
 
   // Book CTA
   bookClassCta: {

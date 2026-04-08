@@ -1,6 +1,6 @@
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Link, router } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
@@ -15,11 +15,19 @@ import { Colors } from "../../constants/Colors";
 
 export default function RegisterScreen() {
   const { signIn } = useAuthActions();
+
+  // Step 1: registration fields
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // Step 2: email verification
+  const [step, setStep] = useState<"register" | "verify">("register");
+  const [code, setCode] = useState("");
+  const codeInputRef = useRef<TextInput>(null);
+
+  // ─── Step 1: sign up ────────────────────────────────────────────────────────
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password) {
       Alert.alert("Error", "Please fill in all fields");
@@ -37,7 +45,9 @@ export default function RegisterScreen() {
         password,
         flow: "signUp",
       });
-      router.replace("/(tabs)");
+      // Verification email sent — show OTP input
+      setStep("verify");
+      setTimeout(() => codeInputRef.current?.focus(), 300);
     } catch (e: any) {
       Alert.alert("Sign Up Failed", e.message ?? "Could not create account");
     } finally {
@@ -45,6 +55,96 @@ export default function RegisterScreen() {
     }
   };
 
+  // ─── Step 2: verify OTP ─────────────────────────────────────────────────────
+  const handleVerify = async () => {
+    if (code.length !== 6) {
+      Alert.alert("Error", "Please enter the 6-digit code");
+      return;
+    }
+    setLoading(true);
+    try {
+      await signIn("password", {
+        email: email.trim(),
+        code,
+        flow: "email-verification",
+      });
+      router.replace("/(tabs)");
+    } catch (e: any) {
+      Alert.alert("Verification Failed", e.message ?? "Invalid or expired code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setLoading(true);
+    try {
+      await signIn("password", {
+        email: email.trim(),
+        flow: "signUp",
+        name: name.trim(),
+        password,
+      });
+      Alert.alert("Code Resent", "A new verification code has been sent to your email.");
+    } catch (e: any) {
+      Alert.alert("Error", e.message ?? "Could not resend code");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ─── Verify screen ──────────────────────────────────────────────────────────
+  if (step === "verify") {
+    return (
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <View style={styles.inner}>
+          <Text style={styles.logo}>OCFit</Text>
+          <Text style={styles.tagline}>Check your email</Text>
+          <Text style={styles.subtitle}>
+            We sent a 6-digit code to{"\n"}
+            <Text style={styles.emailHighlight}>{email.trim()}</Text>
+          </Text>
+
+          <View style={styles.form}>
+            <TextInput
+              ref={codeInputRef}
+              style={[styles.input, styles.codeInput]}
+              placeholder="000000"
+              placeholderTextColor={Colors.textMuted}
+              value={code}
+              onChangeText={(t) => setCode(t.replace(/\D/g, "").slice(0, 6))}
+              keyboardType="number-pad"
+              maxLength={6}
+              textAlign="center"
+            />
+            <Pressable
+              style={[styles.button, loading && styles.buttonDisabled]}
+              onPress={handleVerify}
+              disabled={loading}
+            >
+              <Text style={styles.buttonText}>
+                {loading ? "Verifying…" : "Verify & Continue"}
+              </Text>
+            </Pressable>
+          </View>
+
+          <Pressable onPress={handleResend} disabled={loading} style={styles.resendRow}>
+            <Text style={styles.footerText}>Didn't receive it? </Text>
+            <Text style={[styles.link, loading && { opacity: 0.5 }]}>Resend code</Text>
+          </Pressable>
+
+          <Pressable onPress={() => setStep("register")} style={styles.backRow}>
+            <Text style={styles.link}>← Back</Text>
+          </Pressable>
+        </View>
+      </KeyboardAvoidingView>
+    );
+  }
+
+  // ─── Register screen ────────────────────────────────────────────────────────
   return (
     <KeyboardAvoidingView
       style={styles.container}
@@ -119,7 +219,18 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: Colors.textSecondary,
     textAlign: "center",
-    marginBottom: 52,
+    marginBottom: 12,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    marginBottom: 32,
+    lineHeight: 22,
+  },
+  emailHighlight: {
+    color: Colors.text,
+    fontWeight: "600",
   },
   form: { gap: 12 },
   input: {
@@ -131,6 +242,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  codeInput: {
+    fontSize: 28,
+    fontWeight: "700",
+    letterSpacing: 12,
+    paddingVertical: 18,
   },
   button: {
     backgroundColor: Colors.primary,
@@ -144,4 +261,13 @@ const styles = StyleSheet.create({
   footer: { flexDirection: "row", justifyContent: "center", marginTop: 32 },
   footerText: { color: Colors.textSecondary, fontSize: 15 },
   link: { color: Colors.primary, fontSize: 15, fontWeight: "600" },
+  resendRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 24,
+  },
+  backRow: {
+    alignItems: "center",
+    marginTop: 16,
+  },
 });

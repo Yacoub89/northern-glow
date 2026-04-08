@@ -71,6 +71,7 @@ export default function TabsLayout() {
         name="documents"
         options={{
           tabBarLabel: "Documents",
+          href: isCoach ? undefined : null,
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="document-text" size={size} color={color} />
           ),

@@ -126,6 +126,74 @@ export const checkIn = mutation({
   },
 });
 
+export const getMyAttendanceStats = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+
+    const now = new Date();
+    const today = now.toISOString().split("T")[0];
+
+    // Week start (Monday)
+    const dow = now.getDay(); // 0=Sun
+    const daysToMon = dow === 0 ? 6 : dow - 1;
+    const mon = new Date(now);
+    mon.setDate(now.getDate() - daysToMon);
+    const weekStart = mon.toISOString().split("T")[0];
+
+    // Month start
+    const monthStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+
+    // Year start
+    const yearStart = `${now.getFullYear()}-01-01`;
+
+    const bookings = await ctx.db
+      .query("bookings")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .take(500);
+
+    const bookedPast = bookings.filter((b) => b.status === "booked");
+
+    const withClasses = await Promise.all(
+      bookedPast.map(async (b) => {
+        const cls = await ctx.db.get(b.classId);
+        return cls ? { booking: b, cls } : null;
+      })
+    );
+
+    const attended = withClasses.filter(
+      (e): e is NonNullable<typeof e> => e !== null && e.cls.date <= today
+    );
+
+    const allTime = attended.length;
+    const thisYear = attended.filter((e) => e.cls.date >= yearStart).length;
+    const thisMonth = attended.filter((e) => e.cls.date >= monthStart).length;
+    const thisWeek = attended.filter((e) => e.cls.date >= weekStart).length;
+
+    // Check-in history: only bookings where checkedInAt was recorded
+    const checkedIn = attended
+      .filter((e) => e.booking.checkedInAt)
+      .sort((a, b) => (b.booking.checkedInAt ?? 0) - (a.booking.checkedInAt ?? 0))
+      .slice(0, 30);
+
+    const checkInHistory = await Promise.all(
+      checkedIn.map(async (e) => {
+        const coach = await ctx.db.get(e.cls.coachId);
+        return {
+          classId: e.cls._id,
+          date: e.cls.date,
+          startTime: e.cls.startTime,
+          coachName: coach?.name ?? "Coach",
+          checkedInAt: e.booking.checkedInAt!,
+        };
+      })
+    );
+
+    return { thisWeek, thisMonth, thisYear, allTime, checkInHistory };
+  },
+});
+
 export const uncheckIn = mutation({
   args: { bookingId: v.id("bookings") },
   handler: async (ctx, { bookingId }) => {
