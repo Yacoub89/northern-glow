@@ -1,6 +1,6 @@
 import { useConvexAuth, useQuery } from "convex/react";
 import { Redirect, Tabs, useRouter } from "expo-router";
-import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../convex/_generated/api";
@@ -33,11 +33,6 @@ export default function TabsLayout() {
 
   if (!isAuthenticated) {
     return <Redirect href="/(auth)/login" />;
-  }
-
-  // On web, send coaches/admins to the dedicated admin panel
-  if (Platform.OS === "web" && (me?.role === "coach" || me?.role === "admin")) {
-    return <Redirect href="/admin" />;
   }
 
   const isCoach = me?.role === "coach" || me?.role === "admin";

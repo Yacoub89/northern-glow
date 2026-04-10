@@ -10,14 +10,12 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../convex/_generated/api";
 import { Doc } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
-import { useGymConfig } from "../../constants/GymConfig";
 import { formatDate, formatTime } from "../../utils/date";
 import { useState } from "react";
 
@@ -193,108 +191,6 @@ function AvailabilitySection() {
   );
 }
 
-const COLOR_PRESETS = [
-  "#1BBFBF", "#FF3B30", "#FF9F0A", "#34C759",
-  "#007AFF", "#AF52DE", "#FF2D55", "#5856D6",
-];
-
-function GymSettingsSection() {
-  const gym = useGymConfig();
-  const upsert = useMutation(api.gymConfig.upsert);
-  const me = useQuery(api.users.getMe);
-  const isAdmin = me?.role === "admin";
-
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState(gym.name);
-  const [tagline, setTagline] = useState(gym.tagline);
-  const [primaryColor, setPrimaryColor] = useState(gym.primaryColor);
-  const [saving, setSaving] = useState(false);
-
-  if (!isAdmin) return null;
-
-  const handleSave = async () => {
-    setSaving(true);
-    try {
-      await upsert({ name: name.trim(), tagline: tagline.trim() || undefined, primaryColor, timezone: gym.timezone });
-      setEditing(false);
-    } catch (e: any) {
-      Alert.alert("Error", e.message);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <>
-      <View style={[styles.sectionHeader, { marginTop: 24 }]}>
-        <Text style={styles.sectionLabel}>Gym Settings</Text>
-        {!editing && (
-          <Pressable style={styles.addBtn} onPress={() => {
-            setName(gym.name);
-            setTagline(gym.tagline);
-            setPrimaryColor(gym.primaryColor);
-            setEditing(true);
-          }}>
-            <Text style={styles.addBtnText}>Edit</Text>
-          </Pressable>
-        )}
-      </View>
-
-      {!editing ? (
-        <View style={styles.gymCard}>
-          <Text style={styles.gymCardName}>{gym.name}</Text>
-          {gym.tagline ? <Text style={styles.gymCardTagline}>{gym.tagline}</Text> : null}
-          <View style={[styles.gymColorDot, { backgroundColor: gym.primaryColor }]} />
-        </View>
-      ) : (
-        <View style={styles.gymEditCard}>
-          <Text style={styles.gymEditLabel}>Gym Name</Text>
-          <TextInput
-            style={styles.gymEditInput}
-            value={name}
-            onChangeText={setName}
-            placeholder="Gym name"
-            placeholderTextColor={Colors.textMuted}
-          />
-
-          <Text style={[styles.gymEditLabel, { marginTop: 12 }]}>Tagline</Text>
-          <TextInput
-            style={styles.gymEditInput}
-            value={tagline}
-            onChangeText={setTagline}
-            placeholder="e.g. Forging Elite Fitness"
-            placeholderTextColor={Colors.textMuted}
-          />
-
-          <Text style={[styles.gymEditLabel, { marginTop: 12 }]}>Brand Color</Text>
-          <View style={styles.colorRow}>
-            {COLOR_PRESETS.map((c) => (
-              <Pressable
-                key={c}
-                style={[styles.colorSwatch, { backgroundColor: c }, primaryColor === c && styles.colorSwatchActive]}
-                onPress={() => setPrimaryColor(c)}
-              />
-            ))}
-          </View>
-
-          <View style={styles.gymEditActions}>
-            <Pressable style={styles.gymCancelBtn} onPress={() => setEditing(false)}>
-              <Text style={styles.gymCancelText}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.gymSaveBtn, { backgroundColor: primaryColor }, (!name.trim() || saving) && { opacity: 0.5 }]}
-              onPress={handleSave}
-              disabled={!name.trim() || saving}
-            >
-              <Text style={styles.gymSaveText}>{saving ? "Saving…" : "Save"}</Text>
-            </Pressable>
-          </View>
-        </View>
-      )}
-    </>
-  );
-}
-
 export default function ManageScreen() {
   const router = useRouter();
 
@@ -426,7 +322,7 @@ export default function ManageScreen() {
             </View>
           </View>
         )}
-        ListFooterComponent={<><AvailabilitySection /><GymSettingsSection /></>}
+        ListFooterComponent={<AvailabilitySection />}
       />
     </SafeAreaView>
   );
@@ -583,59 +479,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.error + "55",
   },
   removeBtnText: { color: Colors.error, fontWeight: "600", fontSize: 12 },
-  // Gym settings
-  gymCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  gymCardName: { fontSize: 16, fontWeight: "700", color: Colors.text, flex: 1 },
-  gymCardTagline: { fontSize: 12, color: Colors.textSecondary, flex: 1 },
-  gymColorDot: { width: 24, height: 24, borderRadius: 12 },
-  gymEditCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  gymEditLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: Colors.textSecondary,
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginBottom: 8,
-  },
-  gymEditInput: {
-    backgroundColor: Colors.background,
-    borderRadius: 10,
-    padding: 12,
-    color: Colors.text,
-    fontSize: 15,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  colorRow: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 4 },
-  colorSwatch: { width: 32, height: 32, borderRadius: 16 },
-  colorSwatchActive: { borderWidth: 3, borderColor: "#fff" },
-  gymEditActions: { flexDirection: "row", gap: 10, marginTop: 16 },
-  gymCancelBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  gymCancelText: { color: Colors.textSecondary, fontWeight: "600" },
-  gymSaveBtn: { flex: 1, paddingVertical: 12, borderRadius: 10, alignItems: "center" },
-  gymSaveText: { color: "#fff", fontWeight: "700" },
 });
 
 const modal = StyleSheet.create({

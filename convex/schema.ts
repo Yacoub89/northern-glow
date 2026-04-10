@@ -130,13 +130,6 @@ export default defineSchema({
     .index("by_coach_date", ["coachId", "date"])
     .index("by_athlete_status", ["athleteId", "status"]),
 
-  gymConfig: defineTable({
-    name: v.string(),
-    tagline: v.optional(v.string()),
-    primaryColor: v.string(),
-    timezone: v.optional(v.string()),
-  }),
-
   memberships: defineTable({
     userId: v.id("users"),
     stripeCustomerId: v.string(),

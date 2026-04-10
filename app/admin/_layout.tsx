@@ -17,7 +17,6 @@ const NAV: NavItem[] = [
   { label: "Members",    href: "/admin/members",    icon: "people-outline" },
   { label: "Schedule",   href: "/admin/schedule",   icon: "calendar-outline" },
   { label: "Documents",  href: "/admin/documents",  icon: "document-text-outline" },
-  { label: "Settings",   href: "/admin/settings",   icon: "settings-outline" },
 ];
 
 export default function AdminLayout() {
