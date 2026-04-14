@@ -50,9 +50,28 @@ export default function ClassFormScreen() {
   const [date, setDate] = useState(getTodayDate());
   const [pickerDate, setPickerDate] = useState(stringToDate(getTodayDate()));
   const [showPicker, setShowPicker] = useState(false);
-  const [startTime, setStartTime] = useState("");
+  const [startTimes, setStartTimes] = useState<string[]>([]);
+  const [customTime, setCustomTime] = useState("");
   const [capacity, setCapacity] = useState("15");
   const [saving, setSaving] = useState(false);
+
+  const toggleTime = (t: string) => {
+    setStartTimes((prev) =>
+      prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]
+    );
+  };
+
+  const addCustomTime = () => {
+    const t = customTime.trim();
+    if (!/^\d{2}:\d{2}$/.test(t)) {
+      Alert.alert("Invalid Time", "Time must be in HH:MM format (24h), e.g. 06:00");
+      return;
+    }
+    if (!startTimes.includes(t)) {
+      setStartTimes((prev) => [...prev, t].sort());
+    }
+    setCustomTime("");
+  };
 
   const wod = useQuery(api.wods.getByDate, { date });
 
@@ -65,12 +84,8 @@ export default function ClassFormScreen() {
   };
 
   const handleSave = async () => {
-    if (!date || !startTime) {
-      Alert.alert("Missing Fields", "Please fill in date and time");
-      return;
-    }
-    if (!/^\d{2}:\d{2}$/.test(startTime)) {
-      Alert.alert("Invalid Time", "Time must be in HH:MM format (24h), e.g. 06:00");
+    if (!date || startTimes.length === 0) {
+      Alert.alert("Missing Fields", "Please select at least one time");
       return;
     }
     const cap = parseInt(capacity, 10);
@@ -81,12 +96,11 @@ export default function ClassFormScreen() {
 
     setSaving(true);
     try {
-      await createClass({
-        date,
-        startTime,
-        capacity: cap,
-        wodId: wod?._id,
-      });
+      await Promise.all(
+        startTimes.map((startTime) =>
+          createClass({ date, startTime, capacity: cap, wodId: wod?._id })
+        )
+      );
       router.back();
     } catch (e: any) {
       Alert.alert("Error", e.message);
@@ -175,28 +189,36 @@ export default function ClassFormScreen() {
 
         {/* Time */}
         <View style={styles.field}>
-          <Text style={styles.label}>Start Time (24h)</Text>
+          <Text style={styles.label}>
+            Start Times (24h){startTimes.length > 0 ? ` · ${startTimes.length} selected` : ""}
+          </Text>
           <View style={styles.presets}>
             {TIME_PRESETS.map((t) => (
               <Pressable
                 key={t}
-                style={[styles.preset, startTime === t && styles.presetActive]}
-                onPress={() => setStartTime(t)}
+                style={[styles.preset, startTimes.includes(t) && styles.presetActive]}
+                onPress={() => toggleTime(t)}
               >
-                <Text style={[styles.presetText, startTime === t && styles.presetTextActive]}>
+                <Text style={[styles.presetText, startTimes.includes(t) && styles.presetTextActive]}>
                   {t}
                 </Text>
               </Pressable>
             ))}
           </View>
-          <TextInput
-            style={[styles.input, { marginTop: 10 }]}
-            value={startTime}
-            onChangeText={setStartTime}
-            placeholder="Or type HH:MM"
-            placeholderTextColor={Colors.textMuted}
-            keyboardType="numbers-and-punctuation"
-          />
+          <View style={styles.customTimeRow}>
+            <TextInput
+              style={[styles.input, { flex: 1 }]}
+              value={customTime}
+              onChangeText={setCustomTime}
+              placeholder="Custom HH:MM"
+              placeholderTextColor={Colors.textMuted}
+              keyboardType="numbers-and-punctuation"
+              onSubmitEditing={addCustomTime}
+            />
+            <Pressable style={styles.addTimeBtn} onPress={addCustomTime}>
+              <Text style={styles.addTimeBtnText}>Add</Text>
+            </Pressable>
+          </View>
         </View>
 
         {/* Capacity */}
@@ -223,7 +245,13 @@ export default function ClassFormScreen() {
           onPress={handleSave}
           disabled={saving}
         >
-          <Text style={styles.saveBtnText}>{saving ? "Creating…" : "Add Class"}</Text>
+          <Text style={styles.saveBtnText}>
+            {saving
+              ? "Creating…"
+              : startTimes.length > 1
+              ? `Add ${startTimes.length} Classes`
+              : "Add Class"}
+          </Text>
         </Pressable>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -262,7 +290,15 @@ const styles = StyleSheet.create({
   },
   dateButtonText: { fontSize: 15, color: Colors.text, fontWeight: "500" },
   dateButtonIcon: { fontSize: 18 },
-  presets: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  presets: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 },
+  customTimeRow: { flexDirection: "row", gap: 8, alignItems: "center" },
+  addTimeBtn: {
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    paddingHorizontal: 18,
+    paddingVertical: 14,
+  },
+  addTimeBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
   preset: {
     borderRadius: 8,
     paddingHorizontal: 12,

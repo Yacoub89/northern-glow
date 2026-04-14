@@ -118,6 +118,9 @@ export default function WodFormScreen() {
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
+            <Pressable style={styles.backButton} onPress={() => router.back()}>
+              <Text style={styles.backButtonText}>‹ Back</Text>
+            </Pressable>
             <Text style={styles.gymName}>{gym.name.toUpperCase()}</Text>
             <Text style={styles.title}>{editingId ? "Edit WOD" : "Set WOD"}</Text>
           </View>
@@ -293,6 +296,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 20,
+  },
+  backButton: {
+    marginBottom: 8,
+    alignSelf: "flex-start",
+  },
+  backButtonText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: Colors.primary,
   },
   gymName: {
     fontSize: 12,

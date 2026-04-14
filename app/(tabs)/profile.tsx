@@ -284,14 +284,6 @@ export default function ProfileScreen() {
               <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
             </Pressable>
             <Pressable
-              style={styles.settingsRow}
-              onPress={() => router.push("/kiosk")}
-            >
-              <Ionicons name="tablet-portrait" size={20} color={Colors.primary} style={{ marginRight: 12 }} />
-              <Text style={styles.settingsRowText}>Kiosk / Check-In</Text>
-              <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
-            </Pressable>
-            <Pressable
               style={[styles.settingsRow, { marginBottom: 28 }]}
               onPress={() => router.push("/(tabs)/documents")}
             >
