@@ -1,37 +1,37 @@
 {
   "expo": {
-    "name": "OCFit",
-    "slug": "ocfit",
+    "name": "NorthernGlow",
+    "slug": "northernglow",
     "version": "1.0.0",
     "orientation": "portrait",
-    "scheme": "ocfit",
+    "scheme": "northernglow",
     "userInterfaceStyle": "dark",
     "icon": "./assets/icon.png",
     "splash": {
-      "image": "./assets/icon.png",
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0a0a0a"
+      "backgroundColor": "#0a0e1e"
     },
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.orleanscrossfit.ocfit",
+      "bundleIdentifier": "com.northernglow.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/icon.png",
-        "backgroundColor": "#0a0a0a"
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0a0e1e"
       },
-      "package": "com.orleanscrossfit.ocfit"
+      "package": "com.northernglow.app"
     },
     "plugins": [
       "expo-router",
       [
         "expo-secure-store",
         {
-          "faceIDPermission": "Allow OCFit to access Face ID for secure login."
+          "faceIDPermission": "Allow NorthernGlow to access Face ID for secure login."
         }
       ],
       "@react-native-community/datetimepicker",
