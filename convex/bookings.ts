@@ -273,6 +273,8 @@ export const book = mutation({
 
     const isFull = cls.bookedCount >= cls.capacity;
 
+    let bookingResult: { status: "booked" } | { status: "waitlist"; position: number };
+
     if (!isFull) {
       if (existing) {
         await ctx.db.patch(existing._id, {
@@ -289,7 +291,7 @@ export const book = mutation({
         });
       }
       await ctx.db.patch(classId, { bookedCount: cls.bookedCount + 1 });
-      return { status: "booked" as const };
+      bookingResult = { status: "booked" as const };
     } else {
       const waitlisted = await getWaitlisted(ctx.db, classId);
       const position = waitlisted.length + 1;
@@ -308,8 +310,38 @@ export const book = mutation({
           bookedAt: Date.now(),
         });
       }
-      return { status: "waitlist" as const, position };
+      bookingResult = { status: "waitlist" as const, position };
     }
+
+    // Push notification to athlete
+    const coach = await ctx.db.get(cls.coachId);
+    if (user?.pushToken) {
+      await ctx.scheduler.runAfter(0, internal.notifications.sendPush, {
+        tokens: [user.pushToken],
+        title: bookingResult.status === "waitlist" ? "Added to Waitlist" : "Class Booked!",
+        body:
+          bookingResult.status === "waitlist"
+            ? `You're #${bookingResult.position} on the waitlist for the ${cls.startTime} class on ${cls.date}.`
+            : `You're booked for the ${cls.startTime} class on ${cls.date}!`,
+        data: { type: "class_booked", classId },
+      });
+    }
+
+    // Confirmation email to athlete
+    if (user?.email) {
+      await ctx.scheduler.runAfter(0, internal.email.sendClassBookingEmail, {
+        email: user.email,
+        name: user.name,
+        date: cls.date,
+        startTime: cls.startTime,
+        coachName: coach?.name ?? "TBD",
+        status: bookingResult.status,
+        waitlistPosition:
+          bookingResult.status === "waitlist" ? bookingResult.position : undefined,
+      });
+    }
+
+    return bookingResult;
   },
 });
 

@@ -2,6 +2,7 @@ import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { requireCoachOrAdmin } from "./helpers";
+import { internal } from "./_generated/api";
 
 // ── Queries ──────────────────────────────────────────────────────────────────
 
@@ -202,6 +203,42 @@ export const book = mutation({
       status: "confirmed",
       notes: args.notes,
     });
+
+    // Push notifications
+    const athlete = await ctx.db.get(userId);
+    const coach = await ctx.db.get(args.coachId);
+
+    if (athlete?.pushToken) {
+      await ctx.scheduler.runAfter(0, internal.notifications.sendPush, {
+        tokens: [athlete.pushToken],
+        title: "1-on-1 Booked!",
+        body: `Your session with ${coach?.name ?? "Coach"} on ${args.date} at ${args.startTime} is confirmed.`,
+        data: { type: "appointment_booked" },
+      });
+    }
+
+    if (coach?.pushToken) {
+      await ctx.scheduler.runAfter(0, internal.notifications.sendPush, {
+        tokens: [coach.pushToken],
+        title: "New 1-on-1 Booking",
+        body: `${athlete?.name ?? "An athlete"} booked a session on ${args.date} at ${args.startTime}.`,
+        data: { type: "appointment_new" },
+      });
+    }
+
+    // Confirmation emails with .ics calendar invite
+    if (athlete?.email || coach?.email) {
+      await ctx.scheduler.runAfter(0, internal.email.sendAppointmentEmail, {
+        athleteEmail: athlete?.email ?? "",
+        athleteName: athlete?.name,
+        coachEmail: coach?.email ?? "",
+        coachName: coach?.name,
+        date: args.date,
+        startTime: args.startTime,
+        durationMinutes: args.durationMinutes,
+        notes: args.notes,
+      });
+    }
   },
 });
 
