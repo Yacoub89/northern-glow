@@ -61,6 +61,14 @@ export const updateSettings = mutation({
   },
 });
 
+/** Returns the public URL for the gym's stored logo. */
+export const getLogoUrl = query({
+  args: { storageId: v.id("_storage") },
+  handler: async (ctx, { storageId }) => {
+    return await ctx.storage.getUrl(storageId);
+  },
+});
+
 /** Generate a signed upload URL for the gym logo. */
 export const generateLogoUploadUrl = mutation({
   args: {},
