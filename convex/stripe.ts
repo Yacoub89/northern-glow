@@ -10,7 +10,8 @@ import { Id } from "./_generated/dataModel";
 const getStripe = () =>
   new Stripe(process.env.STRIPE_SECRET_KEY!, { apiVersion: "2025-02-24.acacia" });
 
-const PRICE_IDS = {
+// Fall-back global price IDs (used if the gym hasn't configured their own)
+const FALLBACK_PRICE_IDS = {
   unlimited: {
     monthly: process.env.STRIPE_PRICE_UNLIMITED_MONTHLY!,
     annual: process.env.STRIPE_PRICE_UNLIMITED_ANNUAL!,
@@ -43,7 +44,17 @@ export const createCheckoutSession = action({
     const user = await ctx.runQuery(internal.memberships.getUserInfo, { userId });
     if (!user) throw new Error("User not found");
 
-    const priceId = PRICE_IDS[plan][billingPeriod];
+    // Use gym-specific price IDs if configured, otherwise fall back to global
+    const gym = await ctx.runQuery(internal.gyms.getGymByUserId, { userId });
+    const priceId =
+      plan === "unlimited"
+        ? billingPeriod === "monthly"
+          ? (gym?.stripeUnlimitedMonthlyPriceId ?? FALLBACK_PRICE_IDS.unlimited.monthly)
+          : (gym?.stripeUnlimitedAnnualPriceId ?? FALLBACK_PRICE_IDS.unlimited.annual)
+        : billingPeriod === "monthly"
+          ? (gym?.stripeTwiceWeeklyMonthlyPriceId ?? FALLBACK_PRICE_IDS.twice_weekly.monthly)
+          : (gym?.stripeTwiceWeeklyAnnualPriceId ?? FALLBACK_PRICE_IDS.twice_weekly.annual);
+
     const siteUrl = process.env.EXPO_PUBLIC_CONVEX_SITE_URL;
 
     const session = await getStripe().checkout.sessions.create({
@@ -52,7 +63,12 @@ export const createCheckoutSession = action({
       mode: "subscription",
       line_items: [{ price: priceId, quantity: 1 }],
       subscription_data: {
-        metadata: { convexUserId: userId, plan, billingPeriod },
+        metadata: {
+          convexUserId: userId,
+          convexGymId: user.gymId ?? "",
+          plan,
+          billingPeriod,
+        },
       },
       success_url: `${siteUrl}/stripe/checkout-return?status=success&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl}/stripe/checkout-return?status=cancelled`,
@@ -96,15 +112,18 @@ export const syncFromSession = action({
     let sub = session.subscription as Stripe.Subscription | null;
     if (!sub) return;
 
-    // Stripe can redirect before the subscription transitions incomplete → active.
-    // If payment is confirmed but subscription is still incomplete, poll briefly.
     if (sub.status === "incomplete" && session.payment_status === "paid") {
       await new Promise((r) => setTimeout(r, 2000));
       sub = await getStripe().subscriptions.retrieve(sub.id);
     }
 
+    const gymId = sub.metadata.convexGymId
+      ? (sub.metadata.convexGymId as Id<"gyms">)
+      : undefined;
+
     await ctx.runMutation(internal.memberships.upsertMembership, {
       userId,
+      gymId,
       stripeCustomerId: sub.customer as string,
       stripeSubscriptionId: sub.id,
       stripePriceId: sub.items.data[0].price.id,
@@ -136,8 +155,14 @@ export const processWebhook = internalAction({
     ) {
       const sub = event.data.object as Stripe.Subscription;
       const meta = sub.metadata;
+      const userId = meta.convexUserId as Id<"users">;
+
+      // Look up gymId from the user record (more reliable than metadata)
+      const gymId = await ctx.runQuery(internal.gyms.getGymIdForUser, { userId });
+
       await ctx.runMutation(internal.memberships.upsertMembership, {
-        userId: meta.convexUserId as Id<"users">,
+        userId,
+        gymId: gymId ?? undefined,
         stripeCustomerId: sub.customer as string,
         stripeSubscriptionId: sub.id,
         stripePriceId: sub.items.data[0].price.id,

@@ -11,7 +11,6 @@ function formatTime12h(time: string): string {
 }
 
 function formatDate(date: string): string {
-  // date is YYYY-MM-DD; parse as UTC midnight to avoid timezone shifts
   const [y, mo, d] = date.split("-").map(Number);
   const dt = new Date(Date.UTC(y, mo - 1, d));
   return dt.toLocaleDateString("en-US", {
@@ -25,8 +24,8 @@ function formatDate(date: string): string {
 
 function buildGoogleCalendarUrl(params: {
   title: string;
-  date: string; // YYYY-MM-DD
-  startTime: string; // HH:MM (24h)
+  date: string;
+  startTime: string;
   durationMinutes: number;
   description?: string;
 }): string {
@@ -47,13 +46,14 @@ function buildGoogleCalendarUrl(params: {
 }
 
 function generateICS(params: {
-  date: string; // YYYY-MM-DD
-  startTime: string; // HH:MM (24h)
+  date: string;
+  startTime: string;
   durationMinutes: number;
   athleteName: string;
   coachName: string;
   athleteEmail: string;
   coachEmail: string;
+  gymName: string;
   notes?: string;
 }): string {
   const dateStr = params.date.replace(/-/g, "");
@@ -63,12 +63,13 @@ function generateICS(params: {
   const endH = Math.floor(totalEnd / 60) % 24;
   const endM = totalEnd % 60;
   const endStr = `${String(endH).padStart(2, "0")}${String(endM).padStart(2, "0")}00`;
-  const uid = `${Date.now()}-${Math.random().toString(36).slice(2)}@ocfit.app`;
+  const uid = `${Date.now()}-${Math.random().toString(36).slice(2)}@northernglow.app`;
+  const prodId = params.gymName.replace(/\s+/g, "");
 
   return [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//OCFit//OCFit//EN",
+    `PRODID:-//${prodId}//${prodId}//EN`,
     "METHOD:REQUEST",
     "BEGIN:VEVENT",
     `UID:${uid}`,
@@ -84,24 +85,17 @@ function generateICS(params: {
   ].join("\r\n");
 }
 
-/**
- * Sends a welcome email after a new user is created.
- * Uses the Resend API directly via fetch (no extra npm package needed).
- *
- * Required env vars:
- *   AUTH_RESEND_KEY  — your Resend API key
- *   AUTH_EMAIL_FROM  — verified sender address
- */
+// ── Welcome email ─────────────────────────────────────────────────────────────
+
 export const sendWelcomeEmail = internalAction({
   args: {
     email: v.string(),
     name: v.optional(v.string()),
+    gymName: v.string(),
   },
-  handler: async (_ctx, { email, name }) => {
+  handler: async (_ctx, { email, name, gymName }) => {
     const apiKey = process.env.AUTH_RESEND_KEY;
-    const from =
-      process.env.AUTH_EMAIL_FROM ?? "OCFit <noreply@example.com>";
-
+    const from = process.env.AUTH_EMAIL_FROM ?? `${gymName} <noreply@example.com>`;
     if (!apiKey) {
       console.warn("AUTH_RESEND_KEY not set — skipping welcome email");
       return;
@@ -119,11 +113,11 @@ export const sendWelcomeEmail = internalAction({
       body: JSON.stringify({
         from,
         to: [email],
-        subject: `Welcome to OCFit${greeting}!`,
+        subject: `Welcome to ${gymName}${greeting}!`,
         html: `
           <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
-            <h1 style="color:#111">Welcome${greeting}! 🎉</h1>
-            <p>Your OCFit account is ready. Here's what you can do:</p>
+            <h1 style="color:#111">Welcome to ${gymName}${greeting}!</h1>
+            <p>Your account is ready. Here's what you can do:</p>
             <ul>
               <li>Book classes and join the community</li>
               <li>Track your WOD results and personal records</li>
@@ -131,12 +125,60 @@ export const sendWelcomeEmail = internalAction({
             </ul>
             <p>See you on the floor!</p>
           </div>`,
-        text: `Welcome${greeting}! Your OCFit account is ready. Start booking classes and tracking your results.`,
+        text: `Welcome to ${gymName}${greeting}! Your account is ready. Start booking classes and tracking your results.`,
       }),
     });
 
     if (!res.ok) {
       console.error("Welcome email failed:", await res.text());
+    }
+  },
+});
+
+// ── Invite email ──────────────────────────────────────────────────────────────
+
+export const sendInviteEmail = internalAction({
+  args: {
+    email: v.string(),
+    gymName: v.string(),
+    inviteCode: v.string(),
+    role: v.union(v.literal("athlete"), v.literal("coach"), v.literal("admin")),
+  },
+  handler: async (_ctx, { email, gymName, inviteCode, role }) => {
+    const apiKey = process.env.AUTH_RESEND_KEY;
+    const from = process.env.AUTH_EMAIL_FROM ?? `${gymName} <noreply@example.com>`;
+    if (!apiKey) {
+      console.warn("AUTH_RESEND_KEY not set — skipping invite email");
+      return;
+    }
+
+    const roleLabel = role === "admin" ? "Admin" : role === "coach" ? "Coach" : "Athlete";
+
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to: [email],
+        subject: `You've been invited to join ${gymName}`,
+        html: `
+          <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+            <h2 style="color:#111">You're invited to ${gymName}!</h2>
+            <p>You've been invited as a <strong>${roleLabel}</strong>.</p>
+            <p>Download the app, tap <strong>Sign Up</strong>, and create an account using <strong>this email address</strong>. Your gym membership will be activated automatically.</p>
+            <p style="color:#555;font-size:13px">
+              This invite expires in 7 days.
+            </p>
+          </div>`,
+        text: `You've been invited to join ${gymName} as a ${roleLabel}. Download the app, tap Sign Up, and create an account using this email address. Your gym membership will be activated automatically.`,
+      }),
+    });
+
+    if (!res.ok) {
+      console.error("Invite email failed:", await res.text());
     }
   },
 });
@@ -155,7 +197,7 @@ export const sendClassBookingEmail = internalAction({
   },
   handler: async (_ctx, { email, name, date, startTime, coachName, status, waitlistPosition }) => {
     const apiKey = process.env.AUTH_RESEND_KEY;
-    const from = process.env.AUTH_EMAIL_FROM ?? "OCFit <noreply@example.com>";
+    const from = process.env.AUTH_EMAIL_FROM ?? "noreply@example.com";
     if (!apiKey) {
       console.warn("AUTH_RESEND_KEY not set — skipping class booking email");
       return;
@@ -223,22 +265,21 @@ export const sendAppointmentEmail = internalAction({
     startTime: v.string(),
     durationMinutes: v.number(),
     notes: v.optional(v.string()),
+    gymName: v.optional(v.string()),
   },
-  handler: async (_ctx, { athleteEmail, athleteName, coachEmail, coachName, date, startTime, durationMinutes, notes }) => {
+  handler: async (_ctx, { athleteEmail, athleteName, coachEmail, coachName, date, startTime, durationMinutes, notes, gymName = "your gym" }) => {
     const apiKey = process.env.AUTH_RESEND_KEY;
-    const from = process.env.AUTH_EMAIL_FROM ?? "OCFit <noreply@example.com>";
+    const from = process.env.AUTH_EMAIL_FROM ?? "noreply@example.com";
     if (!apiKey) {
       console.warn("AUTH_RESEND_KEY not set — skipping appointment email");
       return;
     }
 
     const athleteFirst = athleteName?.split(" ")[0] ?? "there";
-    const coachFirst = coachName?.split(" ")[0] ?? "your coach";
     const dateLabel = formatDate(date);
     const timeLabel = formatTime12h(startTime);
     const subject = `1-on-1 confirmed: ${timeLabel} on ${dateLabel}`;
 
-    // Generate .ics calendar invite
     const icsContent = generateICS({
       date,
       startTime,
@@ -247,12 +288,11 @@ export const sendAppointmentEmail = internalAction({
       coachName: coachName ?? "Coach",
       athleteEmail,
       coachEmail,
+      gymName,
       notes,
     });
-    // btoa is available in the Convex V8 runtime
     const icsBase64 = btoa(icsContent);
 
-    // Google Calendar link (works on any browser, iOS + Android)
     const googleCalUrl = buildGoogleCalendarUrl({
       title: `1-on-1 Session: ${athleteName ?? "Athlete"} & ${coachName ?? "Coach"}`,
       date,
@@ -261,7 +301,6 @@ export const sendAppointmentEmail = internalAction({
       description: notes ?? "Personal training session",
     });
 
-    // Reusable "Add to Calendar" button block
     const calendarButtons = `
       <div style="margin:20px 0">
         <a href="${googleCalUrl}"
@@ -302,11 +341,7 @@ export const sendAppointmentEmail = internalAction({
         ${calendarButtons}
       </div>`;
 
-    const attachment = {
-      filename: "invite.ics",
-      content: icsBase64,
-    };
-
+    const attachment = { filename: "invite.ics", content: icsBase64 };
     const sends = [];
 
     if (athleteEmail) {

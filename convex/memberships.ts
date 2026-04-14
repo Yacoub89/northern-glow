@@ -19,7 +19,7 @@ export const getUserInfo = internalQuery({
   handler: async (ctx, { userId }) => {
     const user = await ctx.db.get(userId);
     if (!user) return null;
-    return { email: user.email ?? null, name: user.name ?? null };
+    return { email: user.email ?? null, name: user.name ?? null, gymId: user.gymId ?? null };
   },
 });
 
@@ -36,6 +36,7 @@ export const getByUserId = internalQuery({
 export const upsertMembership = internalMutation({
   args: {
     userId: v.id("users"),
+    gymId: v.optional(v.id("gyms")),
     stripeCustomerId: v.string(),
     stripeSubscriptionId: v.string(),
     stripePriceId: v.string(),
@@ -60,6 +61,7 @@ export const upsertMembership = internalMutation({
 
     if (existing) {
       await ctx.db.patch(existing._id, {
+        gymId: args.gymId,
         stripeCustomerId: args.stripeCustomerId,
         stripePriceId: args.stripePriceId,
         plan: args.plan,

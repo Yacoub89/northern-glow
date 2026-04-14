@@ -284,13 +284,23 @@ export default function ProfileScreen() {
               <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
             </Pressable>
             <Pressable
-              style={[styles.settingsRow, { marginBottom: 28 }]}
+              style={styles.settingsRow}
               onPress={() => router.push("/(tabs)/documents")}
             >
               <Ionicons name="document-text" size={20} color={Colors.primary} style={{ marginRight: 12 }} />
               <Text style={styles.settingsRowText}>Documents & Waivers</Text>
               <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
             </Pressable>
+            {me?.role === "admin" && (
+              <Pressable
+                style={[styles.settingsRow, { marginBottom: 28 }]}
+                onPress={() => router.push("/gym-settings")}
+              >
+                <Ionicons name="settings-outline" size={20} color={Colors.primary} style={{ marginRight: 12 }} />
+                <Text style={styles.settingsRowText}>Gym Settings</Text>
+                <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+              </Pressable>
+            )}
           </>
         )}
 

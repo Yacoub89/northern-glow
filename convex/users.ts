@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { requireAuth, requireCoachOrAdmin } from "./helpers";
 
 export const getMe = query({
   args: {},
@@ -43,11 +44,11 @@ export const getMyStats = query({
 export const listMembers = query({
   args: {},
   handler: async (ctx) => {
-    const callerId = await getAuthUserId(ctx);
-    if (!callerId) throw new Error("Unauthenticated");
-    const caller = await ctx.db.get(callerId);
-    if (caller?.role !== "coach" && caller?.role !== "admin") throw new Error("Unauthorized");
-    return await ctx.db.query("users").order("asc").take(200);
+    const { gymId } = await requireCoachOrAdmin(ctx);
+    return await ctx.db
+      .query("users")
+      .withIndex("by_gym", (q) => q.eq("gymId", gymId))
+      .take(200);
   },
 });
 
@@ -66,10 +67,10 @@ export const setRole = mutation({
     role: v.union(v.literal("athlete"), v.literal("coach"), v.literal("admin")),
   },
   handler: async (ctx, { userId, role }) => {
-    const callerId = await getAuthUserId(ctx);
-    if (!callerId) throw new Error("Unauthenticated");
-    const caller = await ctx.db.get(callerId);
-    if (caller?.role !== "admin") throw new Error("Only admins can change roles");
+    const { gymId, user: caller } = await requireAuth(ctx);
+    if (caller.role !== "admin") throw new Error("Only admins can change roles");
+    const target = await ctx.db.get(userId);
+    if (target?.gymId !== gymId) throw new Error("User not in your gym");
     await ctx.db.patch(userId, { role });
   },
 });
@@ -77,10 +78,10 @@ export const setRole = mutation({
 export const promoteToCoach = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const callerId = await getAuthUserId(ctx);
-    if (!callerId) throw new Error("Unauthenticated");
-    const caller = await ctx.db.get(callerId);
-    if (caller?.role !== "admin") throw new Error("Unauthorized");
+    const { gymId, user: caller } = await requireAuth(ctx);
+    if (caller.role !== "admin") throw new Error("Unauthorized");
+    const target = await ctx.db.get(userId);
+    if (target?.gymId !== gymId) throw new Error("User not in your gym");
     await ctx.db.patch(userId, { role: "coach" });
   },
 });

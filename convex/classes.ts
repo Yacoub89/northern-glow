@@ -1,14 +1,14 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
-import { Doc } from "./_generated/dataModel";
-import { requireCoachOrAdmin } from "./helpers";
+import { requireAuth, requireCoachOrAdmin } from "./helpers";
 
 export const getByDate = query({
   args: { date: v.string() },
   handler: async (ctx, { date }) => {
+    const { gymId } = await requireAuth(ctx);
     const classes = await ctx.db
       .query("classes")
-      .withIndex("by_date", (q) => q.eq("date", date))
+      .withIndex("by_gym_date", (q) => q.eq("gymId", gymId).eq("date", date))
       .collect();
     return classes.sort((a, b) => a.startTime.localeCompare(b.startTime));
   },
@@ -17,6 +17,8 @@ export const getByDate = query({
 export const getUpcoming = query({
   args: { startDate: v.optional(v.string()), days: v.optional(v.number()) },
   handler: async (ctx, { startDate, days = 7 }) => {
+    const { gymId } = await requireAuth(ctx);
+
     const [y, mo, d] = (startDate ?? new Date().toISOString().split("T")[0])
       .split("-")
       .map(Number);
@@ -26,7 +28,7 @@ export const getUpcoming = query({
         const date = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
         return ctx.db
           .query("classes")
-          .withIndex("by_date", (q) => q.eq("date", date))
+          .withIndex("by_gym_date", (q) => q.eq("gymId", gymId).eq("date", date))
           .collect();
       })
     );
@@ -62,9 +64,10 @@ export const create = mutation({
     wodId: v.optional(v.id("wods")),
   },
   handler: async (ctx, args) => {
-    const coachId = await requireCoachOrAdmin(ctx);
+    const { userId: coachId, gymId } = await requireCoachOrAdmin(ctx);
     return await ctx.db.insert("classes", {
       ...args,
+      gymId,
       coachId,
       bookedCount: 0,
     });
@@ -74,7 +77,9 @@ export const create = mutation({
 export const remove = mutation({
   args: { id: v.id("classes") },
   handler: async (ctx, { id }) => {
-    await requireCoachOrAdmin(ctx);
+    const { gymId } = await requireCoachOrAdmin(ctx);
+    const cls = await ctx.db.get(id);
+    if (!cls || cls.gymId !== gymId) throw new Error("Class not found");
     const bookings = await ctx.db
       .query("bookings")
       .withIndex("by_class", (q) => q.eq("classId", id))

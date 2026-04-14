@@ -18,6 +18,19 @@ const tokenStorage = {
   removeItem: SecureStore.deleteItemAsync,
 };
 
+// Links the authenticated user to their gym via a pending invite (runs once after login).
+function GymLinker() {
+  const { isAuthenticated } = useConvexAuth();
+  const checkAndAccept = useMutation(api.invites.checkAndAccept);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    checkAndAccept({}).catch(() => {});
+  }, [isAuthenticated]);
+
+  return null;
+}
+
 // Push notifications are native-only
 function PushTokenRegistrar() {
   const { isAuthenticated } = useConvexAuth();
@@ -73,6 +86,7 @@ function PushTokenRegistrar() {
 export default function RootLayout() {
   return (
     <ConvexAuthProvider client={convex} storage={tokenStorage}>
+      <GymLinker />
       <PushTokenRegistrar />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
@@ -92,6 +106,7 @@ export default function RootLayout() {
         <Stack.Screen name="membership" options={{ headerShown: false }} />
         <Stack.Screen name="roster" options={{ headerShown: false }} />
         <Stack.Screen name="kiosk" options={{ headerShown: false }} />
+        <Stack.Screen name="gym-settings" options={{ headerShown: false }} />
       </Stack>
     </ConvexAuthProvider>
   );
