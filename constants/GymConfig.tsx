@@ -1,6 +1,7 @@
 import { useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import { api } from "../convex/_generated/api";
+import { Colors } from "./Colors";
 
 import * as SecureStore from "expo-secure-store";
 const CACHE_KEY = "gymConfig";
@@ -62,4 +63,13 @@ export function useGymConfig(): GymConfig {
   }
 
   return cached ?? DEFAULT_CONFIG;
+}
+
+/**
+ * Returns Colors with primary overridden by the current gym's brand color.
+ * Use this instead of the static Colors.primary anywhere color theming is needed.
+ */
+export function useGymColors() {
+  const gym = useGymConfig();
+  return { ...Colors, primary: gym.primaryColor };
 }

@@ -22,6 +22,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
+import { useGymColors } from "../../constants/GymConfig";
 
 function formatDate(ts: number) {
   return new Date(ts).toLocaleDateString("en-US", {
@@ -181,6 +182,7 @@ const previewStyles = StyleSheet.create({
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
 export default function DocumentsScreen() {
+  const { primary } = useGymColors();
   const me = useQuery(api.users.getMe);
   const isCoach = me?.role === "coach" || me?.role === "admin";
 
@@ -298,7 +300,7 @@ export default function DocumentsScreen() {
   };
 
   if (me === undefined || docs === undefined) {
-    return <View style={s.centered}><ActivityIndicator color={Colors.primary} size="large" /></View>;
+    return <View style={s.centered}><ActivityIndicator color={primary} size="large" /></View>;
   }
 
   const canCreate = pdfMode ? !!newTitle.trim() && !!pickedPdf : !!newTitle.trim() && !!newContent.trim();
@@ -314,7 +316,7 @@ export default function DocumentsScreen() {
           )}
         </View>
         {isCoach && (
-          <Pressable style={s.newBtn} onPress={() => setCreateVisible(true)}>
+          <Pressable style={[s.newBtn, { backgroundColor: primary }]} onPress={() => setCreateVisible(true)}>
             <Ionicons name="add" size={18} color="#fff" />
             <Text style={s.newBtnText}>New</Text>
           </Pressable>
@@ -350,7 +352,7 @@ export default function DocumentsScreen() {
                   <Ionicons
                     name={signed ? "checkmark-circle" : isPdf ? "document-attach-outline" : "document-text-outline"}
                     size={22}
-                    color={signed ? Colors.success : Colors.primary}
+                    color={signed ? Colors.success : primary}
                     style={{ marginRight: 12 }}
                   />
                   <View style={{ flex: 1 }}>
@@ -396,11 +398,11 @@ export default function DocumentsScreen() {
           <ScrollView style={s.docScroll} contentContainerStyle={{ padding: 20 }}>
             {signDoc?.fileStorageId ? (
               <View style={s.pdfCard}>
-                <Ionicons name="document-attach-outline" size={40} color={Colors.primary} />
+                <Ionicons name="document-attach-outline" size={40} color={primary} />
                 <Text style={s.pdfCardTitle}>{signDoc.title}</Text>
                 <Text style={s.pdfCardHint}>Opens in your browser</Text>
                 <Pressable
-                  style={s.openPdfBtn}
+                  style={[s.openPdfBtn, { backgroundColor: primary }]}
                   onPress={() => pdfUrl && Linking.openURL(pdfUrl)}
                   disabled={!pdfUrl}
                 >
@@ -429,7 +431,7 @@ export default function DocumentsScreen() {
               onClear={() => setSigPaths(null)}
             />
             <Pressable
-              style={[s.signBtn, (!sigName.trim() || !sigPaths || signing) && { opacity: 0.4 }]}
+              style={[s.signBtn, { backgroundColor: primary }, (!sigName.trim() || !sigPaths || signing) && { opacity: 0.4 }]}
               onPress={handleSign}
               disabled={!sigName.trim() || !sigPaths || signing}
             >
@@ -447,7 +449,7 @@ export default function DocumentsScreen() {
           <View style={s.sheetHandle} />
           <Text style={s.sheetTitle}>Signatures</Text>
           {sigs === undefined ? (
-            <ActivityIndicator color={Colors.primary} style={{ marginTop: 20 }} />
+            <ActivityIndicator color={primary} style={{ marginTop: 20 }} />
           ) : sigs.length === 0 ? (
             <Text style={s.emptyText}>No one has signed yet.</Text>
           ) : (
@@ -480,11 +482,11 @@ export default function DocumentsScreen() {
           <Text style={s.sheetTitle}>New Document</Text>
 
           <View style={s.toggle}>
-            <Pressable style={[s.toggleBtn, !pdfMode && s.toggleActive]} onPress={() => setPdfMode(false)}>
+            <Pressable style={[s.toggleBtn, !pdfMode && [s.toggleActive, { backgroundColor: primary }]]} onPress={() => setPdfMode(false)}>
               <Ionicons name="document-text-outline" size={14} color={!pdfMode ? "#fff" : Colors.textSecondary} />
               <Text style={[s.toggleText, !pdfMode && s.toggleTextActive]}>Write Text</Text>
             </Pressable>
-            <Pressable style={[s.toggleBtn, pdfMode && s.toggleActive]} onPress={() => setPdfMode(true)}>
+            <Pressable style={[s.toggleBtn, pdfMode && [s.toggleActive, { backgroundColor: primary }]]} onPress={() => setPdfMode(true)}>
               <Ionicons name="document-attach-outline" size={14} color={pdfMode ? "#fff" : Colors.textSecondary} />
               <Text style={[s.toggleText, pdfMode && s.toggleTextActive]}>Upload PDF</Text>
             </Pressable>
@@ -501,9 +503,9 @@ export default function DocumentsScreen() {
           {pdfMode ? (
             <>
               <Text style={[s.sheetLabel, { marginTop: 12 }]}>PDF File</Text>
-              <Pressable style={s.pickBtn} onPress={handlePickPdf}>
-                <Ionicons name="cloud-upload-outline" size={20} color={Colors.primary} />
-                <Text style={s.pickBtnText} numberOfLines={1}>{pickedPdf ? pickedPdf.name : "Choose PDF from device"}</Text>
+              <Pressable style={[s.pickBtn, { borderColor: primary }]} onPress={handlePickPdf}>
+                <Ionicons name="cloud-upload-outline" size={20} color={primary} />
+                <Text style={[s.pickBtnText, { color: primary }]} numberOfLines={1}>{pickedPdf ? pickedPdf.name : "Choose PDF from device"}</Text>
               </Pressable>
               {pickedPdf && <Text style={s.pickedHint}>✓ Ready to upload</Text>}
             </>
@@ -517,7 +519,7 @@ export default function DocumentsScreen() {
           )}
 
           <Pressable
-            style={[s.signBtn, (!canCreate || creating) && { opacity: 0.4 }]}
+            style={[s.signBtn, { backgroundColor: primary }, (!canCreate || creating) && { opacity: 0.4 }]}
             onPress={handleCreate}
             disabled={!canCreate || creating}
           >
@@ -535,7 +537,7 @@ const s = StyleSheet.create({
   header: { paddingHorizontal: 20, paddingTop: 16, paddingBottom: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   title: { fontSize: 28, fontWeight: "800", color: Colors.text },
   pendingBadge: { fontSize: 13, color: Colors.warning, fontWeight: "600", marginTop: 2 },
-  newBtn: { flexDirection: "row", alignItems: "center", backgroundColor: Colors.primary, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, gap: 4 },
+  newBtn: { flexDirection: "row", alignItems: "center", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, gap: 4 },
   newBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
   list: { paddingHorizontal: 20, paddingBottom: 32 },
   card: { backgroundColor: Colors.surface, borderRadius: 14, padding: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderColor: Colors.border },
@@ -558,11 +560,11 @@ const s = StyleSheet.create({
   pdfCard: { alignItems: "center", paddingVertical: 40, gap: 12, backgroundColor: Colors.surface, borderRadius: 16, borderWidth: 1, borderColor: Colors.border },
   pdfCardTitle: { fontSize: 16, fontWeight: "700", color: Colors.text },
   pdfCardHint: { fontSize: 12, color: Colors.textSecondary },
-  openPdfBtn: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: Colors.primary, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 12, marginTop: 8 },
+  openPdfBtn: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 12, marginTop: 8 },
   openPdfText: { color: "#fff", fontWeight: "700", fontSize: 14 },
   signSection: { backgroundColor: Colors.surface, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 32, borderTopWidth: 1, borderTopColor: Colors.border },
   nameInput: { backgroundColor: Colors.background, borderRadius: 12, padding: 14, color: Colors.text, fontSize: 15, borderWidth: 1, borderColor: Colors.border, marginBottom: 8 },
-  signBtn: { backgroundColor: Colors.primary, borderRadius: 12, paddingVertical: 16, alignItems: "center", flexDirection: "row", justifyContent: "center", marginTop: 12 },
+  signBtn: { borderRadius: 12, paddingVertical: 16, alignItems: "center", flexDirection: "row", justifyContent: "center", marginTop: 12 },
   signBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
 
   // Modals
@@ -585,10 +587,10 @@ const s = StyleSheet.create({
   // Create extras
   toggle: { flexDirection: "row", backgroundColor: Colors.background, borderRadius: 12, padding: 4, marginBottom: 20, gap: 4 },
   toggleBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 10, borderRadius: 9 },
-  toggleActive: { backgroundColor: Colors.primary },
+  toggleActive: {},
   toggleText: { fontSize: 13, fontWeight: "600", color: Colors.textSecondary },
   toggleTextActive: { color: "#fff" },
-  pickBtn: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: Colors.background, borderRadius: 12, borderWidth: 1.5, borderColor: Colors.primary, borderStyle: "dashed", padding: 16 },
-  pickBtnText: { fontSize: 14, color: Colors.primary, fontWeight: "600", flex: 1 },
+  pickBtn: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: Colors.background, borderRadius: 12, borderWidth: 1.5, borderStyle: "dashed", padding: 16 },
+  pickBtnText: { fontSize: 14, fontWeight: "600", flex: 1 },
   pickedHint: { fontSize: 12, color: Colors.success, marginTop: 6, fontWeight: "600" },
 });

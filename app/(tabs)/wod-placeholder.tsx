@@ -15,7 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../convex/_generated/api";
 import { Colors } from "../../constants/Colors";
-import { useGymConfig } from "../../constants/GymConfig";
+import { useGymColors, useGymConfig } from "../../constants/GymConfig";
 import { getTodayDate } from "../../utils/date";
 
 const SCALE_OPTIONS = ["Rx", "Scaled", "Rx+"] as const;
@@ -29,6 +29,7 @@ function parseMovement(text: string): { num: string | null; label: string } {
 
 export default function LogResultScreen() {
   const gym = useGymConfig();
+  const { primary } = useGymColors();
   const today = getTodayDate();
 
   const wod = useQuery(api.wods.getByDate, { date: today });
@@ -74,7 +75,7 @@ export default function LogResultScreen() {
   if (isLoading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color={Colors.primary} size="large" />
+        <ActivityIndicator color={primary} size="large" />
       </View>
     );
   }
@@ -88,7 +89,7 @@ export default function LogResultScreen() {
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.gymName}>{gym.name.toUpperCase()}</Text>
+            <Text style={[styles.gymName, { color: primary }]}>{gym.name.toUpperCase()}</Text>
             <Text style={styles.title}>Log Result</Text>
           </View>
 
@@ -98,7 +99,7 @@ export default function LogResultScreen() {
               <Text style={styles.sectionLabel}>TODAY'S WOD</Text>
               <View style={styles.wodCard}>
                 <Text style={styles.wodTitle}>{wod.title}</Text>
-                <Text style={styles.wodMeta}>
+                <Text style={[styles.wodMeta, { color: primary }]}>
                   {wod.type.toUpperCase()}
                   {wod.description ? ` · ${wod.description.toUpperCase()}` : ""}
                 </Text>
@@ -108,7 +109,7 @@ export default function LogResultScreen() {
                       const { num, label } = parseMovement(m);
                       return (
                         <View key={i} style={styles.movementRow}>
-                          <Text style={styles.movementNum}>{num ?? "·"}</Text>
+                          <Text style={[styles.movementNum, { color: primary }]}>{num ?? "·"}</Text>
                           <Text style={styles.movementLabel}>{label}</Text>
                         </View>
                       );
@@ -152,7 +153,7 @@ export default function LogResultScreen() {
                   {SCALE_OPTIONS.map((opt) => (
                     <Pressable
                       key={opt}
-                      style={[styles.scaleBtn, scale === opt && styles.scaleBtnActive]}
+                      style={[styles.scaleBtn, scale === opt && [styles.scaleBtnActive, { backgroundColor: primary, borderColor: primary }]]}
                       onPress={() => setScale(opt)}
                     >
                       <Text style={[styles.scaleBtnText, scale === opt && styles.scaleBtnTextActive]}>
@@ -175,7 +176,7 @@ export default function LogResultScreen() {
               </View>
 
               <Pressable
-                style={[styles.saveBtn, saving && { opacity: 0.6 }]}
+                style={[styles.saveBtn, { backgroundColor: primary }, saving && { opacity: 0.6 }]}
                 onPress={handleSave}
                 disabled={saving}
               >
@@ -209,7 +210,6 @@ const styles = StyleSheet.create({
   gymName: {
     fontSize: 12,
     fontWeight: "800",
-    color: Colors.primary,
     letterSpacing: 2,
     textTransform: "uppercase",
     marginBottom: 4,
@@ -248,7 +248,6 @@ const styles = StyleSheet.create({
   wodMeta: {
     fontSize: 13,
     fontWeight: "700",
-    color: Colors.primary,
     letterSpacing: 0.5,
     marginBottom: 14,
   },
@@ -258,7 +257,6 @@ const styles = StyleSheet.create({
     width: 28,
     fontSize: 16,
     fontWeight: "800",
-    color: Colors.primary,
     textAlign: "right",
   },
   movementLabel: { fontSize: 15, color: Colors.text, fontWeight: "500", flex: 1 },
@@ -310,15 +308,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  scaleBtnActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
+  scaleBtnActive: {},
   scaleBtnText: { color: Colors.textSecondary, fontWeight: "700", fontSize: 14 },
   scaleBtnTextActive: { color: "#fff" },
 
   saveBtn: {
-    backgroundColor: Colors.primary,
     marginHorizontal: 20,
     marginTop: 20,
     borderRadius: 14,

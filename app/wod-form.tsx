@@ -19,7 +19,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../convex/_generated/api";
 import { Id } from "../convex/_generated/dataModel";
 import { Colors } from "../constants/Colors";
-import { useGymConfig } from "../constants/GymConfig";
+import { useGymColors, useGymConfig } from "../constants/GymConfig";
 import { WOD_TYPES, type WodType } from "../constants/wod";
 import { getTodayDate } from "../utils/date";
 
@@ -33,6 +33,7 @@ const TYPE_LABELS: Record<WodType, string> = {
 
 export default function WodFormScreen() {
   const gym = useGymConfig();
+  const { primary } = useGymColors();
   const router = useRouter();
   const navigation = useNavigation();
   const { wodId, date: dateParam } = useLocalSearchParams<{ wodId?: string; date?: string }>();
@@ -119,9 +120,9 @@ export default function WodFormScreen() {
           {/* Header */}
           <View style={styles.header}>
             <Pressable style={styles.backButton} onPress={() => router.back()}>
-              <Text style={styles.backButtonText}>‹ Back</Text>
+              <Text style={[styles.backButtonText, { color: primary }]}>‹ Back</Text>
             </Pressable>
-            <Text style={styles.gymName}>{gym.name.toUpperCase()}</Text>
+            <Text style={[styles.gymName, { color: primary }]}>{gym.name.toUpperCase()}</Text>
             <Text style={styles.title}>{editingId ? "Edit WOD" : "Set WOD"}</Text>
           </View>
 
@@ -193,7 +194,7 @@ export default function WodFormScreen() {
                             mode="date"
                             display="inline"
                             themeVariant="dark"
-                            accentColor={Colors.primary}
+                            accentColor={primary}
                             style={{ width: "100%" }}
                             onChange={(_, selected) => {
                               if (selected) {
@@ -206,7 +207,7 @@ export default function WodFormScreen() {
                             }}
                           />
                           <Pressable
-                            style={styles.modalDoneBtn}
+                            style={[styles.modalDoneBtn, { backgroundColor: primary }]}
                             onPress={() => setShowPicker(false)}
                           >
                             <Text style={styles.modalDoneBtnText}>Done</Text>
@@ -239,10 +240,10 @@ export default function WodFormScreen() {
               {WOD_TYPES.map((t) => (
                 <Pressable
                   key={t}
-                  style={[styles.typeChip, type === t && styles.typeChipActive]}
+                  style={[styles.typeChip, type === t && { borderColor: primary, backgroundColor: primary + "22" }]}
                   onPress={() => setType(t)}
                 >
-                  <Text style={[styles.typeChipText, type === t && styles.typeChipTextActive]}>
+                  <Text style={[styles.typeChipText, type === t && { color: primary, fontWeight: "700" }]}>
                     {TYPE_LABELS[t]}
                   </Text>
                 </Pressable>
@@ -274,7 +275,7 @@ export default function WodFormScreen() {
           </View>
 
           <Pressable
-            style={[styles.saveBtn, saving && { opacity: 0.6 }]}
+            style={[styles.saveBtn, { backgroundColor: primary }, saving && { opacity: 0.6 }]}
             onPress={handleSave}
             disabled={saving}
           >
@@ -304,12 +305,10 @@ const styles = StyleSheet.create({
   backButtonText: {
     fontSize: 16,
     fontWeight: "600",
-    color: Colors.primary,
   },
   gymName: {
     fontSize: 12,
     fontWeight: "800",
-    color: Colors.primary,
     letterSpacing: 2,
     textTransform: "uppercase",
     marginBottom: 4,
@@ -387,7 +386,6 @@ const styles = StyleSheet.create({
   },
   modalDoneBtn: {
     marginTop: 16,
-    backgroundColor: Colors.primary,
     borderRadius: 12,
     paddingHorizontal: 48,
     paddingVertical: 14,
@@ -410,15 +408,11 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     backgroundColor: Colors.surfaceElevated,
   },
-  typeChipActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.primary + "22",
-  },
+  typeChipActive: {},
   typeChipText: { color: Colors.textSecondary, fontWeight: "600", fontSize: 14 },
-  typeChipTextActive: { color: Colors.primary, fontWeight: "700" },
+  typeChipTextActive: {},
 
   saveBtn: {
-    backgroundColor: Colors.primary,
     marginHorizontal: 20,
     marginTop: 8,
     borderRadius: 14,

@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../convex/_generated/api";
 import { Colors } from "../../constants/Colors";
-import { useGymConfig } from "../../constants/GymConfig";
+import { useGymColors, useGymConfig } from "../../constants/GymConfig";
 import { formatTime, getTodayDate } from "../../utils/date";
 
 function getGreeting(name?: string): string {
@@ -49,6 +49,7 @@ function computeStats(scores: string[]): { top: string | null; avg: string | nul
 
 export default function HomeScreen() {
   const gym = useGymConfig();
+  const { primary } = useGymColors();
   const today = getTodayDate();
   const router = useRouter();
 
@@ -78,7 +79,7 @@ export default function HomeScreen() {
   if (isLoading) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color={Colors.primary} size="large" />
+        <ActivityIndicator color={primary} size="large" />
       </View>
     );
   }
@@ -94,19 +95,19 @@ export default function HomeScreen() {
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.gymName}>{gym.name.toUpperCase()}</Text>
+          <Text style={[styles.gymName, { color: primary }]}>{gym.name.toUpperCase()}</Text>
           <Text style={styles.dateText}>{getTodayLabel()}</Text>
           <Text style={styles.greeting}>{getGreeting(me?.name)}</Text>
           {wod && (
-            <View style={styles.wodDayBadge}>
-              <Text style={styles.wodDayText}>WOD DAY</Text>
+            <View style={[styles.wodDayBadge, { backgroundColor: primary + "33", borderColor: primary + "55" }]}>
+              <Text style={[styles.wodDayText, { color: primary }]}>WOD DAY</Text>
             </View>
           )}
         </View>
 
         {/* Booking banner */}
         {!isCoach && todayBooking?.booking.status === "booked" && (
-          <View style={styles.bookingBanner}>
+          <View style={[styles.bookingBanner, { backgroundColor: primary }]}>
             <Text style={styles.bookingBannerText}>
               You're booked for {formatTime(todayBooking.slot.startTime)}
               {spotsLeft !== null && spotsLeft <= 5
@@ -121,7 +122,7 @@ export default function HomeScreen() {
         {wod ? (
           <View style={styles.wodCard}>
             <Text style={styles.wodTitle}>{wod.title}</Text>
-            <Text style={styles.wodMeta}>
+            <Text style={[styles.wodMeta, { color: primary }]}>
               {wod.type.toUpperCase()}
               {wod.description ? ` · ${wod.description.toUpperCase()}` : ""}
             </Text>
@@ -132,7 +133,7 @@ export default function HomeScreen() {
                   const { num, label } = parseMovement(m);
                   return (
                     <View key={i} style={styles.movementRow}>
-                      <Text style={styles.movementNum}>{num ?? "·"}</Text>
+                      <Text style={[styles.movementNum, { color: primary }]}>{num ?? "·"}</Text>
                       <Text style={styles.movementLabel}>{label}</Text>
                     </View>
                   );
@@ -166,7 +167,7 @@ export default function HomeScreen() {
           <View style={styles.emptyCard}>
             <Text style={styles.emptyText}>No WOD posted yet</Text>
             {isCoach && (
-              <Pressable style={styles.ctaButton} onPress={() => router.push("/wod-form")}>
+              <Pressable style={[styles.ctaButton, { backgroundColor: primary }]} onPress={() => router.push("/wod-form")}>
                 <Text style={styles.ctaButtonText}>+ Post Today's WOD</Text>
               </Pressable>
             )}
@@ -211,19 +212,19 @@ export default function HomeScreen() {
             <Text style={[styles.sectionLabel, { marginTop: 28 }]}>MY ATTENDANCE</Text>
             <View style={styles.attendanceRow}>
               <View style={styles.attendanceBox}>
-                <Text style={styles.attendanceValue}>{attendanceStats.thisWeek}</Text>
+                <Text style={[styles.attendanceValue, { color: primary }]}>{attendanceStats.thisWeek}</Text>
                 <Text style={styles.attendanceLabel}>This Week</Text>
               </View>
               <View style={styles.attendanceBox}>
-                <Text style={styles.attendanceValue}>{attendanceStats.thisMonth}</Text>
+                <Text style={[styles.attendanceValue, { color: primary }]}>{attendanceStats.thisMonth}</Text>
                 <Text style={styles.attendanceLabel}>This Month</Text>
               </View>
               <View style={styles.attendanceBox}>
-                <Text style={styles.attendanceValue}>{attendanceStats.thisYear}</Text>
+                <Text style={[styles.attendanceValue, { color: primary }]}>{attendanceStats.thisYear}</Text>
                 <Text style={styles.attendanceLabel}>This Year</Text>
               </View>
               <View style={styles.attendanceBox}>
-                <Text style={styles.attendanceValue}>{attendanceStats.allTime}</Text>
+                <Text style={[styles.attendanceValue, { color: primary }]}>{attendanceStats.allTime}</Text>
                 <Text style={styles.attendanceLabel}>All Time</Text>
               </View>
             </View>
@@ -234,7 +235,7 @@ export default function HomeScreen() {
                   style={styles.checkInToggle}
                   onPress={() => setShowCheckIns((v) => !v)}
                 >
-                  <Ionicons name="time-outline" size={16} color={Colors.primary} style={{ marginRight: 8 }} />
+                  <Ionicons name="time-outline" size={16} color={primary} style={{ marginRight: 8 }} />
                   <Text style={styles.checkInToggleText}>Check-in History</Text>
                   <Ionicons
                     name={showCheckIns ? "chevron-up" : "chevron-down"}
@@ -281,7 +282,7 @@ export default function HomeScreen() {
             style={styles.bookClassCta}
             onPress={() => router.push("/(tabs)/schedule")}
           >
-            <Text style={styles.bookClassCtaText}>Book a Class →</Text>
+            <Text style={[styles.bookClassCtaText, { color: primary }]}>Book a Class →</Text>
           </Pressable>
         )}
       </ScrollView>
@@ -310,7 +311,6 @@ const styles = StyleSheet.create({
   gymName: {
     fontSize: 12,
     fontWeight: "800",
-    color: Colors.primary,
     letterSpacing: 2,
     textTransform: "uppercase",
     marginBottom: 4,
@@ -329,15 +329,12 @@ const styles = StyleSheet.create({
   },
   wodDayBadge: {
     alignSelf: "flex-start",
-    backgroundColor: Colors.primary + "33",
     borderRadius: 20,
     paddingHorizontal: 14,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: Colors.primary + "55",
   },
   wodDayText: {
-    color: Colors.primary,
     fontSize: 12,
     fontWeight: "800",
     letterSpacing: 1.5,
@@ -345,7 +342,6 @@ const styles = StyleSheet.create({
 
   // Booking banner
   bookingBanner: {
-    backgroundColor: Colors.primary,
     marginHorizontal: 20,
     borderRadius: 28,
     paddingVertical: 14,
@@ -388,7 +384,6 @@ const styles = StyleSheet.create({
   wodMeta: {
     fontSize: 13,
     fontWeight: "700",
-    color: Colors.primary,
     letterSpacing: 0.5,
     marginBottom: 16,
   },
@@ -402,7 +397,6 @@ const styles = StyleSheet.create({
     width: 32,
     fontSize: 18,
     fontWeight: "800",
-    color: Colors.primary,
     textAlign: "right",
   },
   movementLabel: {
@@ -454,7 +448,6 @@ const styles = StyleSheet.create({
   },
   emptyText: { color: Colors.textSecondary, fontSize: 15 },
   ctaButton: {
-    backgroundColor: Colors.primary,
     borderRadius: 10,
     paddingHorizontal: 20,
     paddingVertical: 10,
@@ -505,7 +498,6 @@ const styles = StyleSheet.create({
   attendanceValue: {
     fontSize: 22,
     fontWeight: "800",
-    color: Colors.primary,
     marginBottom: 2,
   },
   attendanceLabel: {
@@ -582,5 +574,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  bookClassCtaText: { color: Colors.primary, fontWeight: "700", fontSize: 15 },
+  bookClassCtaText: { fontWeight: "700", fontSize: 15 },
 });

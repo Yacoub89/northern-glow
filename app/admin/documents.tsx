@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, Text
 import * as DocumentPicker from "expo-document-picker";
 import { api } from "../../convex/_generated/api";
 import { Colors } from "../../constants/Colors";
+import { useGymColors } from "../../constants/GymConfig";
 import { Ionicons } from "@expo/vector-icons";
 import { Id } from "../../convex/_generated/dataModel";
 
@@ -12,6 +13,7 @@ function formatDate(ts: number) {
 }
 
 export default function AdminDocuments() {
+  const { primary } = useGymColors();
   const docs = useQuery(api.documents.listAll);
   const [selectedDocId, setSelectedDocId] = useState<Id<"documents"> | null>(null);
   const sigs = useQuery(api.documents.getSignatures, selectedDocId ? { documentId: selectedDocId } : "skip");
@@ -77,7 +79,7 @@ export default function AdminDocuments() {
     <ScrollView style={s.container} contentContainerStyle={s.content}>
       <View style={s.pageHeader}>
         <Text style={s.title}>Documents</Text>
-        <Pressable style={s.addBtn} onPress={() => setShowCreate(!showCreate)}>
+        <Pressable style={[s.addBtn, { backgroundColor: primary }]} onPress={() => setShowCreate(!showCreate)}>
           <Ionicons name={showCreate ? "close" : "add"} size={16} color="#fff" />
           <Text style={s.addBtnText}>{showCreate ? "Cancel" : "New Document"}</Text>
         </Pressable>
@@ -88,10 +90,10 @@ export default function AdminDocuments() {
         <View style={s.createCard}>
           <Text style={s.createTitle}>New Document</Text>
           <View style={s.toggle}>
-            <Pressable style={[s.toggleBtn, !pdfMode && s.toggleActive]} onPress={() => setPdfMode(false)}>
+            <Pressable style={[s.toggleBtn, !pdfMode && { backgroundColor: primary }]} onPress={() => setPdfMode(false)}>
               <Text style={[s.toggleText, !pdfMode && s.toggleTextActive]}>Write Text</Text>
             </Pressable>
-            <Pressable style={[s.toggleBtn, pdfMode && s.toggleActive]} onPress={() => setPdfMode(true)}>
+            <Pressable style={[s.toggleBtn, pdfMode && { backgroundColor: primary }]} onPress={() => setPdfMode(true)}>
               <Text style={[s.toggleText, pdfMode && s.toggleTextActive]}>Upload PDF</Text>
             </Pressable>
           </View>
@@ -104,9 +106,9 @@ export default function AdminDocuments() {
           {pdfMode ? (
             <>
               <Text style={[s.fieldLabel, { marginTop: 12 }]}>PDF File</Text>
-              <Pressable style={s.pickBtn} onPress={handlePickPdf}>
-                <Ionicons name="cloud-upload-outline" size={18} color={Colors.primary} />
-                <Text style={s.pickBtnText}>{pickedPdf ? pickedPdf.name : "Choose PDF…"}</Text>
+              <Pressable style={[s.pickBtn, { borderColor: primary }]} onPress={handlePickPdf}>
+                <Ionicons name="cloud-upload-outline" size={18} color={primary} />
+                <Text style={[s.pickBtnText, { color: primary }]}>{pickedPdf ? pickedPdf.name : "Choose PDF…"}</Text>
               </Pressable>
             </>
           ) : (
@@ -117,7 +119,7 @@ export default function AdminDocuments() {
             </>
           )}
 
-          <Pressable style={[s.createBtn, (!canCreate || creating) && { opacity: 0.4 }]} onPress={handleCreate} disabled={!canCreate || creating}>
+          <Pressable style={[s.createBtn, { backgroundColor: primary }, (!canCreate || creating) && { opacity: 0.4 }]} onPress={handleCreate} disabled={!canCreate || creating}>
             <Text style={s.createBtnText}>{creating ? "Creating…" : "Create Document"}</Text>
           </Pressable>
         </View>
@@ -125,7 +127,7 @@ export default function AdminDocuments() {
 
       {/* Table */}
       {docs === undefined ? (
-        <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
+        <ActivityIndicator color={primary} style={{ marginTop: 40 }} />
       ) : (
         <View style={s.layout}>
           <View style={s.tableCard}>
@@ -141,7 +143,7 @@ export default function AdminDocuments() {
             ) : docs.map((doc) => (
               <Pressable
                 key={doc._id}
-                style={[s.tableRow, selectedDocId === doc._id && s.selectedRow]}
+                style={[s.tableRow, selectedDocId === doc._id && { backgroundColor: primary + "0f" }]}
                 onPress={() => setSelectedDocId(selectedDocId === doc._id ? null : doc._id)}
               >
                 <View style={{ flex: 2 }}>
@@ -165,14 +167,14 @@ export default function AdminDocuments() {
             <View style={s.sigPanel}>
               <Text style={s.sigPanelTitle}>Signatures</Text>
               {sigs === undefined ? (
-                <ActivityIndicator color={Colors.primary} />
+                <ActivityIndicator color={primary} />
               ) : sigs.length === 0 ? (
                 <Text style={s.emptyText}>No signatures yet</Text>
               ) : (
                 sigs.map((sig) => (
                   <View key={sig._id} style={s.sigRow}>
-                    <View style={s.sigAvatar}>
-                      <Text style={s.sigAvatarText}>{sig.signatureName[0].toUpperCase()}</Text>
+                    <View style={[s.sigAvatar, { backgroundColor: primary + "22" }]}>
+                      <Text style={[s.sigAvatarText, { color: primary }]}>{sig.signatureName[0].toUpperCase()}</Text>
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={s.sigName}>{sig.signatureName}</Text>
@@ -198,29 +200,29 @@ const s = StyleSheet.create({
   content: { padding: 32, paddingBottom: 60 },
   pageHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 20 },
   title: { fontSize: 28, fontWeight: "800", color: Colors.text },
-  addBtn: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: Colors.primary, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10 },
+  addBtn: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 10, paddingHorizontal: 16, paddingVertical: 10 },
   addBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
 
   createCard: { backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 20, marginBottom: 24 },
   createTitle: { fontSize: 16, fontWeight: "700", color: Colors.text, marginBottom: 16 },
   toggle: { flexDirection: "row", backgroundColor: Colors.background, borderRadius: 10, padding: 4, marginBottom: 16, gap: 4, alignSelf: "flex-start" },
   toggleBtn: { paddingVertical: 8, paddingHorizontal: 16, borderRadius: 7 },
-  toggleActive: { backgroundColor: Colors.primary },
+  toggleActive: {},
   toggleText: { fontSize: 13, fontWeight: "600", color: Colors.textSecondary },
   toggleTextActive: { color: "#fff" },
   fieldLabel: { fontSize: 11, fontWeight: "700", color: Colors.textSecondary, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 6 },
   fieldInput: { backgroundColor: Colors.background, borderRadius: 10, padding: 12, color: Colors.text, fontSize: 14, borderWidth: 1, borderColor: Colors.border, marginBottom: 4, outlineStyle: "none" } as any,
   contentInput: { height: 120, textAlignVertical: "top" },
-  pickBtn: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: Colors.background, borderRadius: 10, borderWidth: 1, borderColor: Colors.primary, borderStyle: "dashed", padding: 14, marginBottom: 4 },
-  pickBtnText: { fontSize: 14, color: Colors.primary, fontWeight: "600" },
-  createBtn: { backgroundColor: Colors.primary, borderRadius: 10, paddingVertical: 12, alignItems: "center", marginTop: 16 },
+  pickBtn: { flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: Colors.background, borderRadius: 10, borderWidth: 1, borderStyle: "dashed", padding: 14, marginBottom: 4 },
+  pickBtnText: { fontSize: 14, fontWeight: "600" },
+  createBtn: { borderRadius: 10, paddingVertical: 12, alignItems: "center", marginTop: 16 },
   createBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
 
   layout: { flexDirection: "row", gap: 20, alignItems: "flex-start" },
   tableCard: { flex: 1, backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, overflow: "hidden" },
   tableHeader: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: Colors.border, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: Colors.background, alignItems: "center" },
   tableRow: { flexDirection: "row", paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: Colors.border + "66", alignItems: "center" },
-  selectedRow: { backgroundColor: Colors.primary + "0f" },
+  selectedRow: {},
   cell: { fontSize: 14, color: Colors.textSecondary },
   head: { fontWeight: "700", color: Colors.textSecondary, fontSize: 11, textTransform: "uppercase", letterSpacing: 0.5 },
   deleteBtn: { width: 80, alignItems: "center", padding: 6 },
@@ -230,8 +232,8 @@ const s = StyleSheet.create({
   sigPanel: { width: 280, backgroundColor: Colors.surface, borderRadius: 14, borderWidth: 1, borderColor: Colors.border, padding: 16 },
   sigPanelTitle: { fontSize: 15, fontWeight: "700", color: Colors.text, marginBottom: 14 },
   sigRow: { flexDirection: "row", alignItems: "center", gap: 10, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: Colors.border },
-  sigAvatar: { width: 32, height: 32, borderRadius: 16, backgroundColor: Colors.primary + "22", justifyContent: "center", alignItems: "center" },
-  sigAvatarText: { color: Colors.primary, fontWeight: "700", fontSize: 13 },
+  sigAvatar: { width: 32, height: 32, borderRadius: 16, justifyContent: "center", alignItems: "center" },
+  sigAvatarText: { fontWeight: "700", fontSize: 13 },
   sigName: { fontSize: 14, fontWeight: "600", color: Colors.text },
   sigMeta: { fontSize: 11, color: Colors.textMuted, marginTop: 2 },
   sigBadge: { flexDirection: "row", alignItems: "center", gap: 4 },

@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { api } from "../convex/_generated/api";
 import { Id } from "../convex/_generated/dataModel";
 import { Colors } from "../constants/Colors";
+import { useGymColors } from "../constants/GymConfig";
 import { formatDate, formatTime } from "../utils/date";
 
 function Initials({ name }: { name: string }) {
@@ -32,6 +33,7 @@ function Initials({ name }: { name: string }) {
 }
 
 export default function RosterScreen() {
+  const { primary } = useGymColors();
   const params = useLocalSearchParams<{ classId?: string }>();
   const router = useRouter();
 
@@ -80,7 +82,7 @@ export default function RosterScreen() {
 
         {upcomingClasses === undefined ? (
           <View style={styles.centered}>
-            <ActivityIndicator color={Colors.primary} size="large" />
+            <ActivityIndicator color={primary} size="large" />
           </View>
         ) : upcomingClasses.length === 0 ? (
           <View style={[styles.emptyCard, { margin: 20 }]}>
@@ -117,7 +119,7 @@ export default function RosterScreen() {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centered}>
-          <ActivityIndicator color={Colors.primary} size="large" />
+          <ActivityIndicator color={primary} size="large" />
         </View>
       </SafeAreaView>
     );
@@ -141,11 +143,11 @@ export default function RosterScreen() {
           <Text style={styles.subtitle}>{checkedInCount}/{booked.length} checked in</Text>
         </View>
         <Pressable
-          style={styles.kioskBtn}
+          style={[styles.kioskBtn, { borderColor: primary }]}
           onPress={() => router.push({ pathname: "/kiosk", params: { classId } })}
         >
-          <Ionicons name="tv-outline" size={16} color={Colors.primary} />
-          <Text style={styles.kioskBtnText}>Kiosk</Text>
+          <Ionicons name="tv-outline" size={16} color={primary} />
+          <Text style={[styles.kioskBtnText, { color: primary }]}>Kiosk</Text>
         </Pressable>
       </View>
 
@@ -232,11 +234,10 @@ const styles = StyleSheet.create({
     gap: 5,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: Colors.primary,
     paddingHorizontal: 12,
     paddingVertical: 7,
   },
-  kioskBtnText: { color: Colors.primary, fontWeight: "700", fontSize: 13 },
+  kioskBtnText: { fontWeight: "700", fontSize: 13 },
   list: { padding: 20, paddingBottom: 40 },
   sectionLabel: {
     fontSize: 11,

@@ -16,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../convex/_generated/api";
 import { Doc } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
+import { useGymColors } from "../../constants/GymConfig";
 import { formatDate, formatTime } from "../../utils/date";
 import { useState } from "react";
 
@@ -35,6 +36,7 @@ function AddAvailabilityModal({
   visible: boolean;
   onClose: () => void;
 }) {
+  const { primary } = useGymColors();
   const [dayOfWeek, setDayOfWeek] = useState(1); // Mon
   const [startTime, setStartTime] = useState("09:00");
   const [duration, setDuration] = useState(60);
@@ -60,7 +62,7 @@ function AddAvailabilityModal({
             {DAY_NAMES.map((name, i) => (
               <Pressable
                 key={i}
-                style={[modal.chip, dayOfWeek === i && modal.chipActive]}
+                style={[modal.chip, dayOfWeek === i && [modal.chipActive, { backgroundColor: primary, borderColor: primary }]]}
                 onPress={() => setDayOfWeek(i)}
               >
                 <Text style={[modal.chipText, dayOfWeek === i && modal.chipTextActive]}>
@@ -75,7 +77,7 @@ function AddAvailabilityModal({
             {TIME_PRESETS.map((t) => (
               <Pressable
                 key={t}
-                style={[modal.chip, startTime === t && modal.chipActive]}
+                style={[modal.chip, startTime === t && [modal.chipActive, { backgroundColor: primary, borderColor: primary }]]}
                 onPress={() => setStartTime(t)}
               >
                 <Text style={[modal.chipText, startTime === t && modal.chipTextActive]}>
@@ -90,7 +92,7 @@ function AddAvailabilityModal({
             {DURATION_OPTIONS.map((d) => (
               <Pressable
                 key={d}
-                style={[modal.chip, duration === d && modal.chipActive]}
+                style={[modal.chip, duration === d && [modal.chipActive, { backgroundColor: primary, borderColor: primary }]]}
                 onPress={() => setDuration(d)}
               >
                 <Text style={[modal.chipText, duration === d && modal.chipTextActive]}>
@@ -104,7 +106,7 @@ function AddAvailabilityModal({
             <Pressable style={modal.cancelBtn} onPress={onClose}>
               <Text style={modal.cancelText}>Cancel</Text>
             </Pressable>
-            <Pressable style={modal.saveBtn} onPress={handleSave}>
+            <Pressable style={[modal.saveBtn, { backgroundColor: primary }]} onPress={handleSave}>
               <Text style={modal.saveText}>Save Slot</Text>
             </Pressable>
           </View>
@@ -115,6 +117,7 @@ function AddAvailabilityModal({
 }
 
 function AvailabilitySection() {
+  const { primary } = useGymColors();
   const [showModal, setShowModal] = useState(false);
   const availability = useQuery(api.appointments.getMyAvailability);
   const removeAvailability = useMutation(api.appointments.removeAvailability);
@@ -148,13 +151,13 @@ function AvailabilitySection() {
     <>
       <View style={[styles.sectionHeader, { marginTop: 24 }]}>
         <Text style={styles.sectionLabel}>1:1 Availability</Text>
-        <Pressable style={styles.addBtn} onPress={() => setShowModal(true)}>
+        <Pressable style={[styles.addBtn, { backgroundColor: primary }]} onPress={() => setShowModal(true)}>
           <Text style={styles.addBtnText}>+ Add Slot</Text>
         </Pressable>
       </View>
 
       {availability === undefined ? (
-        <ActivityIndicator color={Colors.primary} style={{ marginTop: 8 }} />
+        <ActivityIndicator color={primary} style={{ marginTop: 8 }} />
       ) : availability.length === 0 ? (
         <View style={styles.emptyCard}>
           <Text style={styles.emptyText}>No availability set</Text>
@@ -192,6 +195,7 @@ function AvailabilitySection() {
 }
 
 export default function ManageScreen() {
+  const { primary } = useGymColors();
   const router = useRouter();
 
   const today = getTodayDate();
@@ -223,7 +227,7 @@ export default function ManageScreen() {
   if (wodSchedule === undefined || upcomingClasses === undefined) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color={Colors.primary} size="large" />
+        <ActivityIndicator color={primary} size="large" />
       </View>
     );
   }
@@ -256,7 +260,7 @@ export default function ManageScreen() {
                   {wod ? (
                     <>
                       <View style={styles.wodCardTop}>
-                        <Text style={styles.wodBadge}>{wod.type}</Text>
+                        <Text style={[styles.wodBadge, { backgroundColor: primary }]}>{wod.type}</Text>
                         <Text style={styles.wodTitle} numberOfLines={1}>
                           {wod.title}
                         </Text>
@@ -270,7 +274,7 @@ export default function ManageScreen() {
                   )}
                 </View>
                 <Pressable
-                  style={[styles.wodActionBtn, wod && styles.wodEditBtn]}
+                  style={[styles.wodActionBtn, { backgroundColor: primary }, wod && styles.wodEditBtn]}
                   onPress={() =>
                     router.push({
                       pathname: "/wod-form",
@@ -288,7 +292,7 @@ export default function ManageScreen() {
             {/* Upcoming Classes */}
             <View style={[styles.sectionHeader, { marginTop: 16 }]}>
               <Text style={styles.sectionLabel}>Upcoming Classes</Text>
-              <Pressable style={styles.addBtn} onPress={() => router.push("/class-form")}>
+              <Pressable style={[styles.addBtn, { backgroundColor: primary }]} onPress={() => router.push("/class-form")}>
                 <Text style={styles.addBtnText}>+ Add</Text>
               </Pressable>
             </View>
@@ -311,10 +315,10 @@ export default function ManageScreen() {
             </View>
             <View style={styles.classActions}>
               <Pressable
-                style={styles.rosterBtn}
+                style={[styles.rosterBtn, { borderColor: primary + "66" }]}
                 onPress={() => router.push({ pathname: "/roster", params: { classId: item._id } })}
               >
-                <Text style={styles.rosterBtnText}>Roster</Text>
+                <Text style={[styles.rosterBtnText, { color: primary }]}>Roster</Text>
               </Pressable>
               <Pressable style={styles.deleteBtn} onPress={() => handleDeleteClass(item)}>
                 <Text style={styles.deleteBtnText}>Cancel</Text>
@@ -353,7 +357,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   addBtn: {
-    backgroundColor: Colors.primary,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 6,
@@ -379,7 +382,6 @@ const styles = StyleSheet.create({
   wodCardEmpty: { borderStyle: "dashed", borderColor: Colors.border },
   wodCardTop: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 },
   wodBadge: {
-    backgroundColor: Colors.primary,
     color: "#fff",
     fontSize: 10,
     fontWeight: "800",
@@ -393,7 +395,6 @@ const styles = StyleSheet.create({
   wodDesc: { fontSize: 12, color: Colors.textSecondary, lineHeight: 16 },
   noWodText: { fontSize: 13, color: Colors.textMuted, fontStyle: "italic" },
   wodActionBtn: {
-    backgroundColor: Colors.primary,
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
@@ -438,9 +439,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 7,
     borderWidth: 1,
-    borderColor: Colors.primary + "66",
   },
-  rosterBtnText: { color: Colors.primary, fontWeight: "600", fontSize: 13 },
+  rosterBtnText: { fontWeight: "600", fontSize: 13 },
   deleteBtn: {
     borderRadius: 8,
     paddingHorizontal: 14,
@@ -520,10 +520,7 @@ const modal = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  chipActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
+  chipActive: {},
   chipText: { color: Colors.textSecondary, fontWeight: "600", fontSize: 13 },
   chipTextActive: { color: "#fff" },
   actions: {
@@ -544,7 +541,6 @@ const modal = StyleSheet.create({
     flex: 1,
     padding: 14,
     borderRadius: 10,
-    backgroundColor: Colors.primary,
     alignItems: "center",
   },
   saveText: { color: "#fff", fontWeight: "700" },

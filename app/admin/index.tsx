@@ -49,12 +49,12 @@ export default function AdminDashboard() {
       </View>
 
       {loading ? (
-        <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
+        <ActivityIndicator color={gym.primaryColor} style={{ marginTop: 40 }} />
       ) : (
         <>
           {/* Stats row */}
           <View style={s.statsRow}>
-            <StatCard label="Total Members" value={totalMembers} icon="people" color={Colors.primary} />
+            <StatCard label="Total Members" value={totalMembers} icon="people" color={gym.primaryColor} />
             <StatCard label="Athletes" value={athletes} icon="barbell-outline" color="#007AFF" />
             <StatCard label="Coaches" value={coaches} icon="ribbon-outline" color={Colors.warning} />
             <StatCard label="Today's Bookings" value={totalBooked} icon="calendar" color={Colors.success} />

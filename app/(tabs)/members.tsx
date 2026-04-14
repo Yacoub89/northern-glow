@@ -9,20 +9,22 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../convex/_generated/api";
 import { Colors } from "../../constants/Colors";
-
-function roleBadgeColor(role?: string) {
-  if (role === "admin") return Colors.primary;
-  if (role === "coach") return Colors.warning ?? "#f59e0b";
-  return Colors.textSecondary;
-}
+import { useGymColors } from "../../constants/GymConfig";
 
 export default function MembersScreen() {
+  const { primary } = useGymColors();
   const members = useQuery(api.users.listMembers);
+
+  function roleBadgeColor(role?: string) {
+    if (role === "admin") return primary;
+    if (role === "coach") return Colors.warning ?? "#f59e0b";
+    return Colors.textSecondary;
+  }
 
   if (members === undefined) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color={Colors.primary} size="large" />
+        <ActivityIndicator color={primary} size="large" />
       </View>
     );
   }
@@ -39,8 +41,8 @@ export default function MembersScreen() {
         contentContainerStyle={styles.list}
         renderItem={({ item }) => (
           <View style={styles.card}>
-            <View style={styles.avatar}>
-              <Text style={styles.avatarText}>
+            <View style={[styles.avatar, { backgroundColor: primary + "22" }]}>
+              <Text style={[styles.avatarText, { color: primary }]}>
                 {(item.name ?? item.email ?? "?")[0].toUpperCase()}
               </Text>
             </View>
@@ -102,14 +104,12 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: Colors.primary + "22",
     justifyContent: "center",
     alignItems: "center",
   },
   avatarText: {
     fontSize: 18,
     fontWeight: "800",
-    color: Colors.primary,
   },
   info: { flex: 1 },
   name: { fontSize: 15, fontWeight: "700", color: Colors.text },

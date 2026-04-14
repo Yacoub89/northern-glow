@@ -5,11 +5,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../convex/_generated/api";
 import { Colors } from "../../constants/Colors";
+import { useGymColors } from "../../constants/GymConfig";
 
-function WodTabButton({ onPress }: { onPress: () => void }) {
+function WodTabButton({ onPress, primary }: { onPress: () => void; primary: string }) {
   return (
     <Pressable style={styles.wodBtn} onPress={onPress}>
-      <View style={styles.wodBtnInner}>
+      <View style={[styles.wodBtnInner, { backgroundColor: primary, shadowColor: primary }]}>
         <Ionicons name="arrow-down" size={22} color="#fff" />
       </View>
       <Text style={styles.wodBtnLabel}>WOD</Text>
@@ -22,11 +23,12 @@ export default function TabsLayout() {
   const me = useQuery(api.users.getMe);
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { primary } = useGymColors();
 
   if (isLoading || (isAuthenticated && me === undefined)) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color={Colors.primary} size="large" />
+        <ActivityIndicator color={primary} size="large" />
       </View>
     );
   }
@@ -42,7 +44,7 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: StyleSheet.flatten([styles.tabBar, { height: 72 + insets.bottom, paddingBottom: 8 + insets.bottom }]),
-        tabBarActiveTintColor: Colors.primary,
+        tabBarActiveTintColor: primary,
         tabBarInactiveTintColor: Colors.textSecondary,
         tabBarLabelStyle: { fontSize: 11, fontWeight: "600" },
       }}
@@ -88,6 +90,7 @@ export default function TabsLayout() {
         options={{
           tabBarButton: () => (
             <WodTabButton
+              primary={primary}
               onPress={() =>
                 isCoach
                   ? router.push("/wod-form")
@@ -154,11 +157,9 @@ const styles = StyleSheet.create({
     width: 52,
     height: 52,
     borderRadius: 26,
-    backgroundColor: Colors.primary,
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 2,
-    shadowColor: Colors.primary,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 8,

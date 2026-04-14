@@ -15,6 +15,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../convex/_generated/api";
 import { Colors } from "../constants/Colors";
+import { useGymColors } from "../constants/GymConfig";
 
 type Plan = "unlimited" | "twice_weekly";
 type Period = "monthly" | "annual";
@@ -61,6 +62,7 @@ const PRICES: Record<Plan, Record<Period, string>> = {
 };
 
 export default function MembershipScreen() {
+  const { primary } = useGymColors();
   const router = useRouter();
   const params = useLocalSearchParams<{
     status?: string;
@@ -187,13 +189,13 @@ export default function MembershipScreen() {
           return (
             <Pressable
               key={plan.id}
-              style={[styles.planCard, active && styles.planCardActive]}
+              style={[styles.planCard, active && { borderColor: primary, backgroundColor: Colors.surfaceElevated }]}
               onPress={() => setSelectedPlan(plan.id)}
             >
               <View style={styles.planCardRow}>
                 <View style={{ flex: 1 }}>
                   <Text
-                    style={[styles.planLabel, active && styles.planLabelActive]}
+                    style={[styles.planLabel, active && { color: primary }]}
                   >
                     {plan.label}
                   </Text>

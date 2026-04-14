@@ -3,20 +3,22 @@ import { useState } from "react";
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { api } from "../../convex/_generated/api";
 import { Colors } from "../../constants/Colors";
+import { useGymColors } from "../../constants/GymConfig";
 import { Ionicons } from "@expo/vector-icons";
 import { Id } from "../../convex/_generated/dataModel";
 
 const ROLES = ["athlete", "coach", "admin"] as const;
 
-function roleBadgeColor(role?: string) {
-  if (role === "admin") return Colors.primary;
-  if (role === "coach") return Colors.warning;
-  return Colors.textSecondary;
-}
-
 export default function AdminMembers() {
+  const { primary } = useGymColors();
   const members = useQuery(api.users.listMembers);
   const setRole = useMutation(api.users.setRole);
+
+  function roleBadgeColor(role?: string) {
+    if (role === "admin") return primary;
+    if (role === "coach") return Colors.warning;
+    return Colors.textSecondary;
+  }
   const [search, setSearch] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
 
@@ -59,7 +61,7 @@ export default function AdminMembers() {
       </View>
 
       {members === undefined ? (
-        <ActivityIndicator color={Colors.primary} style={{ marginTop: 40 }} />
+        <ActivityIndicator color={primary} style={{ marginTop: 40 }} />
       ) : (
         <View style={s.tableCard}>
           <View style={s.tableHeader}>

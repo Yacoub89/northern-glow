@@ -67,7 +67,7 @@ export default function GymSettingsScreen() {
   if (gym === undefined) {
     return (
       <View style={s.centered}>
-        <ActivityIndicator color={Colors.primary} size="large" />
+        <ActivityIndicator color={primaryColor} size="large" />
       </View>
     );
   }
@@ -104,9 +104,9 @@ export default function GymSettingsScreen() {
           <Text style={s.title}>Gym Settings</Text>
           <Pressable onPress={handleSave} disabled={saving} style={s.saveBtn}>
             {saving ? (
-              <ActivityIndicator size="small" color={Colors.primary} />
+              <ActivityIndicator size="small" color={primaryColor} />
             ) : (
-              <Text style={s.saveBtnText}>Save</Text>
+              <Text style={[s.saveBtnText, { color: primaryColor }]}>Save</Text>
             )}
           </Pressable>
         </View>
@@ -205,7 +205,7 @@ const s = StyleSheet.create({
   backBtn: { padding: 4 },
   title: { fontSize: 17, fontWeight: "700", color: Colors.text },
   saveBtn: { paddingHorizontal: 4, paddingVertical: 4, minWidth: 44, alignItems: "flex-end" },
-  saveBtnText: { fontSize: 16, fontWeight: "700", color: Colors.primary },
+  saveBtnText: { fontSize: 16, fontWeight: "700" },
 
   content: { padding: 20, paddingBottom: 60 },
 

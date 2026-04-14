@@ -28,7 +28,7 @@ export default function AdminLayout() {
   if (isLoading || (isAuthenticated && me === undefined)) {
     return (
       <View style={s.splash}>
-        <ActivityIndicator color={Colors.primary} size="large" />
+        <ActivityIndicator color={gym.primaryColor} size="large" />
       </View>
     );
   }
@@ -78,8 +78,8 @@ export default function AdminLayout() {
 
         <View style={s.sidebarFooter}>
           <View style={s.meRow}>
-            <View style={s.meAvatar}>
-              <Text style={s.meAvatarText}>{(me?.name ?? "A")[0].toUpperCase()}</Text>
+            <View style={[s.meAvatar, { backgroundColor: gym.primaryColor + "33" }]}>
+              <Text style={[s.meAvatarText, { color: gym.primaryColor }]}>{(me?.name ?? "A")[0].toUpperCase()}</Text>
             </View>
             <View>
               <Text style={s.meName}>{me?.name ?? me?.email}</Text>
@@ -136,11 +136,10 @@ const s = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.primary + "33",
     justifyContent: "center",
     alignItems: "center",
   },
-  meAvatarText: { color: Colors.primary, fontWeight: "700", fontSize: 14 },
+  meAvatarText: { fontWeight: "700", fontSize: 14 },
   meName: { fontSize: 13, fontWeight: "600", color: Colors.text },
   meRole: { fontSize: 11, color: Colors.textMuted, textTransform: "capitalize" },
 

@@ -17,6 +17,7 @@ import { useRouter } from "expo-router";
 import { api } from "../../convex/_generated/api";
 import { Doc } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
+import { useGymColors } from "../../constants/GymConfig";
 import { formatDate, formatTime } from "../../utils/date";
 
 function ConfirmModal({
@@ -36,6 +37,7 @@ function ConfirmModal({
   onConfirm: () => void;
   onCancel: () => void;
 }) {
+  const { primary } = useGymColors();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <Pressable style={confirmStyles.overlay} onPress={onCancel}>
@@ -47,7 +49,7 @@ function ConfirmModal({
               <Text style={confirmStyles.cancelText}>Cancel</Text>
             </Pressable>
             <Pressable
-              style={[confirmStyles.confirmBtn, destructive && confirmStyles.confirmBtnDestructive]}
+              style={[confirmStyles.confirmBtn, { backgroundColor: primary }, destructive && confirmStyles.confirmBtnDestructive]}
               onPress={onConfirm}
             >
               <Text style={[confirmStyles.confirmText, destructive && confirmStyles.confirmTextDestructive]}>
@@ -69,6 +71,7 @@ function formatMemberSince(ts: number) {
 }
 
 export default function ProfileScreen() {
+  const { primary } = useGymColors();
   const router = useRouter();
   const { signOut } = useAuthActions();
   const me = useQuery(api.users.getMe);
@@ -92,7 +95,7 @@ export default function ProfileScreen() {
   if (me === undefined) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color={Colors.primary} size="large" />
+        <ActivityIndicator color={primary} size="large" />
       </View>
     );
   }
@@ -167,15 +170,15 @@ export default function ProfileScreen() {
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.avatar}>
+          <View style={[styles.avatar, { backgroundColor: primary }]}>
             <Text style={styles.avatarInitials}>{initials}</Text>
           </View>
           <View style={styles.headerInfo}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 2 }}>
               <Text style={styles.name}>{me?.name ?? "Unknown"}</Text>
               {isCoachOrAdmin && (
-                <View style={styles.roleBadge}>
-                  <Text style={styles.roleBadgeText}>
+                <View style={[styles.roleBadge, { backgroundColor: primary + "22" }]}>
+                  <Text style={[styles.roleBadgeText, { color: primary }]}>
                     {me?.role === "admin" ? "Admin" : "Coach"}
                   </Text>
                 </View>
@@ -249,15 +252,15 @@ export default function ProfileScreen() {
         {!isCoachOrAdmin && (
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{stats?.classesAttended ?? "—"}</Text>
+              <Text style={[styles.statValue, { color: primary }]}>{stats?.classesAttended ?? "—"}</Text>
               <Text style={styles.statLabel}>Classes</Text>
             </View>
             <View style={[styles.statBox, styles.statBoxMiddle]}>
-              <Text style={styles.statValue}>{stats?.wodsLogged ?? "—"}</Text>
+              <Text style={[styles.statValue, { color: primary }]}>{stats?.wodsLogged ?? "—"}</Text>
               <Text style={styles.statLabel}>WODs logged</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={styles.statValue}>{stats?.prsSet ?? "—"}</Text>
+              <Text style={[styles.statValue, { color: primary }]}>{stats?.prsSet ?? "—"}</Text>
               <Text style={styles.statLabel}>PRs set</Text>
             </View>
           </View>
@@ -271,7 +274,7 @@ export default function ProfileScreen() {
               style={styles.settingsRow}
               onPress={() => router.push("/(tabs)/members")}
             >
-              <Ionicons name="people" size={20} color={Colors.primary} style={{ marginRight: 12 }} />
+              <Ionicons name="people" size={20} color={primary} style={{ marginRight: 12 }} />
               <Text style={styles.settingsRowText}>Members</Text>
               <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
             </Pressable>
@@ -279,7 +282,7 @@ export default function ProfileScreen() {
               style={styles.settingsRow}
               onPress={() => router.push("/(tabs)/manage")}
             >
-              <Ionicons name="calendar" size={20} color={Colors.primary} style={{ marginRight: 12 }} />
+              <Ionicons name="calendar" size={20} color={primary} style={{ marginRight: 12 }} />
               <Text style={styles.settingsRowText}>Manage Schedule & WODs</Text>
               <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
             </Pressable>
@@ -287,7 +290,7 @@ export default function ProfileScreen() {
               style={styles.settingsRow}
               onPress={() => router.push("/(tabs)/documents")}
             >
-              <Ionicons name="document-text" size={20} color={Colors.primary} style={{ marginRight: 12 }} />
+              <Ionicons name="document-text" size={20} color={primary} style={{ marginRight: 12 }} />
               <Text style={styles.settingsRowText}>Documents & Waivers</Text>
               <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
             </Pressable>
@@ -296,7 +299,7 @@ export default function ProfileScreen() {
                 style={[styles.settingsRow, { marginBottom: 28 }]}
                 onPress={() => router.push("/gym-settings")}
               >
-                <Ionicons name="settings-outline" size={20} color={Colors.primary} style={{ marginRight: 12 }} />
+                <Ionicons name="settings-outline" size={20} color={primary} style={{ marginRight: 12 }} />
                 <Text style={styles.settingsRowText}>Gym Settings</Text>
                 <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
               </Pressable>
@@ -312,7 +315,7 @@ export default function ProfileScreen() {
               style={[styles.settingsRow, { marginBottom: 28 }]}
               onPress={() => router.push("/(tabs)/documents")}
             >
-              <Ionicons name="document-text" size={20} color={Colors.primary} style={{ marginRight: 12 }} />
+              <Ionicons name="document-text" size={20} color={primary} style={{ marginRight: 12 }} />
               <Text style={styles.settingsRowText}>Documents & Waivers</Text>
               <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
             </Pressable>
@@ -324,13 +327,13 @@ export default function ProfileScreen() {
           <>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionLabel}>Personal Records</Text>
-              <Pressable style={styles.addBtn} onPress={() => setPrModalVisible(true)}>
+              <Pressable style={[styles.addBtn, { backgroundColor: primary }]} onPress={() => setPrModalVisible(true)}>
                 <Text style={styles.addBtnText}>+ Add</Text>
               </Pressable>
             </View>
 
             {prs === undefined ? (
-              <ActivityIndicator color={Colors.primary} style={{ marginBottom: 20 }} />
+              <ActivityIndicator color={primary} style={{ marginBottom: 20 }} />
             ) : prs.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyText}>No PRs yet — add your first one!</Text>
@@ -344,7 +347,7 @@ export default function ProfileScreen() {
                     onLongPress={() => handleDeletePR(pr)}
                   >
                     <Text style={styles.prMovement}>{pr.movement}</Text>
-                    <Text style={styles.prScore}>{pr.score}</Text>
+                    <Text style={[styles.prScore, { color: primary }]}>{pr.score}</Text>
                   </Pressable>
                 ))}
               </View>
@@ -356,7 +359,7 @@ export default function ProfileScreen() {
             </View>
 
             {upcomingBookings === undefined ? (
-              <ActivityIndicator color={Colors.primary} style={{ marginBottom: 20 }} />
+              <ActivityIndicator color={primary} style={{ marginBottom: 20 }} />
             ) : upcomingBookings.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Text style={styles.emptyText}>No upcoming bookings</Text>
@@ -434,7 +437,7 @@ export default function ProfileScreen() {
           />
 
           <Pressable
-            style={[styles.modalSaveBtn, savingPR && { opacity: 0.6 }]}
+            style={[styles.modalSaveBtn, { backgroundColor: primary }, savingPR && { opacity: 0.6 }]}
             onPress={handleSavePR}
             disabled={savingPR}
           >
@@ -469,7 +472,6 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: Colors.primary,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -479,7 +481,6 @@ const styles = StyleSheet.create({
   memberSince: { fontSize: 13, color: Colors.textSecondary },
   signOutIcon: { padding: 4 },
   roleBadge: {
-    backgroundColor: Colors.primary + "22",
     borderRadius: 6,
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -487,7 +488,6 @@ const styles = StyleSheet.create({
   roleBadgeText: {
     fontSize: 11,
     fontWeight: "700",
-    color: Colors.primary,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
@@ -535,7 +535,6 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 28,
     fontWeight: "800",
-    color: Colors.primary,
     marginBottom: 4,
   },
   statLabel: {
@@ -560,7 +559,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   addBtn: {
-    backgroundColor: Colors.primary,
     borderRadius: 8,
     paddingHorizontal: 14,
     paddingVertical: 6,
@@ -603,7 +601,7 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border,
   },
   prMovement: { fontSize: 16, color: Colors.text, fontWeight: "500" },
-  prScore: { fontSize: 16, fontWeight: "700", color: Colors.primary },
+  prScore: { fontSize: 16, fontWeight: "700" },
 
   // Bookings
   bookingCard: {
@@ -675,7 +673,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   modalSaveBtn: {
-    backgroundColor: Colors.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
@@ -734,7 +731,6 @@ const confirmStyles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 10,
-    backgroundColor: Colors.primary,
     alignItems: "center",
   },
   confirmBtnDestructive: {
