@@ -15,6 +15,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { api } from "../convex/_generated/api";
 import { Id } from "../convex/_generated/dataModel";
 import { Colors } from "../constants/Colors";
+import { useGymColors } from "../constants/GymConfig";
 
 function Initials({ name, size = 56 }: { name: string; size?: number }) {
   const initials = (name ?? "?")
@@ -46,6 +47,7 @@ function CheckedInBanner({ name, onDismiss }: { name: string; onDismiss: () => v
 }
 
 export default function KioskScreen() {
+  const { primary } = useGymColors();
   const { classId } = useLocalSearchParams<{ classId: string }>();
   const router = useRouter();
   const [lastCheckedIn, setLastCheckedIn] = useState<string | null>(null);
@@ -62,7 +64,7 @@ export default function KioskScreen() {
   if (roster === undefined) {
     return (
       <View style={kioskStyles.centered}>
-        <ActivityIndicator color={Colors.primary} size="large" />
+        <ActivityIndicator color={primary} size="large" />
       </View>
     );
   }

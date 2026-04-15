@@ -103,7 +103,7 @@ export default function RegisterScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={styles.inner}>
-          <Text style={[styles.logo, { color: primary }]}>OCFit</Text>
+          <Text style={[styles.logo, { color: primary }]}>NorthernGlow</Text>
           <Text style={styles.tagline}>Check your email</Text>
           <Text style={styles.subtitle}>
             We sent a 6-digit code to{"\n"}
@@ -153,7 +153,7 @@ export default function RegisterScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.inner}>
-        <Text style={[styles.logo, { color: primary }]}>OCFit</Text>
+        <Text style={[styles.logo, { color: primary }]}>NorthernGlow</Text>
         <Text style={styles.tagline}>Create your account</Text>
 
         <View style={styles.form}>

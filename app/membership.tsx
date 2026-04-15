@@ -202,12 +202,12 @@ export default function MembershipScreen() {
                   <Text style={styles.planTagline}>{plan.tagline}</Text>
                 </View>
                 <Text
-                  style={[styles.planPrice, active && styles.planPriceActive]}
+                  style={[styles.planPrice, active && { color: primary }]}
                 >
                   {PRICES[plan.id][selectedPeriod]}
                 </Text>
-                <View style={[styles.radio, active && styles.radioActive]}>
-                  {active && <View style={styles.radioDot} />}
+                <View style={[styles.radio, active && { borderColor: primary }]}>
+                  {active && <View style={[styles.radioDot, { backgroundColor: primary }]} />}
                 </View>
               </View>
               <View style={styles.featureList}>
@@ -216,7 +216,7 @@ export default function MembershipScreen() {
                     <Ionicons
                       name="checkmark"
                       size={14}
-                      color={active ? Colors.primary : Colors.textSecondary}
+                      color={active ? primary : Colors.textSecondary}
                     />
                     <Text style={styles.featureText}>{f}</Text>
                   </View>
@@ -236,7 +236,7 @@ export default function MembershipScreen() {
             return (
               <Pressable
                 key={p.id}
-                style={[styles.periodBtn, active && styles.periodBtnActive]}
+                style={[styles.periodBtn, active && { borderColor: primary, backgroundColor: Colors.surfaceElevated }]}
                 onPress={() => setSelectedPeriod(p.id)}
               >
                 <Text
@@ -248,8 +248,8 @@ export default function MembershipScreen() {
                   {p.label}
                 </Text>
                 {p.badge && (
-                  <View style={styles.badgeContainer}>
-                    <Text style={styles.badgeText}>{p.badge}</Text>
+                  <View style={[styles.badgeContainer, { backgroundColor: primary + "33" }]}>
+                    <Text style={[styles.badgeText, { color: primary }]}>{p.badge}</Text>
                   </View>
                 )}
               </Pressable>
@@ -260,7 +260,7 @@ export default function MembershipScreen() {
         {/* Subscribe CTA */}
         {!isActive && (
           <Pressable
-            style={[styles.subscribeBtn, loading && { opacity: 0.6 }]}
+            style={[styles.subscribeBtn, { backgroundColor: primary }, loading && { opacity: 0.6 }]}
             onPress={handleSubscribe}
             disabled={loading}
           >
@@ -343,10 +343,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Colors.border,
   },
-  planCardActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.surfaceElevated,
-  },
+  planCardActive: {},
   planCardRow: {
     flexDirection: "row",
     alignItems: "center",
@@ -359,10 +356,10 @@ const styles = StyleSheet.create({
     color: Colors.text,
     marginBottom: 2,
   },
-  planLabelActive: { color: Colors.primary },
+  planLabelActive: {},
   planTagline: { fontSize: 13, color: Colors.textSecondary },
   planPrice: { fontSize: 15, fontWeight: "700", color: Colors.textSecondary },
-  planPriceActive: { color: Colors.primary },
+  planPriceActive: {},
   radio: {
     width: 22,
     height: 22,
@@ -372,12 +369,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  radioActive: { borderColor: Colors.primary },
+  radioActive: {},
   radioDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: Colors.primary,
   },
   featureList: { gap: 6 },
   featureRow: { flexDirection: "row", alignItems: "center", gap: 8 },
@@ -393,23 +389,18 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Colors.border,
   },
-  periodBtnActive: {
-    borderColor: Colors.primary,
-    backgroundColor: Colors.surfaceElevated,
-  },
+  periodBtnActive: {},
   periodLabel: { fontSize: 14, fontWeight: "600", color: Colors.textSecondary },
   periodLabelActive: { color: Colors.text },
   badgeContainer: {
     marginTop: 4,
-    backgroundColor: Colors.primary + "33",
     borderRadius: 4,
     paddingHorizontal: 6,
     paddingVertical: 2,
   },
-  badgeText: { fontSize: 10, fontWeight: "700", color: Colors.primary },
+  badgeText: { fontSize: 10, fontWeight: "700" },
 
   subscribeBtn: {
-    backgroundColor: Colors.primary,
     borderRadius: 14,
     paddingVertical: 18,
     alignItems: "center",

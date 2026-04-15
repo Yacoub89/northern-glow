@@ -38,7 +38,7 @@ http.route({
     const url = new URL(req.url);
     const status = url.searchParams.get("status") ?? "cancelled";
     const sessionId = url.searchParams.get("session_id") ?? "";
-    const deepLink = `ocfit://membership?status=${status}${sessionId ? `&session_id=${encodeURIComponent(sessionId)}` : ""}`;
+    const deepLink = `northernglow://membership?status=${status}${sessionId ? `&session_id=${encodeURIComponent(sessionId)}` : ""}`;
 
     const html = `<!DOCTYPE html>
 <html>
