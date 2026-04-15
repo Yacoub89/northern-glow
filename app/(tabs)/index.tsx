@@ -1,5 +1,4 @@
 import { useQuery } from "convex/react";
-import { useState } from "react";
 import { useRouter } from "expo-router";
 import {
   ActivityIndicator,
@@ -13,284 +12,374 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../convex/_generated/api";
 import { Colors } from "../../constants/Colors";
-import { useGymColors, useGymConfig } from "../../constants/GymConfig";
-import { formatTime, getTodayDate } from "../../utils/date";
+import { Fonts, FontSizes } from "../../constants/Typography";
+import { useGymColors } from "../../constants/GymConfig";
+import { getTodayDate } from "../../utils/date";
 
-function getGreeting(name?: string): string {
-  const h = new Date().getHours();
-  const first = name?.split(" ")[0] ?? "Athlete";
-  if (h < 12) return `Good morning, ${first}!`;
-  if (h < 17) return `Good afternoon, ${first}!`;
-  return `Good evening, ${first}!`;
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function getWodSubtitle(wod: { type: string; description: string }): string {
+  const text = `${wod.type} ${wod.description}`;
+  const m = text.match(/(\d+)[\s-]?min/i);
+  const mins = m ? parseInt(m[1]) : wod.type === "AMRAP" ? 20 : null;
+  if (wod.type === "AMRAP") return mins ? `AMRAP ${mins} MINUTES` : "AMRAP";
+  if (wod.type === "ForTime") return mins ? `FOR TIME (${mins} MIN CAP)` : "FOR TIME";
+  if (wod.type === "EMOM") return mins ? `EMOM ${mins} MINUTES` : "EMOM";
+  if (wod.type === "Strength") return "STRENGTH WORK";
+  return "WORKOUT";
 }
 
-function getTodayLabel(): string {
-  const d = new Date();
-  return d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+function computeStreak(history: Array<{ date: string }>): number {
+  if (!history?.length) return 0;
+  const dateSet = new Set(history.map((h) => h.date));
+  const today = new Date();
+  let streak = 0;
+  for (let i = 0; i < 90; i++) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const s = d.toISOString().split("T")[0];
+    if (dateSet.has(s)) {
+      streak++;
+    } else if (i === 0) {
+      continue;
+    } else {
+      break;
+    }
+  }
+  return streak;
 }
 
-function parseMovement(text: string): { num: string | null; label: string } {
-  const match = text.match(/^(\d+(?:\+\d+)?)\s+(.+)/);
-  if (match) return { num: match[1], label: match[2] };
-  return { num: null, label: text };
-}
-
-function computeStats(scores: string[]): { top: string | null; avg: string | null } {
-  const nums = scores
-    .map((s) => { const m = s.match(/^(\d+)/); return m ? parseInt(m[1]) : null; })
-    .filter((n): n is number => n !== null);
-  if (!nums.length) return { top: null, avg: null };
-  const suffix = scores[0]?.replace(/^\d+/, "").trim() || "rds";
+function splitFormattedTime(time: string): { hour: string; period: string } {
+  // time is "HH:MM" 24h format
+  const [h] = time.split(":").map(Number);
+  const hour = h % 12 || 12;
   return {
-    top: `${Math.max(...nums)} ${suffix}`,
-    avg: `${Math.round(nums.reduce((a, b) => a + b, 0) / nums.length)} ${suffix}`,
+    hour: `${hour}:${time.split(":")[1]}`,
+    period: h >= 12 ? "PM" : "AM",
   };
 }
 
+function getLast7Days(): string[] {
+  const days: string[] = [];
+  const today = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    days.push(d.toISOString().split("T")[0]);
+  }
+  return days;
+}
+
+function getDayAbbr(dateStr: string): string {
+  const [y, mo, d] = dateStr.split("-").map(Number);
+  return new Date(y, mo - 1, d)
+    .toLocaleDateString("en-US", { weekday: "short" })
+    .toUpperCase()
+    .slice(0, 3);
+}
+
+// ─── Screen ───────────────────────────────────────────────────────────────────
+
 export default function HomeScreen() {
-  const gym = useGymConfig();
   const { primary } = useGymColors();
   const today = getTodayDate();
   const router = useRouter();
 
   const me = useQuery(api.users.getMe);
-  const wod = useQuery(api.wods.getByDate, { date: today });
-  const todayBooking = useQuery(api.bookings.getMyUpcomingBooking, { date: today });
-  const upcomingBookings = useQuery(api.bookings.getMyUpcoming);
-  const wodStats = useQuery(
-    api.results.getWodStats,
-    wod?._id ? { wodId: wod._id } : "skip"
-  );
+  const hasGym = !!me?.gymId;
+
+  const wod = useQuery(api.wods.getByDate, hasGym ? { date: today } : "skip");
+  const todayBooking = useQuery(api.bookings.getMyUpcomingBooking, hasGym ? { date: today } : "skip");
+  const upcomingBookings = useQuery(api.bookings.getMyUpcoming, hasGym ? {} : "skip");
 
   const isCoach = me?.role === "coach" || me?.role === "admin";
 
   const attendanceStats = useQuery(
     api.bookings.getMyAttendanceStats,
-    isCoach || me === undefined ? "skip" : undefined
+    !hasGym || isCoach || me === undefined ? "skip" : undefined
   );
 
-  const [showCheckIns, setShowCheckIns] = useState(false);
+  const myPRs = useQuery(
+    api.personalRecords.getMyPRs,
+    !hasGym || isCoach || me === undefined ? "skip" : undefined
+  );
 
-  const isLoading =
-    me === undefined ||
-    wod === undefined ||
-    todayBooking === undefined;
+  const todayClasses = useQuery(api.classes.getUpcoming, hasGym ? { days: 1 } : "skip");
 
-  if (isLoading) {
+  if (me === undefined || !hasGym || (hasGym && (wod === undefined || todayBooking === undefined))) {
     return (
-      <View style={styles.centered}>
+      <View style={sc.centered}>
         <ActivityIndicator color={primary} size="large" />
       </View>
     );
   }
 
-  const spotsLeft = todayBooking
-    ? todayBooking.slot.capacity - todayBooking.slot.bookedCount
+  const streak = attendanceStats ? computeStreak(attendanceStats.checkInHistory) : 0;
+
+  // Most recent PR (sorted by setAt descending)
+  const recentPR = myPRs
+    ? [...myPRs].sort((a, b) => b.setAt - a.setAt)[0]
     : null;
 
-  const stats = wodStats ? computeStats(wodStats.scores) : null;
+  // Today's classes with my booking status
+  const todayClassList = todayClasses ?? [];
+
+  // Last 7 days for performance chart
+  const last7 = getLast7Days();
+  const attendedDates = new Set(
+    attendanceStats?.checkInHistory?.map((h) => h.date) ?? []
+  );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={[styles.gymName, { color: primary }]}>{gym.name.toUpperCase()}</Text>
-          <Text style={styles.dateText}>{getTodayLabel()}</Text>
-          <Text style={styles.greeting}>{getGreeting(me?.name)}</Text>
-          {wod && (
-            <View style={[styles.wodDayBadge, { backgroundColor: primary + "33", borderColor: primary + "55" }]}>
-              <Text style={[styles.wodDayText, { color: primary }]}>WOD DAY</Text>
+    <SafeAreaView style={sc.container} edges={[]}>
+      <ScrollView contentContainerStyle={sc.scroll} showsVerticalScrollIndicator={false}>
+
+        {/* ── WOD Hero ── */}
+        <View style={sc.wodHero}>
+          <View style={sc.wodHeroHeader}>
+            <View style={{ flex: 1 }}>
+              {wod ? (
+                <>
+                  <Text style={sc.wodSubtitle}>{getWodSubtitle(wod)}</Text>
+                  <Text style={sc.wodTitle}>{wod.title.toUpperCase()}</Text>
+                </>
+              ) : (
+                <Text style={sc.wodTitle}>NO WOD TODAY</Text>
+              )}
+            </View>
+
+            {wod && !isCoach && (
+              <Pressable
+                style={[sc.logBtn, { backgroundColor: primary }]}
+                onPress={() => router.push("/(tabs)/wod-placeholder")}
+              >
+                <Text style={[sc.logBtnText, { color: Colors.onPrimary }]}>LOG</Text>
+                <Ionicons name="add-circle-outline" size={16} color={Colors.onPrimary} />
+              </Pressable>
+            )}
+
+            {wod && isCoach && (
+              <Pressable
+                style={[sc.logBtn, { backgroundColor: Colors.surfaceContainerHighest }]}
+                onPress={() => router.push("/(tabs)/wod-placeholder")}
+              >
+                <Text style={[sc.logBtnText, { color: primary }]}>EDIT</Text>
+                <Ionicons name="create-outline" size={16} color={primary} />
+              </Pressable>
+            )}
+
+            {!wod && isCoach && (
+              <Pressable
+                style={[sc.logBtn, { backgroundColor: primary }]}
+                onPress={() => router.push("/(tabs)/wod-placeholder")}
+              >
+                <Text style={[sc.logBtnText, { color: Colors.onPrimary }]}>POST</Text>
+                <Ionicons name="add-circle-outline" size={16} color={Colors.onPrimary} />
+              </Pressable>
+            )}
+          </View>
+
+          {wod && wod.movements.length > 0 && (
+            <View style={sc.movementList}>
+              {wod.movements.map((m, i) => (
+                <Text key={i} style={sc.movementItem}>{m}</Text>
+              ))}
             </View>
           )}
         </View>
 
-        {/* Booking banner */}
-        {!isCoach && todayBooking?.booking.status === "booked" && (
-          <View style={[styles.bookingBanner, { backgroundColor: primary }]}>
-            <Text style={styles.bookingBannerText}>
-              You're booked for {formatTime(todayBooking.slot.startTime)}
-              {spotsLeft !== null && spotsLeft <= 5
-                ? ` — ${spotsLeft} spot${spotsLeft !== 1 ? "s" : ""} left`
-                : ""}
-            </Text>
-          </View>
-        )}
-
-        {/* Today's WOD */}
-        <Text style={styles.sectionLabel}>TODAY'S WOD</Text>
-        {wod ? (
-          <View style={styles.wodCard}>
-            <Text style={styles.wodTitle}>{wod.title}</Text>
-            <Text style={[styles.wodMeta, { color: primary }]}>
-              {wod.type.toUpperCase()}
-              {wod.description ? ` · ${wod.description.toUpperCase()}` : ""}
-            </Text>
-
-            {wod.movements.length > 0 && (
-              <View style={styles.movements}>
-                {wod.movements.map((m, i) => {
-                  const { num, label } = parseMovement(m);
-                  return (
-                    <View key={i} style={styles.movementRow}>
-                      <Text style={[styles.movementNum, { color: primary }]}>{num ?? "·"}</Text>
-                      <Text style={styles.movementLabel}>{label}</Text>
-                    </View>
-                  );
-                })}
+        {/* ── Stat cards ── */}
+        {!isCoach && (
+          <View style={sc.statsRow}>
+            {/* Recent PR */}
+            <View style={sc.statCard}>
+              <View style={sc.statCardHeader}>
+                <Ionicons name="trophy-outline" size={13} color={primary} />
+                <Text style={sc.statLabel}>RECENT PR</Text>
               </View>
-            )}
-
-            {/* Stats */}
-            {(stats?.top || (wodStats?.count ?? 0) > 0) && (
-              <View style={styles.statsRow}>
-                {stats?.top && (
-                  <View style={styles.statBox}>
-                    <Text style={styles.statLabel}>Top score</Text>
-                    <Text style={styles.statValue}>{stats.top}</Text>
-                  </View>
-                )}
-                {stats?.avg && (
-                  <View style={styles.statBox}>
-                    <Text style={styles.statLabel}>Avg score</Text>
-                    <Text style={styles.statValue}>{stats.avg}</Text>
-                  </View>
-                )}
-                <View style={styles.statBox}>
-                  <Text style={styles.statLabel}>Athletes</Text>
-                  <Text style={styles.statValue}>{wodStats?.count ?? 0}</Text>
-                </View>
-              </View>
-            )}
-          </View>
-        ) : (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No WOD posted yet</Text>
-            {isCoach && (
-              <Pressable style={[styles.ctaButton, { backgroundColor: primary }]} onPress={() => router.push("/wod-form")}>
-                <Text style={styles.ctaButtonText}>+ Post Today's WOD</Text>
-              </Pressable>
-            )}
-          </View>
-        )}
-
-        {/* Upcoming Classes */}
-        {!isCoach && (upcomingBookings?.length ?? 0) > 0 && (
-          <>
-            <Text style={[styles.sectionLabel, { marginTop: 28 }]}>UPCOMING CLASSES</Text>
-            {upcomingBookings!.map(({ booking, cls, coachName }) => (
-              <View key={booking._id} style={styles.classCard}>
-                <View>
-                  <Text style={styles.classTime}>{formatTime(cls.startTime)}</Text>
-                  <Text style={styles.classCoach}>Coach {coachName}</Text>
-                </View>
-                <View
-                  style={[
-                    styles.classStatusBadge,
-                    booking.status === "waitlist" && styles.classStatusWaitlist,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.classStatusText,
-                      booking.status === "waitlist" && styles.classStatusTextWaitlist,
-                    ]}
-                  >
-                    {booking.status === "waitlist"
-                      ? `Waitlist #${booking.waitlistPosition}`
-                      : "Booked"}
+              {recentPR ? (
+                <>
+                  <Text style={sc.prMovement}>
+                    {recentPR.movement.toUpperCase()}
                   </Text>
-                </View>
-              </View>
-            ))}
-          </>
-        )}
-
-        {/* Attendance Stats — athletes only */}
-        {!isCoach && attendanceStats !== undefined && attendanceStats !== null && (
-          <>
-            <Text style={[styles.sectionLabel, { marginTop: 28 }]}>MY ATTENDANCE</Text>
-            <View style={styles.attendanceRow}>
-              <View style={styles.attendanceBox}>
-                <Text style={[styles.attendanceValue, { color: primary }]}>{attendanceStats.thisWeek}</Text>
-                <Text style={styles.attendanceLabel}>This Week</Text>
-              </View>
-              <View style={styles.attendanceBox}>
-                <Text style={[styles.attendanceValue, { color: primary }]}>{attendanceStats.thisMonth}</Text>
-                <Text style={styles.attendanceLabel}>This Month</Text>
-              </View>
-              <View style={styles.attendanceBox}>
-                <Text style={[styles.attendanceValue, { color: primary }]}>{attendanceStats.thisYear}</Text>
-                <Text style={styles.attendanceLabel}>This Year</Text>
-              </View>
-              <View style={styles.attendanceBox}>
-                <Text style={[styles.attendanceValue, { color: primary }]}>{attendanceStats.allTime}</Text>
-                <Text style={styles.attendanceLabel}>All Time</Text>
-              </View>
+                  <Text style={[sc.prValue, { color: Colors.text }]}>
+                    {recentPR.score}
+                  </Text>
+                </>
+              ) : (
+                <Text style={sc.prMovement}>—</Text>
+              )}
             </View>
 
-            {attendanceStats.checkInHistory.length > 0 && (
-              <>
-                <Pressable
-                  style={styles.checkInToggle}
-                  onPress={() => setShowCheckIns((v) => !v)}
-                >
-                  <Ionicons name="time-outline" size={16} color={primary} style={{ marginRight: 8 }} />
-                  <Text style={styles.checkInToggleText}>Check-in History</Text>
-                  <Ionicons
-                    name={showCheckIns ? "chevron-up" : "chevron-down"}
-                    size={16}
-                    color={Colors.textSecondary}
-                  />
-                </Pressable>
+            {/* Streak */}
+            <View style={sc.statCard}>
+              <View style={sc.statCardHeader}>
+                <Ionicons name="flame-outline" size={13} color={primary} />
+                <Text style={sc.statLabel}>STREAK</Text>
+              </View>
+              <View style={sc.streakRow}>
+                <Text style={sc.streakNum}>{String(streak).padStart(2, "0")}</Text>
+                <Text style={sc.streakUnit}>DAYS</Text>
+              </View>
+            </View>
+          </View>
+        )}
 
-                {showCheckIns && (
-                  <View style={styles.checkInList}>
-                    {attendanceStats.checkInHistory.map((item, i) => (
-                      <View
-                        key={item.classId + i}
-                        style={[
-                          styles.checkInRow,
-                          i === attendanceStats.checkInHistory.length - 1 && { borderBottomWidth: 0 },
-                        ]}
-                      >
-                        <View style={styles.checkInDot} />
-                        <View style={{ flex: 1 }}>
-                          <Text style={styles.checkInDate}>
-                            {new Date(item.date + "T12:00:00").toLocaleDateString("en-US", {
-                              weekday: "short",
-                              month: "short",
-                              day: "numeric",
-                            })}
-                            {" · "}{formatTime(item.startTime)}
-                          </Text>
-                          <Text style={styles.checkInCoach}>Coach {item.coachName}</Text>
-                        </View>
-                        <Ionicons name="checkmark-circle" size={18} color={Colors.success} />
-                      </View>
-                    ))}
+        {/* ── Today's Classes ── */}
+        <View style={sc.section}>
+          <View style={sc.sectionRow}>
+            <Text style={sc.sectionTitle}>CLASSES</Text>
+            <Pressable onPress={() => router.push("/(tabs)/schedule")}>
+              <Text style={[sc.sectionAction, { color: primary }]}>SCHEDULE</Text>
+            </Pressable>
+          </View>
+
+          {todayClassList.length === 0 ? (
+            <View style={sc.emptyClasses}>
+              <Text style={sc.emptyText}>No classes scheduled today</Text>
+            </View>
+          ) : (
+            todayClassList.map((cls) => {
+              const myBooking = upcomingBookings?.find(
+                (b) => b.booking.classId === cls._id && b.booking.status !== "cancelled"
+              );
+              const spotsLeft = cls.capacity - cls.bookedCount;
+              const { hour, period } = splitFormattedTime(cls.startTime);
+
+              return (
+                <View key={cls._id} style={sc.classCard}>
+                  <View style={sc.classTimeCol}>
+                    <Text style={[sc.classHour, { color: primary }]}>{hour}</Text>
+                    <Text style={sc.classPeriod}>{period}</Text>
                   </View>
-                )}
-              </>
-            )}
-          </>
+
+                  <View style={{ flex: 1 }}>
+                    <Text style={sc.className}>
+                      {(cls as any).wodTitle?.toUpperCase() ?? "CROSSFIT CLASS"}
+                    </Text>
+                    <Text style={sc.classCoach}>{(cls as any).coachName}</Text>
+
+                    {/* Status badge */}
+                    {myBooking ? (
+                      <View style={sc.statusRow}>
+                        <View
+                          style={[
+                            sc.statusDot,
+                            {
+                              backgroundColor:
+                                myBooking.booking.status === "waitlist"
+                                  ? Colors.warning
+                                  : Colors.success,
+                            },
+                          ]}
+                        />
+                        <Text
+                          style={[
+                            sc.statusText,
+                            {
+                              color:
+                                myBooking.booking.status === "waitlist"
+                                  ? Colors.warning
+                                  : Colors.success,
+                            },
+                          ]}
+                        >
+                          {myBooking.booking.status === "waitlist"
+                            ? `WAITLIST #${myBooking.booking.waitlistPosition}`
+                            : "BOOKED"}
+                        </Text>
+                      </View>
+                    ) : (
+                      <View style={sc.statusRow}>
+                        <View
+                          style={[
+                            sc.statusDot,
+                            {
+                              backgroundColor:
+                                spotsLeft <= 0 ? Colors.error : Colors.success,
+                            },
+                          ]}
+                        />
+                        <Text
+                          style={[
+                            sc.statusText,
+                            {
+                              color:
+                                spotsLeft <= 0 ? Colors.error : Colors.success,
+                            },
+                          ]}
+                        >
+                          {spotsLeft <= 0
+                            ? "FULL"
+                            : spotsLeft <= 3
+                            ? `${spotsLeft} SLOTS`
+                            : "OPEN"}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Avatar placeholder */}
+                  <View style={[sc.classAvatar, { borderColor: Colors.surfaceContainerHighest }]}>
+                    <Text style={[sc.classAvatarText, { color: Colors.textSecondary }]}>
+                      {(cls as any).coachName?.[0]?.toUpperCase() ?? "C"}
+                    </Text>
+                  </View>
+                </View>
+              );
+            })
+          )}
+        </View>
+
+        {/* ── Performance Breakdown ── */}
+        {!isCoach && attendanceStats != null && (
+          <View style={sc.section}>
+            <View style={sc.sectionRow}>
+              <Text style={sc.sectionTitle}>PERFORMANCE BREAKDOWN</Text>
+            </View>
+            <View style={sc.barChart}>
+              {last7.map((dateStr, i) => {
+                const attended = attendedDates.has(dateStr);
+                const isToday = dateStr === today;
+                const dayLabel = getDayAbbr(dateStr);
+                return (
+                  <View key={i} style={sc.barCol}>
+                    <View style={sc.barTrack}>
+                      <View
+                        style={[
+                          sc.bar,
+                          {
+                            height: attended ? 64 : 16,
+                            backgroundColor: attended
+                              ? primary
+                              : Colors.surfaceContainerHighest,
+                          },
+                        ]}
+                      />
+                    </View>
+                    <Text
+                      style={[
+                        sc.barLabel,
+                        isToday && { color: primary },
+                      ]}
+                    >
+                      {dayLabel}
+                    </Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
         )}
 
-        {/* No class booked CTA */}
-        {!isCoach && !todayBooking && (
-          <Pressable
-            style={styles.bookClassCta}
-            onPress={() => router.push("/(tabs)/schedule")}
-          >
-            <Text style={[styles.bookClassCtaText, { color: primary }]}>Book a Class →</Text>
-          </Pressable>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const sc = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
   centered: {
     flex: 1,
@@ -298,281 +387,268 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: Colors.background,
   },
-  scroll: { paddingBottom: 48 },
+  scroll: { paddingBottom: 100 },
 
-  // Header
-  header: {
-    backgroundColor: Colors.surface,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 24,
-    marginBottom: 20,
-  },
-  gymName: {
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    marginBottom: 4,
-  },
-  dateText: {
-    fontSize: 32,
-    fontWeight: "800",
-    color: Colors.text,
-    lineHeight: 36,
-  },
-  greeting: {
-    fontSize: 16,
-    color: Colors.textSecondary,
-    marginTop: 4,
-    marginBottom: 14,
-  },
-  wodDayBadge: {
-    alignSelf: "flex-start",
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderWidth: 1,
-  },
-  wodDayText: {
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 1.5,
-  },
-
-  // Booking banner
-  bookingBanner: {
-    marginHorizontal: 20,
-    borderRadius: 28,
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    alignItems: "center",
-    marginBottom: 24,
-  },
-  bookingBannerText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "700",
-  },
-
-  // Section label
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: Colors.textSecondary,
-    letterSpacing: 1.5,
-    textTransform: "uppercase",
-    marginHorizontal: 20,
-    marginBottom: 12,
-  },
-
-  // WOD card
-  wodCard: {
-    backgroundColor: Colors.surface,
-    marginHorizontal: 20,
-    borderRadius: 16,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  wodTitle: {
-    fontSize: 22,
-    fontWeight: "800",
-    color: Colors.text,
-    marginBottom: 4,
-  },
-  wodMeta: {
-    fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-    marginBottom: 16,
-  },
-  movements: { gap: 10, marginBottom: 20 },
-  movementRow: {
-    flexDirection: "row",
-    alignItems: "baseline",
-    gap: 16,
-  },
-  movementNum: {
-    width: 32,
-    fontSize: 18,
-    fontWeight: "800",
-    textAlign: "right",
-  },
-  movementLabel: {
-    fontSize: 16,
-    color: Colors.text,
-    fontWeight: "500",
-    flex: 1,
-  },
-
-  // Stats
-  statsRow: {
-    flexDirection: "row",
-    gap: 8,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    paddingTop: 16,
-  },
-  statBox: {
-    flex: 1,
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: 10,
-    padding: 10,
-    alignItems: "center",
-  },
-  statLabel: {
-    fontSize: 10,
-    color: Colors.textSecondary,
-    fontWeight: "600",
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 4,
-  },
-  statValue: {
-    fontSize: 15,
-    fontWeight: "800",
-    color: Colors.text,
-  },
-
-  // Empty
-  emptyCard: {
-    backgroundColor: Colors.surface,
-    marginHorizontal: 20,
-    borderRadius: 16,
-    padding: 24,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: 14,
-  },
-  emptyText: { color: Colors.textSecondary, fontSize: 15 },
-  ctaButton: {
-    borderRadius: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-  },
-  ctaButtonText: { color: "#fff", fontWeight: "700", fontSize: 14 },
-
-  // Upcoming classes
-  classCard: {
-    backgroundColor: Colors.surface,
-    marginHorizontal: 20,
-    borderRadius: 14,
-    padding: 16,
+  // Top bar
+  topBar: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    paddingHorizontal: 20,
+    paddingTop: 8,
+    paddingBottom: 4,
   },
-  classTime: { fontSize: 22, fontWeight: "800", color: Colors.text },
-  classCoach: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
-  classStatusBadge: {
-    backgroundColor: Colors.success + "22",
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-  },
-  classStatusWaitlist: { backgroundColor: Colors.warning + "22" },
-  classStatusText: { color: Colors.success, fontWeight: "700", fontSize: 13 },
-  classStatusTextWaitlist: { color: Colors.warning },
-
-  // Attendance
-  attendanceRow: {
-    flexDirection: "row",
-    marginHorizontal: 20,
-    gap: 8,
-    marginBottom: 12,
-  },
-  attendanceBox: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 12,
+  avatar: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: 1.5,
+    justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
-  attendanceValue: {
-    fontSize: 22,
-    fontWeight: "800",
-    marginBottom: 2,
+  avatarText: {
+    fontFamily: Fonts.display,
+    fontSize: 13,
   },
-  attendanceLabel: {
-    fontSize: 10,
-    fontWeight: "600",
-    color: Colors.textSecondary,
-    textAlign: "center",
-    textTransform: "uppercase",
-    letterSpacing: 0.3,
+  brandName: {
+    fontFamily: Fonts.display,
+    fontSize: 18,
+    letterSpacing: 2,
   },
 
-  // Check-in history
-  checkInToggle: {
+  // WOD Hero
+  wodHero: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
+  },
+  wodHeroHeader: {
     flexDirection: "row",
-    alignItems: "center",
-    marginHorizontal: 20,
-    marginTop: 4,
-    marginBottom: 8,
-    backgroundColor: Colors.surface,
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  checkInToggleText: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.text,
-  },
-  checkInList: {
-    marginHorizontal: 20,
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 4,
-    overflow: "hidden",
-  },
-  checkInRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    alignItems: "flex-start",
     gap: 12,
+    marginBottom: 16,
   },
-  checkInDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.success,
-  },
-  checkInDate: {
-    fontSize: 14,
-    fontWeight: "600",
-    color: Colors.text,
-    marginBottom: 2,
-  },
-  checkInCoach: {
-    fontSize: 12,
+  wodSubtitle: {
+    fontFamily: Fonts.bodySemi,
+    fontSize: FontSizes.labelMd,
     color: Colors.textSecondary,
+    letterSpacing: 0.8,
+    marginBottom: 4,
+  },
+  wodTitle: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes.displayMd,
+    color: Colors.text,
+    letterSpacing: -0.5,
+    lineHeight: 40,
+  },
+  logBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    borderRadius: 8,
+    marginTop: 6,
+  },
+  logBtnText: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes.labelMd,
+    letterSpacing: 1,
+  },
+  movementList: {
+    gap: 6,
+  },
+  movementItem: {
+    fontFamily: Fonts.bodyMed,
+    fontSize: FontSizes.labelLg,
+    color: Colors.text,
+    lineHeight: 22,
   },
 
-  // Book CTA
-  bookClassCta: {
-    marginHorizontal: 20,
-    marginTop: 24,
-    backgroundColor: Colors.surface,
+  // Stat cards
+  statsRow: {
+    flexDirection: "row",
+    gap: 12,
+    paddingHorizontal: 20,
+    marginBottom: 28,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: Colors.surfaceContainerLow,
     borderRadius: 14,
     padding: 16,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
-  bookClassCtaText: { fontWeight: "700", fontSize: 15 },
+  statCardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginBottom: 8,
+  },
+  statLabel: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary,
+    letterSpacing: 0.8,
+  },
+  prMovement: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: FontSizes.labelMd,
+    color: Colors.textSecondary,
+    letterSpacing: 0.5,
+    marginBottom: 2,
+    textTransform: "uppercase",
+  },
+  prValue: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes.headlineMd,
+  },
+  streakRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 4,
+    marginTop: 4,
+  },
+  streakNum: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes.headlineMd,
+    color: Colors.text,
+  },
+  streakUnit: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: FontSizes.labelMd,
+    color: Colors.textSecondary,
+    letterSpacing: 0.5,
+  },
+
+  // Section
+  section: {
+    marginBottom: 28,
+  },
+  sectionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  sectionTitle: {
+    fontFamily: Fonts.bodyExtra,
+    fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary,
+    letterSpacing: 1.5,
+  },
+  sectionAction: {
+    fontFamily: Fonts.bodySemi,
+    fontSize: FontSizes.labelSm,
+    letterSpacing: 1,
+  },
+
+  // Class cards
+  classCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.surfaceContainerLow,
+    marginHorizontal: 20,
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 8,
+    gap: 14,
+  },
+  classTimeCol: {
+    alignItems: "flex-end",
+    minWidth: 44,
+  },
+  classHour: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes.headlineSm,
+    lineHeight: 26,
+  },
+  classPeriod: {
+    fontFamily: Fonts.bodySemi,
+    fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary,
+  },
+  className: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: FontSizes.labelLg,
+    color: Colors.text,
+    marginBottom: 2,
+  },
+  classCoach: {
+    fontFamily: Fonts.bodyMed,
+    fontSize: FontSizes.labelMd,
+    color: Colors.textSecondary,
+    marginBottom: 6,
+  },
+  classAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  classAvatarText: {
+    fontFamily: Fonts.display,
+    fontSize: 12,
+  },
+  statusRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+  },
+  statusDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  statusText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: FontSizes.labelSm,
+    letterSpacing: 0.5,
+  },
+  emptyClasses: {
+    marginHorizontal: 20,
+    padding: 20,
+    backgroundColor: Colors.surfaceContainerLow,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  emptyText: {
+    fontFamily: Fonts.bodyMed,
+    fontSize: FontSizes.labelMd,
+    color: Colors.textSecondary,
+  },
+
+  // Performance breakdown bar chart
+  barChart: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    gap: 6,
+  },
+  barCol: {
+    flex: 1,
+    alignItems: "center",
+    gap: 6,
+  },
+  barTrack: {
+    height: 80,
+    justifyContent: "flex-end",
+    width: "100%",
+  },
+  bar: {
+    width: "100%",
+    borderRadius: 4,
+    minHeight: 4,
+  },
+  barLabel: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 9,
+    color: Colors.textSecondary,
+    letterSpacing: 0.5,
+  },
 });

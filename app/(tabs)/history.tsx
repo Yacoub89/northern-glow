@@ -32,7 +32,7 @@ export default function HistoryScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <View style={styles.titleBar}>
         <Text style={styles.title}>My Results</Text>
       </View>

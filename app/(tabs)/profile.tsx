@@ -17,6 +17,7 @@ import { useRouter } from "expo-router";
 import { api } from "../../convex/_generated/api";
 import { Doc } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
+import { Fonts, FontSizes } from "../../constants/Typography";
 import { useGymColors } from "../../constants/GymConfig";
 import { formatDate, formatTime } from "../../utils/date";
 
@@ -89,7 +90,7 @@ export default function ProfileScreen() {
   const [prScore, setPrScore] = useState("");
   const [savingPR, setSavingPR] = useState(false);
 
-  type ConfirmState = { title: string; message: string; confirmLabel: string; destructive: boolean; onConfirm: () => void } | null;
+  type ConfirmState = { title: string; message: string; confirmLabel: string; destructive?: boolean; onConfirm: () => void } | null;
   const [confirm, setConfirm] = useState<ConfirmState>(null);
 
   if (me === undefined) {
@@ -157,7 +158,6 @@ export default function ProfileScreen() {
       title: "Sign Out",
       message: "Are you sure you want to sign out?",
       confirmLabel: "Sign Out",
-      destructive: true,
       onConfirm: () => {
         setConfirm(null);
         signOut();
@@ -166,7 +166,7 @@ export default function ProfileScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Header */}
         <View style={styles.header}>
@@ -184,9 +184,11 @@ export default function ProfileScreen() {
                 </View>
               )}
             </View>
-            <Text style={styles.memberSince}>
-              Member since {formatMemberSince(me?._creationTime ?? Date.now())}
-            </Text>
+            {(membership?.status === "active" || membership?.status === "trialing") && (
+              <Text style={styles.memberSince}>
+                Member since {formatMemberSince(me?._creationTime ?? Date.now())}
+              </Text>
+            )}
           </View>
           <Pressable style={styles.signOutIcon} onPress={handleSignOut}>
             <Ionicons name="log-out-outline" size={22} color={Colors.textSecondary} />
@@ -336,6 +338,7 @@ export default function ProfileScreen() {
               <ActivityIndicator color={primary} style={{ marginBottom: 20 }} />
             ) : prs.length === 0 ? (
               <View style={styles.emptyCard}>
+                <Ionicons name="analytics-outline" size={28} color={Colors.textMuted} style={{ marginBottom: 8 }} />
                 <Text style={styles.emptyText}>No PRs yet — add your first one!</Text>
               </View>
             ) : (
@@ -362,7 +365,11 @@ export default function ProfileScreen() {
               <ActivityIndicator color={primary} style={{ marginBottom: 20 }} />
             ) : upcomingBookings.length === 0 ? (
               <View style={styles.emptyCard}>
+                <Ionicons name="calendar-outline" size={28} color={Colors.textMuted} style={{ marginBottom: 8 }} />
                 <Text style={styles.emptyText}>No upcoming bookings</Text>
+                <Pressable onPress={() => router.push("/(tabs)/schedule")} style={{ marginTop: 10 }}>
+                  <Text style={[styles.viewScheduleLink, { color: primary }]}>View Schedule</Text>
+                </Pressable>
               </View>
             ) : (
               upcomingBookings.map(({ booking, cls, coachName }) => (
@@ -388,6 +395,17 @@ export default function ProfileScreen() {
                 </View>
               ))
             )}
+
+            {/* Current Program */}
+            <View style={[styles.sectionHeader, { marginTop: 8 }]}>
+              <Text style={styles.sectionLabel}>Current Program</Text>
+            </View>
+            <View style={styles.programCard}>
+              <View style={styles.programOverlay}>
+                <Text style={styles.programTag}>CURRENT PROGRAM</Text>
+                <Text style={styles.programTitle}>Arctic Strength II</Text>
+              </View>
+            </View>
           </>
         )}
       </ScrollView>
@@ -469,13 +487,13 @@ const styles = StyleSheet.create({
     gap: 14,
   },
   avatar: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+    width: 64,
+    height: 64,
+    borderRadius: 14,
     justifyContent: "center",
     alignItems: "center",
   },
-  avatarInitials: { fontSize: 22, fontWeight: "800", color: "#fff" },
+  avatarInitials: { fontSize: 22, fontFamily: Fonts.display, color: "#fff" },
   headerInfo: { flex: 1 },
   name: { fontSize: 20, fontWeight: "700", color: Colors.text, marginBottom: 2 },
   memberSince: { fontSize: 13, color: Colors.textSecondary },
@@ -629,13 +647,41 @@ const styles = StyleSheet.create({
   emptyCard: {
     backgroundColor: Colors.surface,
     borderRadius: 14,
-    padding: 20,
+    padding: 24,
     alignItems: "center",
     borderWidth: 1,
     borderColor: Colors.border,
     marginBottom: 20,
   },
-  emptyText: { color: Colors.textSecondary, fontSize: 14 },
+  emptyText: { color: Colors.textSecondary, fontSize: 14, fontFamily: Fonts.bodyMed },
+  viewScheduleLink: { fontFamily: Fonts.bodySemi, fontSize: 14 },
+
+  // Current Program
+  programCard: {
+    borderRadius: 16,
+    overflow: "hidden",
+    height: 120,
+    backgroundColor: Colors.surfaceContainerLow,
+    marginBottom: 20,
+    justifyContent: "flex-end",
+  },
+  programOverlay: {
+    padding: 16,
+    backgroundColor: "rgba(4, 19, 41, 0.55)",
+    borderRadius: 16,
+  },
+  programTag: {
+    fontFamily: Fonts.bodyExtra,
+    fontSize: FontSizes.labelSm,
+    color: Colors.primary,
+    letterSpacing: 1.5,
+    marginBottom: 4,
+  },
+  programTitle: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes.headlineSm,
+    color: Colors.text,
+  },
 
   // PR Modal
   modalOverlay: {

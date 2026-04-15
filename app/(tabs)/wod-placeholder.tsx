@@ -217,43 +217,40 @@ function PartCard({ part, index, total, primary, onChange, onRemove }: PartCardP
       {/* MetCon fields */}
       {isMetcon && (
         <>
-          <View style={s.twoColRow}>
-            <View style={s.twoColItem}>
-              <Text style={s.partFieldLabel}>WORKOUT TYPE</Text>
-              <View style={s.selectWrapper}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.typeChipsScroll}>
-                  {(["AMRAP", "ForTime", "EMOM", "Other"] as WodType[]).map((t) => (
-                    <Pressable
-                      key={t}
-                      style={[
-                        s.typeChip,
-                        part.type === t && { borderColor: primary, backgroundColor: primary + "18" },
-                      ]}
-                      onPress={() => update("type", t)}
-                    >
-                      <Text
-                        style={[
-                          s.typeChipText,
-                          part.type === t && { color: primary, fontFamily: Fonts.bodyBold },
-                        ]}
-                      >
-                        {TYPE_LABELS[t]}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </ScrollView>
-              </View>
+          <View style={s.partFieldGroup}>
+            <Text style={s.partFieldLabel}>WORKOUT TYPE</Text>
+            <View style={s.typeChipsRow}>
+              {(["AMRAP", "ForTime", "EMOM", "Other"] as WodType[]).map((t) => (
+                <Pressable
+                  key={t}
+                  style={[
+                    s.typeChip,
+                    part.type === t && { borderColor: primary, backgroundColor: primary + "18" },
+                  ]}
+                  onPress={() => update("type", t)}
+                >
+                  <Text
+                    style={[
+                      s.typeChipText,
+                      part.type === t && { color: primary, fontFamily: Fonts.bodyBold },
+                    ]}
+                  >
+                    {TYPE_LABELS[t]}
+                  </Text>
+                </Pressable>
+              ))}
             </View>
-            <View style={s.twoColItem}>
-              <Text style={s.partFieldLabel}>TIME CAP</Text>
-              <TextInput
-                style={s.partInput}
-                value={part.timeCap}
-                onChangeText={(v) => update("timeCap", v)}
-                placeholder="15:00"
-                placeholderTextColor={Colors.textMuted}
-              />
-            </View>
+          </View>
+
+          <View style={s.partFieldGroup}>
+            <Text style={s.partFieldLabel}>TIME CAP</Text>
+            <TextInput
+              style={s.partInput}
+              value={part.timeCap}
+              onChangeText={(v) => update("timeCap", v)}
+              placeholder="15:00"
+              placeholderTextColor={Colors.textMuted}
+            />
           </View>
 
           <View style={s.partFieldGroup}>
@@ -1200,8 +1197,11 @@ const s = StyleSheet.create({
   twoColItem: {
     flex: 1,
   },
-  selectWrapper: { flex: 1 },
-  typeChipsScroll: { flexDirection: "row", gap: 8 },
+  typeChipsRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
   typeChip: {
     borderRadius: 20,
     paddingHorizontal: 12,

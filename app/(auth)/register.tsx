@@ -12,11 +12,12 @@ import {
   View,
 } from "react-native";
 import { Colors } from "../../constants/Colors";
-import { useGymColors } from "../../constants/GymConfig";
+import { useGymColors, useGymConfig } from "../../constants/GymConfig";
 
 export default function RegisterScreen() {
   const { signIn } = useAuthActions();
   const { primary } = useGymColors();
+  const gym = useGymConfig();
 
   // Step 1: registration fields
   const [name, setName] = useState("");
@@ -33,6 +34,10 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password) {
       Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      Alert.alert("Error", "Please enter a valid email address");
       return;
     }
     if (password.length < 8) {
@@ -103,7 +108,7 @@ export default function RegisterScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={styles.inner}>
-          <Text style={[styles.logo, { color: primary }]}>NorthernGlow</Text>
+          <Text style={[styles.logo, { color: primary }]}>{gym.name}</Text>
           <Text style={styles.tagline}>Check your email</Text>
           <Text style={styles.subtitle}>
             We sent a 6-digit code to{"\n"}
@@ -153,7 +158,7 @@ export default function RegisterScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.inner}>
-        <Text style={[styles.logo, { color: primary }]}>NorthernGlow</Text>
+        <Text style={[styles.logo, { color: primary }]}>{gym.name}</Text>
         <Text style={styles.tagline}>Create your account</Text>
 
         <View style={styles.form}>

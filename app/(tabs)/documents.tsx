@@ -306,7 +306,7 @@ export default function DocumentsScreen() {
   const canCreate = pdfMode ? !!newTitle.trim() && !!pickedPdf : !!newTitle.trim() && !!newContent.trim();
 
   return (
-    <SafeAreaView style={s.container}>
+    <SafeAreaView style={s.container} edges={[]}>
       {/* Header */}
       <View style={s.header}>
         <View>

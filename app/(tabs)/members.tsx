@@ -30,7 +30,7 @@ export default function MembersScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <View style={styles.header}>
         <Text style={styles.title}>Members</Text>
         <Text style={styles.count}>{members.length} total</Text>

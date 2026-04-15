@@ -389,7 +389,7 @@ export default function ScheduleScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={[]}>
       {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.gymName, { color: primary }]}>{gym.name.toUpperCase()}</Text>
