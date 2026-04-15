@@ -233,7 +233,7 @@ export default function ManageScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={[]}>
       <View style={styles.titleBar}>
         <Text style={styles.title}>Manage</Text>
       </View>
@@ -276,10 +276,7 @@ export default function ManageScreen() {
                 <Pressable
                   style={[styles.wodActionBtn, { backgroundColor: primary }, wod && styles.wodEditBtn]}
                   onPress={() =>
-                    router.push({
-                      pathname: "/wod-form",
-                      params: wod ? { wodId: wod._id } : { date },
-                    })
+                    router.push("/(tabs)/wod-placeholder")
                   }
                 >
                   <Text style={[styles.wodActionText, wod && styles.wodEditText]}>

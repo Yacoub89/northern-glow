@@ -72,6 +72,29 @@ export default defineSchema({
     movements: v.array(v.string()),
     scalingNotes: v.optional(v.string()),
     createdBy: v.id("users"),
+    accessLevel: v.optional(v.union(
+      v.literal("PUBLIC_CLASS"),
+      v.literal("MEMBERS_ONLY"),
+      v.literal("ADVANCED"),
+    )),
+    parts: v.optional(v.array(v.object({
+      label: v.string(),
+      name: v.string(),
+      type: v.optional(v.union(
+        v.literal("AMRAP"),
+        v.literal("ForTime"),
+        v.literal("EMOM"),
+        v.literal("Strength"),
+        v.literal("Other"),
+      )),
+      movement: v.optional(v.string()),
+      sets: v.optional(v.string()),
+      reps: v.optional(v.string()),
+      percentMax: v.optional(v.string()),
+      coachNotes: v.optional(v.string()),
+      timeCap: v.optional(v.string()),
+      description: v.optional(v.string()),
+    }))),
   })
     .index("by_date", ["date"])
     .index("by_gym_date", ["gymId", "date"]),

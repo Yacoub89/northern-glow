@@ -10,6 +10,19 @@ const WodType = v.union(
   v.literal("Other")
 );
 
+const WodPart = v.object({
+  label: v.string(),
+  name: v.string(),
+  type: v.optional(WodType),
+  movement: v.optional(v.string()),
+  sets: v.optional(v.string()),
+  reps: v.optional(v.string()),
+  percentMax: v.optional(v.string()),
+  coachNotes: v.optional(v.string()),
+  timeCap: v.optional(v.string()),
+  description: v.optional(v.string()),
+});
+
 export const getByDate = query({
   args: { date: v.string() },
   handler: async (ctx, { date }) => {
@@ -77,6 +90,12 @@ export const create = mutation({
     type: WodType,
     movements: v.array(v.string()),
     scalingNotes: v.optional(v.string()),
+    accessLevel: v.optional(v.union(
+      v.literal("PUBLIC_CLASS"),
+      v.literal("MEMBERS_ONLY"),
+      v.literal("ADVANCED"),
+    )),
+    parts: v.optional(v.array(WodPart)),
   },
   handler: async (ctx, args) => {
     const { userId, gymId } = await requireCoachOrAdmin(ctx);
@@ -97,6 +116,12 @@ export const update = mutation({
     type: v.optional(WodType),
     movements: v.optional(v.array(v.string())),
     scalingNotes: v.optional(v.string()),
+    accessLevel: v.optional(v.union(
+      v.literal("PUBLIC_CLASS"),
+      v.literal("MEMBERS_ONLY"),
+      v.literal("ADVANCED"),
+    )),
+    parts: v.optional(v.array(WodPart)),
   },
   handler: async (ctx, { id, ...updates }) => {
     const { gymId } = await requireCoachOrAdmin(ctx);

@@ -81,7 +81,7 @@ export default function AdminSchedule() {
                 <Text style={[s.cell, { flex: 2 }]} numberOfLines={1}>{wod?.title ?? <Text style={{ color: Colors.textMuted, fontStyle: "italic" }}>No WOD</Text>}</Text>
                 <Pressable
                   style={[s.actionBtn, wod && [s.editBtn, { borderColor: primary + "55", backgroundColor: primary + "11" }]]}
-                  onPress={() => router.push({ pathname: "/wod-form", params: wod ? { wodId: wod._id } : { date } })}
+                  onPress={() => router.push("/(tabs)/wod-placeholder")}
                 >
                   <Text style={[s.actionBtnText, wod && [s.editBtnText, { color: primary }]]}>{wod ? "Edit" : "+ Add"}</Text>
                 </Pressable>
