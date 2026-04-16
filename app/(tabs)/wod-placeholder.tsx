@@ -281,6 +281,122 @@ function PartCard({ part, index, total, primary, onChange, onRemove }: PartCardP
   );
 }
 
+// ─── WOD schedule strip helpers ──────────────────────────────────────────────
+
+function getDayAbbr(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d)
+    .toLocaleDateString("en-US", { weekday: "short" })
+    .toUpperCase()
+    .slice(0, 3);
+}
+
+function getDayNum(dateStr: string): string {
+  return String(parseInt(dateStr.split("-")[2], 10));
+}
+
+function formatNavDateShort(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+    weekday: "long",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function WodScheduleStrip({
+  schedule,
+  selectedDate,
+  today,
+  primary,
+  onSelect,
+}: {
+  schedule: { date: string; wod: any }[];
+  selectedDate: string;
+  today: string;
+  primary: string;
+  onSelect: (date: string) => void;
+}) {
+  return (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={ss.strip}
+    >
+      {schedule.map(({ date, wod }) => {
+        const isSelected = date === selectedDate;
+        const isToday = date === today;
+        const hasWod = !!wod;
+        return (
+          <Pressable
+            key={date}
+            style={[
+              ss.chip,
+              isSelected && { backgroundColor: primary, borderColor: primary },
+            ]}
+            onPress={() => onSelect(date)}
+          >
+            <Text style={[ss.chipDay, isSelected && ss.chipTextActive]}>
+              {isToday ? "TODAY" : getDayAbbr(date)}
+            </Text>
+            <Text style={[ss.chipNum, isSelected && ss.chipTextActive]}>
+              {getDayNum(date)}
+            </Text>
+            <View
+              style={[
+                ss.dot,
+                {
+                  backgroundColor: hasWod
+                    ? isSelected ? Colors.onPrimary : primary
+                    : Colors.surfaceContainerHighest,
+                },
+              ]}
+            />
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
+const ss = StyleSheet.create({
+  strip: {
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    gap: 8,
+  },
+  chip: {
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    alignItems: "center",
+    minWidth: 56,
+    gap: 2,
+  },
+  chipDay: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 9,
+    color: Colors.textSecondary,
+    letterSpacing: 0.5,
+  },
+  chipNum: {
+    fontFamily: Fonts.display,
+    fontSize: 18,
+    color: Colors.text,
+    lineHeight: 22,
+  },
+  chipTextActive: { color: Colors.onPrimary },
+  dot: {
+    width: 5,
+    height: 5,
+    borderRadius: 3,
+    marginTop: 3,
+  },
+});
+
 // ─── Coach: Post / Edit WOD ───────────────────────────────────────────────────
 
 function CoachWodTab() {
@@ -288,15 +404,26 @@ function CoachWodTab() {
   const { primary } = useGymColors();
   const today = getTodayDate();
 
-  const wod = useQuery(api.wods.getByDate, { date: today });
+  const [selectedDate, setSelectedDate] = useState(today);
+
+  const wod = useQuery(api.wods.getByDate, { date: selectedDate });
+  const wodSchedule = useQuery(api.wods.getSchedule, { startDate: today, days: 7 });
   const createWod = useMutation(api.wods.create);
   const updateWod = useMutation(api.wods.update);
 
-  const [date, setDate] = useState(today);
+  const [date, setDate] = useState(selectedDate);
   const [pickerDate, setPickerDate] = useState(() => {
     const [y, mo, d] = today.split("-").map(Number);
     return new Date(y, mo - 1, d);
   });
+
+  // Sync form date when selected day changes
+  useEffect(() => {
+    setDate(selectedDate);
+    const [y, mo, d] = selectedDate.split("-").map(Number);
+    setPickerDate(new Date(y, mo - 1, d));
+    setEditMode(false);
+  }, [selectedDate]);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [title, setTitle] = useState("");
   const [accessLevel, setAccessLevel] = useState<AccessLevel>("PUBLIC_CLASS");
@@ -427,10 +554,19 @@ function CoachWodTab() {
     return (
       <SafeAreaView style={s.container} edges={[]}>
         <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+          <WodScheduleStrip
+            schedule={wodSchedule ?? []}
+            selectedDate={selectedDate}
+            today={today}
+            primary={primary}
+            onSelect={setSelectedDate}
+          />
           <View style={s.readHeader}>
             <View>
               <Text style={[s.readGymName, { color: primary }]}>{gym.name.toUpperCase()}</Text>
-              <Text style={s.readTitle}>TODAY'S WOD</Text>
+              <Text style={s.readTitle}>
+                {selectedDate === today ? "TODAY'S WOD" : formatNavDateShort(selectedDate).toUpperCase()}
+              </Text>
             </View>
             <Pressable
               style={[s.editBtn, { borderColor: primary }]}
@@ -499,7 +635,7 @@ function CoachWodTab() {
         {/* Page header */}
         <View style={s.pageHeader}>
           <View>
-            <Text style={s.pageTitle}>CREATE WOD</Text>
+            <Text style={s.pageTitle}>{editMode ? "EDIT WOD" : "CREATE WOD"}</Text>
             <View style={[s.pageTitleUnderline, { backgroundColor: primary }]} />
           </View>
           <Text style={[s.coachBadge, { color: primary }]}>COACH INTERFACE</Text>
@@ -510,6 +646,13 @@ function CoachWodTab() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          <WodScheduleStrip
+            schedule={wodSchedule ?? []}
+            selectedDate={selectedDate}
+            today={today}
+            primary={primary}
+            onSelect={setSelectedDate}
+          />
           {/* WOD Title */}
           <View style={s.formFieldGroup}>
             <Text style={s.formFieldLabel}>WOD TITLE</Text>

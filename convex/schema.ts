@@ -13,6 +13,8 @@ export default defineSchema({
     primaryColor: v.string(),
     timezone: v.string(),
     logoStorageId: v.optional(v.id("_storage")),
+    appIconStorageId: v.optional(v.id("_storage")),
+    splashStorageId: v.optional(v.id("_storage")),
     // Per-gym Stripe price IDs (falls back to env vars if not set)
     stripeUnlimitedMonthlyPriceId: v.optional(v.string()),
     stripeUnlimitedAnnualPriceId: v.optional(v.string()),

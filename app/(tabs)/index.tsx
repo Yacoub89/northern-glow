@@ -104,7 +104,7 @@ export default function HomeScreen() {
     !hasGym || isCoach || me === undefined ? "skip" : undefined
   );
 
-  const todayClasses = useQuery(api.classes.getUpcoming, hasGym ? { days: 1 } : "skip");
+  const todayClasses = useQuery(api.classes.getUpcoming, hasGym ? { startDate: today, days: 1 } : "skip");
 
   if (me === undefined || !hasGym || (hasGym && (wod === undefined || todayBooking === undefined))) {
     return (
@@ -229,9 +229,18 @@ export default function HomeScreen() {
         <View style={sc.section}>
           <View style={sc.sectionRow}>
             <Text style={sc.sectionTitle}>CLASSES</Text>
-            <Pressable onPress={() => router.push("/(tabs)/schedule")}>
-              <Text style={[sc.sectionAction, { color: primary }]}>SCHEDULE</Text>
-            </Pressable>
+            {isCoach ? (
+              <Pressable
+                style={[sc.addClassBtn, { backgroundColor: primary }]}
+                onPress={() => router.push("/class-form")}
+              >
+                <Text style={sc.addClassBtnText}>+ ADD CLASS</Text>
+              </Pressable>
+            ) : (
+              <Pressable onPress={() => router.push("/(tabs)/schedule")}>
+                <Text style={[sc.sectionAction, { color: primary }]}>SCHEDULE</Text>
+              </Pressable>
+            )}
           </View>
 
           {todayClassList.length === 0 ? (
@@ -542,6 +551,17 @@ const sc = StyleSheet.create({
     fontFamily: Fonts.bodySemi,
     fontSize: FontSizes.labelSm,
     letterSpacing: 1,
+  },
+  addClassBtn: {
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+  },
+  addClassBtnText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: FontSizes.labelSm,
+    color: "#fff",
+    letterSpacing: 0.8,
   },
 
   // Class cards

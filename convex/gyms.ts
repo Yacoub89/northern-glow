@@ -43,6 +43,8 @@ export const updateSettings = mutation({
     primaryColor: v.optional(v.string()),
     timezone: v.optional(v.string()),
     logoStorageId: v.optional(v.id("_storage")),
+    appIconStorageId: v.optional(v.id("_storage")),
+    splashStorageId: v.optional(v.id("_storage")),
     stripeUnlimitedMonthlyPriceId: v.optional(v.string()),
     stripeUnlimitedAnnualPriceId: v.optional(v.string()),
     stripeTwiceWeeklyMonthlyPriceId: v.optional(v.string()),
