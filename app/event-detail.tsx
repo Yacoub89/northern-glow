@@ -117,10 +117,17 @@ export default function EventDetailScreen() {
         text: "Cancel Registration",
         style: "destructive",
         onPress: async () => {
+          setLoading(true);
           try {
             await cancelRegistration({ eventId });
+            Alert.alert(
+              "Cancelled",
+              "You have been removed from this event, and any payment has been refunded."
+            );
           } catch (e: any) {
             Alert.alert("Error", e.message);
+          } finally {
+            setLoading(false);
           }
         },
       },
