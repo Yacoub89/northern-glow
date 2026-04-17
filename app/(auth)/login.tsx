@@ -1,5 +1,5 @@
 import { useAuthActions } from "@convex-dev/auth/react";
-import { Link, router } from "expo-router";
+import { Link } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
@@ -29,8 +29,11 @@ export default function LoginScreen() {
     }
     setLoading(true);
     try {
-      const result = await signIn("password", { email: email.trim(), password, flow: "signIn" });
-      router.replace("/(tabs)");
+      await signIn("password", { email: email.trim(), password, flow: "signIn" });
+      // Navigation is handled automatically by (auth)/_layout.tsx once
+      // isAuthenticated becomes true. Do NOT call router.replace here —
+      // it fires before the Convex client processes the token, so the
+      // TabsLayout sees isAuthenticated=false and redirects back to login.
     } catch (e: any) {
       Alert.alert("Login Failed", e.message ?? "Invalid email or password");
     } finally {
