@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { api } from "../convex/_generated/api";
 import { Colors } from "../constants/Colors";
+import { useGymColors } from "../constants/GymConfig";
 import { getTodayDate } from "../utils/date";
 
 const TIME_PRESETS = [
@@ -44,6 +45,7 @@ function stringToDate(s: string) {
 }
 
 export default function ClassFormScreen() {
+  const { primary } = useGymColors();
   const router = useRouter();
   const createClass = useMutation(api.classes.create);
 
@@ -169,12 +171,12 @@ export default function ClassFormScreen() {
                         mode="date"
                         display="inline"
                         themeVariant="dark"
-                        accentColor={Colors.primary}
+                        accentColor={primary}
                         style={{ width: "100%" }}
                         onChange={handleDateChange}
                       />
                       <Pressable
-                        style={styles.modalDoneBtn}
+                        style={[styles.modalDoneBtn, { backgroundColor: primary }]}
                         onPress={() => setShowPicker(false)}
                       >
                         <Text style={styles.modalDoneBtnText}>Done</Text>
@@ -196,7 +198,7 @@ export default function ClassFormScreen() {
             {TIME_PRESETS.map((t) => (
               <Pressable
                 key={t}
-                style={[styles.preset, startTimes.includes(t) && styles.presetActive]}
+                style={[styles.preset, startTimes.includes(t) && { backgroundColor: primary, borderColor: primary }]}
                 onPress={() => toggleTime(t)}
               >
                 <Text style={[styles.presetText, startTimes.includes(t) && styles.presetTextActive]}>
@@ -215,7 +217,7 @@ export default function ClassFormScreen() {
               keyboardType="numbers-and-punctuation"
               onSubmitEditing={addCustomTime}
             />
-            <Pressable style={styles.addTimeBtn} onPress={addCustomTime}>
+            <Pressable style={[styles.addTimeBtn, { backgroundColor: primary }]} onPress={addCustomTime}>
               <Text style={styles.addTimeBtnText}>Add</Text>
             </Pressable>
           </View>
@@ -241,7 +243,7 @@ export default function ClassFormScreen() {
         )}
 
         <Pressable
-          style={[styles.saveBtn, saving && { opacity: 0.6 }]}
+          style={[styles.saveBtn, { backgroundColor: primary }, saving && { opacity: 0.6 }]}
           onPress={handleSave}
           disabled={saving}
         >
@@ -293,7 +295,6 @@ const styles = StyleSheet.create({
   presets: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 },
   customTimeRow: { flexDirection: "row", gap: 8, alignItems: "center" },
   addTimeBtn: {
-    backgroundColor: Colors.primary,
     borderRadius: 12,
     paddingHorizontal: 18,
     paddingVertical: 14,
@@ -306,10 +307,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  presetActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
+  presetActive: {},
   presetText: { color: Colors.textSecondary, fontWeight: "600", fontSize: 13 },
   presetTextActive: { color: "#fff" },
   wodPreview: {
@@ -323,7 +321,6 @@ const styles = StyleSheet.create({
   wodPreviewLabel: { fontSize: 12, color: Colors.success, fontWeight: "600", marginBottom: 4 },
   wodPreviewTitle: { fontSize: 15, fontWeight: "700", color: Colors.text },
   saveBtn: {
-    backgroundColor: Colors.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
@@ -352,7 +349,6 @@ const styles = StyleSheet.create({
   },
   modalDoneBtn: {
     marginTop: 16,
-    backgroundColor: Colors.primary,
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 40,

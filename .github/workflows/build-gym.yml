@@ -1,0 +1,56 @@
+name: Build Gym App
+
+on:
+  workflow_dispatch:
+    inputs:
+      gymId:
+        description: "Gym ID (copy from Convex dashboard)"
+        required: true
+        type: string
+      platform:
+        description: "Platform"
+        required: true
+        type: choice
+        options:
+          - all
+          - ios
+          - android
+        default: all
+      profile:
+        description: "Build profile"
+        required: true
+        type: choice
+        options:
+          - gym-production
+          - gym-preview
+        default: gym-production
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install EAS CLI
+        run: npm install -g eas-cli
+
+      - name: Build gym app
+        env:
+          BUILD_SECRET: ${{ secrets.NORTHERNGLOW_BUILD_SECRET }}
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          chmod +x ./scripts/build-gym.sh
+          ./scripts/build-gym.sh "${{ inputs.gymId }}" \
+            --platform "${{ inputs.platform }}" \
+            --profile "${{ inputs.profile }}" \
+            --env prod

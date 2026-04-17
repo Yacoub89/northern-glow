@@ -1,7 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { requireCoachOrAdmin } from "./helpers";
+import { requireAuth, requireCoachOrAdmin } from "./helpers";
 import { internal } from "./_generated/api";
 
 // ── Queries ──────────────────────────────────────────────────────────────────
@@ -9,10 +9,12 @@ import { internal } from "./_generated/api";
 export const listCoaches = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return [];
-    const users = await ctx.db.query("users").take(200);
-    return users.filter(
+    const { gymId } = await requireAuth(ctx);
+    const gymMembers = await ctx.db
+      .query("users")
+      .withIndex("by_gym", (q) => q.eq("gymId", gymId))
+      .take(200);
+    return gymMembers.filter(
       (u) => u.role === "coach" || u.role === "admin"
     );
   },
@@ -24,13 +26,15 @@ export const getCoachAvailableSlots = query({
     date: v.string(), // YYYY-MM-DD
   },
   handler: async (ctx, { coachId, date }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) return [];
+    const { gymId } = await requireAuth(ctx);
+
+    // Verify the coach belongs to the same gym
+    const coach = await ctx.db.get(coachId);
+    if (coach?.gymId !== gymId) return [];
 
     const [y, mo, d] = date.split("-").map(Number);
-    const dayOfWeek = new Date(y, mo - 1, d).getDay(); // 0=Sun
+    const dayOfWeek = new Date(y, mo - 1, d).getDay();
 
-    // Get recurring availability for this day of week
     const availability = await ctx.db
       .query("coachAvailability")
       .withIndex("by_coach_day", (q) =>
@@ -40,7 +44,6 @@ export const getCoachAvailableSlots = query({
 
     if (availability.length === 0) return [];
 
-    // Get already-booked slots for this coach on this date
     const booked = await ctx.db
       .query("appointments")
       .withIndex("by_coach_date", (q) =>
@@ -54,7 +57,6 @@ export const getCoachAvailableSlots = query({
         .map((a) => a.startTime)
     );
 
-    // Return available (not yet booked) slots
     return availability
       .filter((slot) => !bookedTimes.has(slot.startTime))
       .sort((a, b) => a.startTime.localeCompare(b.startTime))
@@ -119,11 +121,10 @@ export const getMyAppointmentForDate = query({
   },
 });
 
-// Coach: view their schedule for a date range
 export const getCoachAppointments = query({
   args: { startDate: v.string(), days: v.optional(v.number()) },
   handler: async (ctx, { startDate, days = 7 }) => {
-    const coachId = await requireCoachOrAdmin(ctx);
+    const { userId: coachId } = await requireCoachOrAdmin(ctx);
     const [y, mo, d] = startDate.split("-").map(Number);
 
     const perDay = await Promise.all(
@@ -149,11 +150,10 @@ export const getCoachAppointments = query({
   },
 });
 
-// Coach: view their availability settings
 export const getMyAvailability = query({
   args: {},
   handler: async (ctx) => {
-    const coachId = await requireCoachOrAdmin(ctx);
+    const { userId: coachId } = await requireCoachOrAdmin(ctx);
     return await ctx.db
       .query("coachAvailability")
       .withIndex("by_coach", (q) => q.eq("coachId", coachId))
@@ -172,10 +172,12 @@ export const book = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Unauthenticated");
+    const { userId, gymId } = await requireAuth(ctx);
 
-    // Check slot not already taken
+    // Verify coach belongs to the same gym
+    const coach = await ctx.db.get(args.coachId);
+    if (coach?.gymId !== gymId) throw new Error("Coach not found");
+
     const existing = await ctx.db
       .query("appointments")
       .withIndex("by_coach_date", (q) =>
@@ -188,13 +190,13 @@ export const book = mutation({
     );
     if (conflict) throw new Error("This slot has already been booked");
 
-    // Check athlete doesn't already have an appointment with this coach that day
     const myExisting = existing.find(
       (a) => a.athleteId === userId && a.status !== "cancelled"
     );
     if (myExisting) throw new Error("You already have an appointment with this coach on this day");
 
     await ctx.db.insert("appointments", {
+      gymId,
       coachId: args.coachId,
       athleteId: userId,
       date: args.date,
@@ -204,9 +206,7 @@ export const book = mutation({
       notes: args.notes,
     });
 
-    // Push notifications
     const athlete = await ctx.db.get(userId);
-    const coach = await ctx.db.get(args.coachId);
 
     if (athlete?.pushToken) {
       await ctx.scheduler.runAfter(0, internal.notifications.sendPush, {
@@ -226,7 +226,6 @@ export const book = mutation({
       });
     }
 
-    // Confirmation emails with .ics calendar invite
     if (athlete?.email || coach?.email) {
       await ctx.scheduler.runAfter(0, internal.email.sendAppointmentEmail, {
         athleteEmail: athlete?.email ?? "",
@@ -262,7 +261,6 @@ export const cancel = mutation({
   },
 });
 
-// Coach: add a recurring availability slot
 export const addAvailability = mutation({
   args: {
     dayOfWeek: v.number(),
@@ -270,9 +268,8 @@ export const addAvailability = mutation({
     durationMinutes: v.number(),
   },
   handler: async (ctx, args) => {
-    const coachId = await requireCoachOrAdmin(ctx);
+    const { userId: coachId, gymId } = await requireCoachOrAdmin(ctx);
 
-    // Prevent duplicate slots
     const existing = await ctx.db
       .query("coachAvailability")
       .withIndex("by_coach_day", (q) =>
@@ -284,15 +281,14 @@ export const addAvailability = mutation({
       throw new Error("Slot already exists");
     }
 
-    await ctx.db.insert("coachAvailability", { coachId, ...args });
+    await ctx.db.insert("coachAvailability", { gymId, coachId, ...args });
   },
 });
 
-// Coach: remove a recurring availability slot
 export const removeAvailability = mutation({
   args: { availabilityId: v.id("coachAvailability") },
   handler: async (ctx, { availabilityId }) => {
-    const coachId = await requireCoachOrAdmin(ctx);
+    const { userId: coachId } = await requireCoachOrAdmin(ctx);
     const slot = await ctx.db.get(availabilityId);
     if (!slot || slot.coachId !== coachId) throw new Error("Unauthorized");
     await ctx.db.delete(availabilityId);

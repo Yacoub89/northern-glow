@@ -1,10 +1,9 @@
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
-import { getTodayDate } from "../../utils/date";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
-  FlatList,
   Modal,
   Pressable,
   ScrollView,
@@ -13,11 +12,15 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../convex/_generated/api";
 import { Doc } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
-import { formatDate, formatTime } from "../../utils/date";
-import { useState } from "react";
+import { Fonts, FontSizes } from "../../constants/Typography";
+import { useGymColors } from "../../constants/GymConfig";
+import { formatDate, formatTime, getTodayDate } from "../../utils/date";
+
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
@@ -28,14 +31,41 @@ const TIME_PRESETS = [
 
 const DURATION_OPTIONS = [30, 45, 60, 90];
 
-function AddAvailabilityModal({
-  visible,
-  onClose,
-}: {
-  visible: boolean;
-  onClose: () => void;
-}) {
-  const [dayOfWeek, setDayOfWeek] = useState(1); // Mon
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function shiftDate(dateStr: string, n: number): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(y, m - 1, d + n);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+}
+
+function formatNavDate(dateStr: string): { monthDay: string; dayName: string } {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  return {
+    monthDay: dt.toLocaleDateString("en-US", { month: "long", day: "numeric" }).toUpperCase(),
+    dayName: dt.toLocaleDateString("en-US", { weekday: "long" }).toUpperCase(),
+  };
+}
+
+function sessionLabel(startTime: string): string {
+  return parseInt(startTime.split(":")[0], 10) < 12 ? "AM SESSION" : "PM SESSION";
+}
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type EnrichedClass = Doc<"classes"> & {
+  coachName: string;
+  wodTitle: string | null;
+  wodType: string | null;
+  wodDescription: string | null;
+};
+
+// ─── Add Availability Modal ───────────────────────────────────────────────────
+
+function AddAvailabilityModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { primary } = useGymColors();
+  const [dayOfWeek, setDayOfWeek] = useState(1);
   const [startTime, setStartTime] = useState("09:00");
   const [duration, setDuration] = useState(60);
   const addAvailability = useMutation(api.appointments.addAvailability);
@@ -51,61 +81,55 @@ function AddAvailabilityModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={modal.overlay}>
-        <View style={modal.sheet}>
-          <Text style={modal.title}>Add Availability Slot</Text>
+      <View style={md.overlay}>
+        <View style={md.sheet}>
+          <Text style={md.title}>Add Availability Slot</Text>
 
-          <Text style={modal.label}>Day of Week</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={modal.row}>
+          <Text style={md.label}>Day of Week</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={md.row}>
             {DAY_NAMES.map((name, i) => (
               <Pressable
                 key={i}
-                style={[modal.chip, dayOfWeek === i && modal.chipActive]}
+                style={[md.chip, dayOfWeek === i && [md.chipActive, { backgroundColor: primary, borderColor: primary }]]}
                 onPress={() => setDayOfWeek(i)}
               >
-                <Text style={[modal.chipText, dayOfWeek === i && modal.chipTextActive]}>
-                  {name}
-                </Text>
+                <Text style={[md.chipText, dayOfWeek === i && md.chipTextActive]}>{name}</Text>
               </Pressable>
             ))}
           </ScrollView>
 
-          <Text style={modal.label}>Start Time</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={modal.row}>
+          <Text style={md.label}>Start Time</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={md.row}>
             {TIME_PRESETS.map((t) => (
               <Pressable
                 key={t}
-                style={[modal.chip, startTime === t && modal.chipActive]}
+                style={[md.chip, startTime === t && [md.chipActive, { backgroundColor: primary, borderColor: primary }]]}
                 onPress={() => setStartTime(t)}
               >
-                <Text style={[modal.chipText, startTime === t && modal.chipTextActive]}>
-                  {formatTime(t)}
-                </Text>
+                <Text style={[md.chipText, startTime === t && md.chipTextActive]}>{formatTime(t)}</Text>
               </Pressable>
             ))}
           </ScrollView>
 
-          <Text style={modal.label}>Duration</Text>
-          <View style={modal.row}>
+          <Text style={md.label}>Duration</Text>
+          <View style={md.row}>
             {DURATION_OPTIONS.map((d) => (
               <Pressable
                 key={d}
-                style={[modal.chip, duration === d && modal.chipActive]}
+                style={[md.chip, duration === d && [md.chipActive, { backgroundColor: primary, borderColor: primary }]]}
                 onPress={() => setDuration(d)}
               >
-                <Text style={[modal.chipText, duration === d && modal.chipTextActive]}>
-                  {d} min
-                </Text>
+                <Text style={[md.chipText, duration === d && md.chipTextActive]}>{d} min</Text>
               </Pressable>
             ))}
           </View>
 
-          <View style={modal.actions}>
-            <Pressable style={modal.cancelBtn} onPress={onClose}>
-              <Text style={modal.cancelText}>Cancel</Text>
+          <View style={md.actions}>
+            <Pressable style={md.cancelBtn} onPress={onClose}>
+              <Text style={md.cancelText}>Cancel</Text>
             </Pressable>
-            <Pressable style={modal.saveBtn} onPress={handleSave}>
-              <Text style={modal.saveText}>Save Slot</Text>
+            <Pressable style={[md.saveBtn, { backgroundColor: primary }]} onPress={handleSave}>
+              <Text style={md.saveText}>Save Slot</Text>
             </Pressable>
           </View>
         </View>
@@ -114,7 +138,10 @@ function AddAvailabilityModal({
   );
 }
 
+// ─── 1:1 Availability Section ─────────────────────────────────────────────────
+
 function AvailabilitySection() {
+  const { primary } = useGymColors();
   const [showModal, setShowModal] = useState(false);
   const availability = useQuery(api.appointments.getMyAvailability);
   const removeAvailability = useMutation(api.appointments.removeAvailability);
@@ -136,7 +163,6 @@ function AvailabilitySection() {
     ]);
   };
 
-  // Group by day of week
   const byDay = (availability ?? []).reduce<Record<number, typeof availability>>((acc, slot) => {
     if (!slot) return acc;
     if (!acc[slot.dayOfWeek]) acc[slot.dayOfWeek] = [];
@@ -145,40 +171,36 @@ function AvailabilitySection() {
   }, {});
 
   return (
-    <>
-      <View style={[styles.sectionHeader, { marginTop: 24 }]}>
-        <Text style={styles.sectionLabel}>1:1 Availability</Text>
-        <Pressable style={styles.addBtn} onPress={() => setShowModal(true)}>
-          <Text style={styles.addBtnText}>+ Add Slot</Text>
+    <View style={sc.sectionBlock}>
+      <View style={sc.sectionHeaderRow}>
+        <Text style={sc.sectionLabel}>1:1 Availability</Text>
+        <Pressable style={[sc.addSlotBtn, { backgroundColor: primary }]} onPress={() => setShowModal(true)}>
+          <Ionicons name="add" size={14} color={Colors.onPrimary} />
+          <Text style={sc.addSlotBtnText}>Add Slot</Text>
         </Pressable>
       </View>
 
       {availability === undefined ? (
-        <ActivityIndicator color={Colors.primary} style={{ marginTop: 8 }} />
+        <ActivityIndicator color={primary} style={{ marginTop: 8 }} />
       ) : availability.length === 0 ? (
-        <View style={styles.emptyCard}>
-          <Text style={styles.emptyText}>No availability set</Text>
-          <Text style={[styles.emptyText, { fontSize: 12, marginTop: 4 }]}>
-            Add slots so athletes can book 1:1 sessions
-          </Text>
+        <View style={sc.emptyCard}>
+          <Text style={sc.emptyText}>No availability set</Text>
+          <Text style={sc.emptyHint}>Add slots so athletes can book 1:1 sessions</Text>
         </View>
       ) : (
         [0, 1, 2, 3, 4, 5, 6]
           .filter((d) => byDay[d]?.length)
           .map((d) => (
-            <View key={d} style={{ marginBottom: 12 }}>
-              <Text style={styles.availDayLabel}>{DAY_NAMES[d]}</Text>
+            <View key={d} style={{ marginBottom: 10 }}>
+              <Text style={sc.availDayLabel}>{DAY_NAMES[d]}</Text>
               {byDay[d]!
                 .sort((a, b) => a!.startTime.localeCompare(b!.startTime))
                 .map((slot) => (
-                  <View key={slot!._id} style={styles.availSlotRow}>
-                    <Text style={styles.availSlotTime}>{formatTime(slot!.startTime)}</Text>
-                    <Text style={styles.availSlotDuration}>{slot!.durationMinutes} min</Text>
-                    <Pressable
-                      style={styles.removeBtn}
-                      onPress={() => handleRemove(slot!._id)}
-                    >
-                      <Text style={styles.removeBtnText}>Remove</Text>
+                  <View key={slot!._id} style={sc.availSlotRow}>
+                    <Text style={sc.availSlotTime}>{formatTime(slot!.startTime)}</Text>
+                    <Text style={sc.availSlotDuration}>{slot!.durationMinutes} min</Text>
+                    <Pressable style={sc.removeBtn} onPress={() => handleRemove(slot!._id)}>
+                      <Ionicons name="trash-outline" size={14} color={Colors.error} />
                     </Pressable>
                   </View>
                 ))}
@@ -187,19 +209,119 @@ function AvailabilitySection() {
       )}
 
       <AddAvailabilityModal visible={showModal} onClose={() => setShowModal(false)} />
-    </>
+    </View>
   );
 }
 
-export default function ManageScreen() {
-  const router = useRouter();
+// ─── Daily velocity card ──────────────────────────────────────────────────────
 
+function VelocityCard({ classes }: { classes: EnrichedClass[] }) {
+  const { primary } = useGymColors();
+  const totalCapacity = classes.reduce((s, c) => s + c.capacity, 0);
+  const totalBooked = classes.reduce((s, c) => s + c.bookedCount, 0);
+  const pct = totalCapacity > 0 ? Math.round((totalBooked / totalCapacity) * 100) : 0;
+
+  return (
+    <View style={sc.velocityCard}>
+      <Text style={sc.velocityLabel}>DAILY VELOCITY</Text>
+      <Text style={[sc.velocityPct, { color: primary }]}>{pct}%</Text>
+      <Text style={sc.velocitySubLabel}>DAILY CAPACITY</Text>
+      <View style={sc.progressTrack}>
+        <View style={[sc.progressFill, { width: `${pct}%` as any, backgroundColor: primary }]} />
+      </View>
+      <View style={sc.velocityStats}>
+        <View style={sc.velocityStat}>
+          <Text style={sc.velocityStatNum}>{String(totalBooked).padStart(2, "0")}</Text>
+          <Text style={sc.velocityStatUnit}>ATHLETES</Text>
+        </View>
+        <View style={sc.velocityStatDivider} />
+        <View style={sc.velocityStat}>
+          <Text style={sc.velocityStatNum}>{String(classes.length).padStart(2, "0")}</Text>
+          <Text style={sc.velocityStatUnit}>SESSIONS</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ─── Class card ───────────────────────────────────────────────────────────────
+
+function ClassCard({ cls, onDelete }: { cls: EnrichedClass; onDelete: (cls: Doc<"classes">) => void }) {
+  const router = useRouter();
+  const { primary } = useGymColors();
+  const spotsLeft = cls.capacity - cls.bookedCount;
+  const isFull = spotsLeft <= 0;
+
+  return (
+    <View style={sc.classCard}>
+      <View style={sc.classTimeRow}>
+        <View>
+          <Text style={sc.classTime}>{cls.startTime}</Text>
+          <Text style={sc.sessionLabel}>{sessionLabel(cls.startTime)}</Text>
+        </View>
+        <View style={[sc.badge, {
+          backgroundColor: isFull ? Colors.error + "22" : primary + "22",
+          borderColor: isFull ? Colors.error + "66" : primary + "44",
+        }]}>
+          <Text style={[sc.badgeText, { color: isFull ? Colors.error : primary }]}>
+            {isFull ? "FULL" : `${spotsLeft} SLOTS`}
+          </Text>
+        </View>
+      </View>
+
+      <Text style={sc.classTitle}>{cls.wodTitle?.toUpperCase() ?? "CROSSFIT CLASS"}</Text>
+      {cls.wodDescription ? (
+        <Text style={sc.classDesc} numberOfLines={1}>{cls.wodDescription}</Text>
+      ) : null}
+
+      <View style={sc.divider} />
+
+      <View style={sc.classMeta}>
+        <View style={sc.metaItem}>
+          <Ionicons name="person-outline" size={13} color={Colors.textSecondary} />
+          <Text style={sc.metaText}>{cls.coachName}</Text>
+        </View>
+        <View style={sc.metaItem}>
+          <Ionicons name="people-outline" size={13} color={Colors.textSecondary} />
+          <Text style={sc.metaText}>{cls.bookedCount}/{cls.capacity} Athletes</Text>
+        </View>
+      </View>
+
+      <View style={sc.classActions}>
+        <Pressable
+          style={sc.rosterBtn}
+          onPress={() => router.push({ pathname: "/roster", params: { classId: cls._id } })}
+        >
+          <Ionicons name="people" size={15} color={primary} />
+          <Text style={[sc.rosterBtnText, { color: primary }]}>Roster</Text>
+        </Pressable>
+        <Pressable style={sc.deleteBtn} onPress={() => onDelete(cls)}>
+          <Ionicons name="trash-outline" size={16} color={Colors.error} />
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+// ─── Main screen ──────────────────────────────────────────────────────────────
+
+export default function ManageScreen() {
+  const { primary } = useGymColors();
+  const router = useRouter();
   const today = getTodayDate();
-  const wodSchedule = useQuery(api.wods.getSchedule, { startDate: today, days: 7 });
-  const upcomingClasses = useQuery(api.classes.getUpcoming, { startDate: today, days: 14 });
+  const [selectedDate, setSelectedDate] = useState(today);
+
+  const { monthDay, dayName } = formatNavDate(selectedDate);
+
+  const upcomingClasses = useQuery(api.classes.getUpcoming, { startDate: selectedDate, days: 1 });
   const removeClass = useMutation(api.classes.remove);
 
-  const handleDeleteClass = (cls: Doc<"classes">) => {
+  const dayClasses = useMemo(
+    () => (upcomingClasses ?? []).filter((c) => c.date === selectedDate),
+    [upcomingClasses, selectedDate]
+  );
+
+  const handleDelete = (cls: Doc<"classes">) => {
     Alert.alert(
       "Cancel Class",
       `Cancel the ${formatTime(cls.startTime)} class on ${formatDate(cls.date, { relative: true, weekday: "short" })}? All bookings will be cancelled.`,
@@ -220,332 +342,371 @@ export default function ManageScreen() {
     );
   };
 
-  if (wodSchedule === undefined || upcomingClasses === undefined) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator color={Colors.primary} size="large" />
-      </View>
-    );
-  }
-
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.titleBar}>
-        <Text style={styles.title}>Manage</Text>
-      </View>
+    <SafeAreaView style={sc.container} edges={[]}>
+      <ScrollView contentContainerStyle={sc.scroll} showsVerticalScrollIndicator={false}>
 
-      <FlatList
-        data={upcomingClasses}
-        keyExtractor={(c) => c._id}
-        contentContainerStyle={styles.scroll}
-        ListHeaderComponent={
-          <>
-            {/* WOD Schedule */}
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionLabel}>WOD Schedule</Text>
-            </View>
+        {/* ── Page header ── */}
+        <View style={sc.pageHeader}>
+          <Text style={[sc.pageEyebrow, { color: primary }]}>MANAGEMENT HUB</Text>
+          <Text style={sc.pageTitle}>SCHEDULE</Text>
+          <Text style={sc.pageSubtitle}>
+            Modify class slots, monitor capacity, and deploy new programming sessions.
+          </Text>
+        </View>
 
-            {wodSchedule.map(({ date, wod }) => (
-              <View key={date} style={styles.wodRow}>
-                <View style={styles.wodDateCol}>
-                  <Text style={styles.wodDayLabel}>
-                    {formatDate(date, { relative: true, weekday: "short" })}
-                  </Text>
-                </View>
-                <View style={[styles.wodCardInline, !wod && styles.wodCardEmpty]}>
-                  {wod ? (
-                    <>
-                      <View style={styles.wodCardTop}>
-                        <Text style={styles.wodBadge}>{wod.type}</Text>
-                        <Text style={styles.wodTitle} numberOfLines={1}>
-                          {wod.title}
-                        </Text>
-                      </View>
-                      <Text style={styles.wodDesc} numberOfLines={1}>
-                        {wod.description}
-                      </Text>
-                    </>
-                  ) : (
-                    <Text style={styles.noWodText}>No WOD posted</Text>
-                  )}
-                </View>
-                <Pressable
-                  style={[styles.wodActionBtn, wod && styles.wodEditBtn]}
-                  onPress={() =>
-                    router.push({
-                      pathname: "/wod-form",
-                      params: wod ? { wodId: wod._id } : { date },
-                    })
-                  }
-                >
-                  <Text style={[styles.wodActionText, wod && styles.wodEditText]}>
-                    {wod ? "Edit" : "+ Add"}
-                  </Text>
-                </Pressable>
-              </View>
-            ))}
-
-            {/* Upcoming Classes */}
-            <View style={[styles.sectionHeader, { marginTop: 16 }]}>
-              <Text style={styles.sectionLabel}>Upcoming Classes</Text>
-              <Pressable style={styles.addBtn} onPress={() => router.push("/class-form")}>
-                <Text style={styles.addBtnText}>+ Add</Text>
-              </Pressable>
-            </View>
-          </>
-        }
-        ListEmptyComponent={
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>No classes scheduled</Text>
+        {/* ── Date navigator ── */}
+        <View style={sc.dateNav}>
+          <Pressable style={sc.navArrow} onPress={() => setSelectedDate((d) => shiftDate(d, -1))} hitSlop={10}>
+            <Ionicons name="chevron-back" size={20} color={Colors.text} />
+          </Pressable>
+          <View style={sc.dateCenter}>
+            <Text style={sc.dateMonthDay}>{monthDay}</Text>
+            <Text style={sc.dateDayName}>{dayName}</Text>
           </View>
-        }
-        renderItem={({ item }) => (
-          <View style={styles.classCard}>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.classDate}>{formatDate(item.date, { relative: true, weekday: "short" })}</Text>
-              <Text style={styles.classTime}>{formatTime(item.startTime)}</Text>
-              <Text style={styles.classCapacity}>
-                {item.bookedCount}/{item.capacity} booked
-                {item.bookedCount >= item.capacity ? " · Full" : ""}
-              </Text>
-            </View>
-            <View style={styles.classActions}>
-              <Pressable
-                style={styles.rosterBtn}
-                onPress={() => router.push({ pathname: "/roster", params: { classId: item._id } })}
-              >
-                <Text style={styles.rosterBtnText}>Roster</Text>
-              </Pressable>
-              <Pressable style={styles.deleteBtn} onPress={() => handleDeleteClass(item)}>
-                <Text style={styles.deleteBtnText}>Cancel</Text>
-              </Pressable>
-            </View>
+          <Pressable style={sc.navArrow} onPress={() => setSelectedDate((d) => shiftDate(d, 1))} hitSlop={10}>
+            <Ionicons name="chevron-forward" size={20} color={Colors.text} />
+          </Pressable>
+        </View>
+
+        {/* ── Deploy Class card ── */}
+        <Pressable style={[sc.deployCard, { borderColor: primary + "44" }]} onPress={() => router.push("/class-form")}>
+          <View style={[sc.deployIcon, { borderColor: primary + "66" }]}>
+            <Ionicons name="add" size={22} color={primary} />
           </View>
+          <View style={{ flex: 1 }}>
+            <Text style={sc.deployTitle}>DEPLOY CLASS</Text>
+            <Text style={sc.deploySubtitle}>Create a new slot in the daily roster.</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
+        </Pressable>
+
+        {/* ── Daily velocity ── */}
+        {dayClasses.length > 0 && (
+          <VelocityCard classes={dayClasses as EnrichedClass[]} />
         )}
-        ListFooterComponent={<AvailabilitySection />}
-      />
+
+        {/* ── Classes for selected day ── */}
+        <View style={sc.sectionBlock}>
+          <Text style={sc.sectionLabel}>
+            {selectedDate === today ? "Today's Classes" : `${dayName.charAt(0) + dayName.slice(1).toLowerCase()}'s Classes`}
+          </Text>
+
+          {upcomingClasses === undefined ? (
+            <View style={sc.centered}><ActivityIndicator color={primary} /></View>
+          ) : dayClasses.length === 0 ? (
+            <View style={sc.emptyCard}>
+              <Text style={sc.emptyText}>No classes scheduled</Text>
+              <Text style={sc.emptyHint}>Tap Deploy Class to add one</Text>
+            </View>
+          ) : (
+            (dayClasses as EnrichedClass[]).map((cls) => (
+              <ClassCard key={cls._id} cls={cls} onDelete={handleDelete} />
+            ))
+          )}
+        </View>
+
+        {/* ── 1:1 Availability ── */}
+        <AvailabilitySection />
+
+        <Text style={sc.endLabel}>END OF DAY ROSTER</Text>
+      </ScrollView>
+
+      {/* ── FAB ── */}
+      <Pressable style={[sc.fab, { backgroundColor: primary }]} onPress={() => router.push("/class-form")}>
+        <Ionicons name="add" size={26} color={Colors.onPrimary} />
+      </Pressable>
     </SafeAreaView>
   );
 }
 
-const styles = StyleSheet.create({
+// ─── Styles ───────────────────────────────────────────────────────────────────
+
+const sc = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: Colors.background,
+  scroll: { paddingBottom: 120 },
+  centered: { paddingVertical: 24, alignItems: "center" },
+
+  // Page header
+  pageHeader: { paddingHorizontal: 22, paddingTop: 18, paddingBottom: 8 },
+  pageEyebrow: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: FontSizes.labelSm,
+    letterSpacing: 2,
+    marginBottom: 4,
   },
-  titleBar: { padding: 20, paddingBottom: 8 },
-  title: { fontSize: 28, fontWeight: "800", color: Colors.text },
-  scroll: { padding: 20, paddingTop: 8, paddingBottom: 40 },
-  sectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+  pageTitle: {
+    fontFamily: Fonts.display,
+    fontSize: 42,
+    color: Colors.text,
+    letterSpacing: -1,
     marginBottom: 10,
   },
-  sectionLabel: {
-    fontSize: 12,
-    fontWeight: "700",
+  pageSubtitle: {
+    fontFamily: Fonts.body,
+    fontSize: 13,
     color: Colors.textSecondary,
-    textTransform: "uppercase",
+    lineHeight: 19,
+  },
+
+  // Date navigator
+  dateNav: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginHorizontal: 22,
+    marginTop: 20,
+    marginBottom: 16,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
+  },
+  navArrow: {
+    width: 36, height: 36, borderRadius: 10,
+    backgroundColor: Colors.surfaceContainerHighest,
+    alignItems: "center", justifyContent: "center",
+  },
+  dateCenter: { flex: 1, alignItems: "center", gap: 3 },
+  dateMonthDay: {
+    fontFamily: Fonts.bodySemi,
+    fontSize: FontSizes.labelMd,
+    color: Colors.textSecondary,
     letterSpacing: 1,
   },
-  addBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+  dateDayName: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes.headlineSm,
+    color: Colors.text,
+    letterSpacing: 0.5,
   },
-  addBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
-  // WOD schedule row
-  wodRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 8,
-    gap: 8,
-  },
-  wodDateCol: { width: 72 },
-  wodDayLabel: { fontSize: 13, fontWeight: "600", color: Colors.textSecondary },
-  wodCardInline: {
-    flex: 1,
+
+  // Deploy card
+  deployCard: {
+    marginHorizontal: 22, marginBottom: 14,
     backgroundColor: Colors.surface,
-    borderRadius: 10,
-    padding: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderRadius: 16, borderWidth: 1,
+    flexDirection: "row", alignItems: "center",
+    padding: 16, gap: 14,
   },
-  wodCardEmpty: { borderStyle: "dashed", borderColor: Colors.border },
-  wodCardTop: { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 },
-  wodBadge: {
-    backgroundColor: Colors.primary,
-    color: "#fff",
-    fontSize: 10,
-    fontWeight: "800",
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    textTransform: "uppercase",
-    overflow: "hidden",
+  deployIcon: {
+    width: 46, height: 46, borderRadius: 12, borderWidth: 1.5,
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: Colors.surfaceContainerHighest,
   },
-  wodTitle: { fontSize: 14, fontWeight: "700", color: Colors.text, flex: 1 },
-  wodDesc: { fontSize: 12, color: Colors.textSecondary, lineHeight: 16 },
-  noWodText: { fontSize: 13, color: Colors.textMuted, fontStyle: "italic" },
-  wodActionBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    minWidth: 50,
-    alignItems: "center",
+  deployTitle: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes.titleMd,
+    color: Colors.text,
+    letterSpacing: 0.5,
+    marginBottom: 3,
   },
-  wodEditBtn: {
-    backgroundColor: "transparent",
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  wodActionText: { color: "#fff", fontWeight: "700", fontSize: 12 },
-  wodEditText: { color: Colors.textSecondary },
-  // Classes
-  emptyCard: {
+  deploySubtitle: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary },
+
+  // Velocity card
+  velocityCard: {
+    marginHorizontal: 22, marginBottom: 14,
     backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 20,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 20,
+    borderRadius: 16, borderWidth: 1, borderColor: Colors.border,
+    padding: 18,
   },
-  emptyText: { color: Colors.textSecondary, fontSize: 14 },
+  velocityLabel: {
+    fontFamily: Fonts.bodyBold, fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary, letterSpacing: 2, marginBottom: 6,
+  },
+  velocityPct: { fontFamily: Fonts.display, fontSize: 52, letterSpacing: -2, lineHeight: 58 },
+  velocitySubLabel: {
+    fontFamily: Fonts.bodyBold, fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary, letterSpacing: 1.5, marginBottom: 12, marginTop: 2,
+  },
+  progressTrack: {
+    height: 4, backgroundColor: Colors.surfaceContainerHighest,
+    borderRadius: 2, marginBottom: 18, overflow: "hidden",
+  },
+  progressFill: { height: 4, borderRadius: 2 },
+  velocityStats: { flexDirection: "row", alignItems: "center" },
+  velocityStat: { flex: 1 },
+  velocityStatNum: {
+    fontFamily: Fonts.display, fontSize: FontSizes.headlineSm,
+    color: Colors.text, letterSpacing: -0.5,
+  },
+  velocityStatUnit: {
+    fontFamily: Fonts.bodyBold, fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary, letterSpacing: 1.5, marginTop: 2,
+  },
+  velocityStatDivider: { width: 1, height: 36, backgroundColor: Colors.border, marginHorizontal: 20 },
+
+  // Section block
+  sectionBlock: { marginHorizontal: 22, marginBottom: 24 },
+  sectionHeaderRow: {
+    flexDirection: "row", alignItems: "center",
+    justifyContent: "space-between", marginBottom: 12,
+  },
+  sectionLabel: {
+    fontFamily: Fonts.display, fontSize: FontSizes.titleMd,
+    color: Colors.text, letterSpacing: 0.5, marginBottom: 14,
+  },
+  addSlotBtn: {
+    flexDirection: "row", alignItems: "center", gap: 4,
+    borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6,
+  },
+  addSlotBtnText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.onPrimary },
+
+  // Class card
   classCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 14,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    backgroundColor: Colors.surface, borderRadius: 16,
+    borderWidth: 1, borderColor: Colors.border,
+    padding: 16, marginBottom: 12,
   },
-  classDate: { fontSize: 12, color: Colors.textSecondary, marginBottom: 2 },
-  classTime: { fontSize: 18, fontWeight: "700", color: Colors.text },
-  classCapacity: { fontSize: 13, color: Colors.textSecondary, marginTop: 2 },
-  classActions: { flexDirection: "row", gap: 8, alignItems: "center" },
+  classTimeRow: {
+    flexDirection: "row", alignItems: "flex-start",
+    justifyContent: "space-between", marginBottom: 10,
+  },
+  classTime: {
+    fontFamily: Fonts.display, fontSize: 32,
+    color: Colors.text, letterSpacing: -1, lineHeight: 36,
+  },
+  sessionLabel: {
+    fontFamily: Fonts.bodyBold, fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary, letterSpacing: 1.5, marginTop: 2,
+  },
+  badge: { borderRadius: 8, borderWidth: 1, paddingHorizontal: 10, paddingVertical: 5 },
+  badgeText: { fontFamily: Fonts.bodyBold, fontSize: FontSizes.labelSm, letterSpacing: 0.8 },
+  classTitle: {
+    fontFamily: Fonts.display, fontSize: FontSizes.titleLg,
+    color: Colors.text, letterSpacing: 0.3, marginBottom: 4,
+  },
+  classDesc: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary },
+  divider: { height: 1, backgroundColor: Colors.border, marginVertical: 12 },
+  classMeta: { flexDirection: "row", gap: 16, marginBottom: 12 },
+  metaItem: { flexDirection: "row", alignItems: "center", gap: 5 },
+  metaText: { fontFamily: Fonts.bodySemi, fontSize: 12, color: Colors.textSecondary },
+  classActions: { flexDirection: "row", alignItems: "center", gap: 8 },
   rosterBtn: {
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderWidth: 1,
-    borderColor: Colors.primary + "66",
+    flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 6, paddingVertical: 9, borderRadius: 10,
+    borderWidth: 1, borderColor: Colors.border,
+    backgroundColor: Colors.surfaceContainerHighest,
   },
-  rosterBtnText: { color: Colors.primary, fontWeight: "600", fontSize: 13 },
+  rosterBtnText: { fontFamily: Fonts.bodyBold, fontSize: 13 },
   deleteBtn: {
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderWidth: 1,
-    borderColor: Colors.error + "55",
+    width: 38, height: 38, borderRadius: 10,
+    borderWidth: 1, borderColor: Colors.error + "44",
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: Colors.error + "11",
   },
-  deleteBtnText: { color: Colors.error, fontWeight: "600", fontSize: 13 },
+
+  // Empty state
+  emptyCard: {
+    backgroundColor: Colors.surface, borderRadius: 16,
+    padding: 28, alignItems: "center",
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  emptyText: { fontFamily: Fonts.bodyBold, fontSize: 15, color: Colors.textSecondary, marginBottom: 6 },
+  emptyHint: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textMuted },
+
+  // WOD schedule — big cards
+  wodBigCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 16, borderWidth: 1, borderColor: Colors.border,
+    padding: 16, marginBottom: 12,
+  },
+  wodBigCardHeader: {
+    flexDirection: "row", alignItems: "center",
+    justifyContent: "space-between", marginBottom: 8,
+  },
+  wodBigDate: {
+    fontFamily: Fonts.bodyBold, fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary, letterSpacing: 1.5,
+  },
+  wodTypeBadge: {
+    borderRadius: 5, borderWidth: 1,
+    paddingHorizontal: 8, paddingVertical: 3,
+  },
+  wodTypeText: { fontFamily: Fonts.bodyBold, fontSize: 10, letterSpacing: 0.5 },
+  wodBigTitle: {
+    fontFamily: Fonts.display, fontSize: FontSizes.titleLg,
+    color: Colors.text, letterSpacing: 0.3, marginBottom: 4,
+  },
+  wodBigDesc: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textSecondary, lineHeight: 18 },
+  noWodText: { fontFamily: Fonts.body, fontSize: 13, color: Colors.textMuted, fontStyle: "italic" },
+  wodActionRow: {
+    flexDirection: "row", alignItems: "center", justifyContent: "center",
+    gap: 6, paddingVertical: 9, borderRadius: 10,
+    borderWidth: 1, borderColor: Colors.border,
+  },
+  wodActionOutline: { backgroundColor: Colors.surfaceContainerHighest },
+  wodActionText: { fontFamily: Fonts.bodyBold, fontSize: 13, color: "#fff", letterSpacing: 0.5 },
+
   // Availability
   availDayLabel: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: Colors.textSecondary,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    marginBottom: 6,
+    fontFamily: Fonts.bodyBold, fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary, letterSpacing: 1.5,
+    textTransform: "uppercase", marginBottom: 6,
   },
   availSlotRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.surface,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 6,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: 8,
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: Colors.surface, borderRadius: 12,
+    padding: 12, marginBottom: 6,
+    borderWidth: 1, borderColor: Colors.border, gap: 8,
   },
-  availSlotTime: { fontSize: 16, fontWeight: "700", color: Colors.text, flex: 1 },
-  availSlotDuration: { fontSize: 13, color: Colors.textSecondary },
+  availSlotTime: { fontFamily: Fonts.display, fontSize: 16, color: Colors.text, flex: 1 },
+  availSlotDuration: { fontFamily: Fonts.bodySemi, fontSize: 13, color: Colors.textSecondary },
   removeBtn: {
-    borderRadius: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderWidth: 1,
-    borderColor: Colors.error + "55",
+    width: 32, height: 32, borderRadius: 8,
+    borderWidth: 1, borderColor: Colors.error + "44",
+    alignItems: "center", justifyContent: "center",
+    backgroundColor: Colors.error + "11",
   },
-  removeBtnText: { color: Colors.error, fontWeight: "600", fontSize: 12 },
+
+  // End + FAB
+  endLabel: {
+    textAlign: "center", fontFamily: Fonts.bodyBold,
+    fontSize: FontSizes.labelSm, color: Colors.textMuted,
+    letterSpacing: 2, marginTop: 8, marginBottom: 8,
+  },
+  fab: {
+    position: "absolute", bottom: 28, right: 22,
+    width: 56, height: 56, borderRadius: 28,
+    alignItems: "center", justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3, shadowRadius: 8, elevation: 8,
+  },
 });
 
-const modal = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.7)",
-    justifyContent: "flex-end",
-  },
+// ─── Availability modal styles ────────────────────────────────────────────────
+
+const md = StyleSheet.create({
+  overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" },
   sheet: {
     backgroundColor: Colors.surface,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 24,
-    paddingBottom: 40,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    padding: 24, paddingBottom: 40,
+    borderWidth: 1, borderColor: Colors.border,
   },
-  title: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: Colors.text,
-    marginBottom: 20,
-  },
+  title: { fontFamily: Fonts.display, fontSize: 18, color: Colors.text, marginBottom: 20 },
   label: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: Colors.textSecondary,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-    marginBottom: 8,
-    marginTop: 16,
+    fontFamily: Fonts.bodyBold, fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary, letterSpacing: 1,
+    textTransform: "uppercase", marginBottom: 8, marginTop: 16,
   },
   row: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   chip: {
-    backgroundColor: Colors.surfaceElevated,
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    backgroundColor: Colors.surfaceElevated, borderRadius: 8,
+    paddingHorizontal: 14, paddingVertical: 8,
+    borderWidth: 1, borderColor: Colors.border,
   },
-  chipActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  chipText: { color: Colors.textSecondary, fontWeight: "600", fontSize: 13 },
+  chipActive: {},
+  chipText: { fontFamily: Fonts.bodySemi, color: Colors.textSecondary, fontSize: 13 },
   chipTextActive: { color: "#fff" },
-  actions: {
-    flexDirection: "row",
-    gap: 12,
-    marginTop: 28,
-  },
+  actions: { flexDirection: "row", gap: 12, marginTop: 28 },
   cancelBtn: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: "center",
+    flex: 1, padding: 14, borderRadius: 10,
+    borderWidth: 1, borderColor: Colors.border, alignItems: "center",
   },
-  cancelText: { color: Colors.textSecondary, fontWeight: "700" },
-  saveBtn: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 10,
-    backgroundColor: Colors.primary,
-    alignItems: "center",
-  },
-  saveText: { color: "#fff", fontWeight: "700" },
+  cancelText: { fontFamily: Fonts.bodyBold, color: Colors.textSecondary },
+  saveBtn: { flex: 1, padding: 14, borderRadius: 10, alignItems: "center" },
+  saveText: { fontFamily: Fonts.bodyBold, color: "#fff" },
 });

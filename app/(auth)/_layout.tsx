@@ -2,9 +2,11 @@ import { useConvexAuth } from "convex/react";
 import { Redirect, Stack } from "expo-router";
 import { ActivityIndicator, View } from "react-native";
 import { Colors } from "../../constants/Colors";
+import { useGymColors } from "../../constants/GymConfig";
 
 export default function AuthLayout() {
   const { isAuthenticated, isLoading } = useConvexAuth();
+  const { primary } = useGymColors();
 
   if (isLoading) {
     return (
@@ -16,7 +18,7 @@ export default function AuthLayout() {
           backgroundColor: Colors.background,
         }}
       >
-        <ActivityIndicator color={Colors.primary} size="large" />
+        <ActivityIndicator color={primary} size="large" />
       </View>
     );
   }

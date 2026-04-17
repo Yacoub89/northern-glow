@@ -1,14 +1,12 @@
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { requireAuth, requireCoachOrAdmin } from "./helpers";
 
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Unauthenticated");
-    const caller = await ctx.db.get(userId);
-    if (caller?.role !== "coach" && caller?.role !== "admin") throw new Error("Unauthorized");
+    await requireCoachOrAdmin(ctx);
     return await ctx.storage.generateUploadUrl();
   },
 });
@@ -23,11 +21,12 @@ export const getDocumentUrl = query({
 export const listAll = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Unauthenticated");
-    const caller = await ctx.db.get(userId);
-    if (caller?.role !== "coach" && caller?.role !== "admin") throw new Error("Unauthorized");
-    const docs = await ctx.db.query("documents").order("desc").take(100);
+    const { gymId } = await requireCoachOrAdmin(ctx);
+    const docs = await ctx.db
+      .query("documents")
+      .withIndex("by_gym_createdAt", (q) => q.eq("gymId", gymId))
+      .order("desc")
+      .take(100);
     return await Promise.all(
       docs.map(async (doc) => {
         const sigs = await ctx.db
@@ -43,9 +42,12 @@ export const listAll = query({
 export const listMine = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Unauthenticated");
-    const docs = await ctx.db.query("documents").order("desc").take(100);
+    const { userId, gymId } = await requireAuth(ctx);
+    const docs = await ctx.db
+      .query("documents")
+      .withIndex("by_gym_createdAt", (q) => q.eq("gymId", gymId))
+      .order("desc")
+      .take(100);
     const mySigs = await ctx.db
       .query("documentSignatures")
       .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -63,10 +65,10 @@ export const listMine = query({
 export const getSignatures = query({
   args: { documentId: v.id("documents") },
   handler: async (ctx, { documentId }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Unauthenticated");
-    const caller = await ctx.db.get(userId);
-    if (caller?.role !== "coach" && caller?.role !== "admin") throw new Error("Unauthorized");
+    const { gymId } = await requireCoachOrAdmin(ctx);
+    // Verify document belongs to this gym
+    const doc = await ctx.db.get(documentId);
+    if (doc?.gymId !== gymId) throw new Error("Document not found");
     const sigs = await ctx.db
       .query("documentSignatures")
       .withIndex("by_document", (q) => q.eq("documentId", documentId))
@@ -88,13 +90,11 @@ export const create = mutation({
     fileStorageId: v.optional(v.id("_storage")),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Unauthenticated");
-    const caller = await ctx.db.get(userId);
-    if (caller?.role !== "coach" && caller?.role !== "admin") throw new Error("Unauthorized");
+    const { userId, gymId } = await requireCoachOrAdmin(ctx);
     if (!args.content && !args.fileStorageId) throw new Error("Provide content or a PDF file");
     return await ctx.db.insert("documents", {
       ...args,
+      gymId,
       createdBy: userId,
       createdAt: Date.now(),
     });
@@ -130,12 +130,10 @@ export const sign = mutation({
 export const remove = mutation({
   args: { documentId: v.id("documents") },
   handler: async (ctx, { documentId }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Unauthenticated");
-    const caller = await ctx.db.get(userId);
-    if (caller?.role !== "coach" && caller?.role !== "admin") throw new Error("Unauthorized");
+    const { gymId } = await requireCoachOrAdmin(ctx);
     const doc = await ctx.db.get(documentId);
-    if (doc?.fileStorageId) {
+    if (doc?.gymId !== gymId) throw new Error("Document not found");
+    if (doc.fileStorageId) {
       await ctx.storage.delete(doc.fileStorageId);
     }
     await ctx.db.delete(documentId);

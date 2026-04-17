@@ -15,7 +15,22 @@
       }
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_CONVEX_URL": "https://resolute-woodpecker-795.convex.cloud"
+      }
+    },
+    "gym-preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_CONVEX_URL": "https://resolute-woodpecker-795.convex.cloud"
+      }
+    },
+    "gym-production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_CONVEX_URL": "https://resolute-woodpecker-795.convex.cloud"
+      }
     }
   },
   "submit": {

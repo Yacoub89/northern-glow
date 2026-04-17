@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../convex/_generated/api";
 import { Doc, Id } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
-import { useGymConfig } from "../../constants/GymConfig";
+import { useGymColors, useGymConfig } from "../../constants/GymConfig";
 import { formatTime, getTodayDate } from "../../utils/date";
 
 
@@ -63,6 +63,7 @@ function ClassCard({
   cls: EnrichedClass;
   myBookings: Doc<"bookings">[];
 }) {
+  const { primary } = useGymColors();
   const book = useMutation(api.bookings.book);
   const cancel = useMutation(api.bookings.cancel);
   const myBooking = myBookings.find(
@@ -122,7 +123,7 @@ function ClassCard({
 
         {!myBooking ? (
           <Pressable
-            style={[styles.bookBtn, isFull && styles.fullBtn]}
+            style={[styles.bookBtn, { backgroundColor: primary }, isFull && styles.fullBtn]}
             onPress={isFull ? undefined : handleBook}
             disabled={isFull}
           >
@@ -154,6 +155,7 @@ type AvailableSlot = {
 };
 
 function CoachInitials({ name }: { name: string }) {
+  const { primary } = useGymColors();
   const initials = name
     .split(" ")
     .map((w) => w[0])
@@ -161,7 +163,7 @@ function CoachInitials({ name }: { name: string }) {
     .join("")
     .toUpperCase();
   return (
-    <View style={styles.coachAvatar}>
+    <View style={[styles.coachAvatar, { backgroundColor: primary }]}>
       <Text style={styles.coachAvatarText}>{initials}</Text>
     </View>
   );
@@ -245,6 +247,7 @@ function AppointmentsPanel({
   selectedDate: string;
   today: string;
 }) {
+  const { primary } = useGymColors();
   const coaches = useQuery(api.appointments.listCoaches);
   const [selectedCoachId, setSelectedCoachId] = useState<Id<"users"> | null>(null);
 
@@ -263,7 +266,7 @@ function AppointmentsPanel({
   if (coaches === undefined) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color={Colors.primary} />
+        <ActivityIndicator color={primary} />
       </View>
     );
   }
@@ -290,7 +293,7 @@ function AppointmentsPanel({
           return (
             <Pressable
               key={coach._id}
-              style={[styles.coachPill, isSelected && styles.coachPillActive]}
+              style={[styles.coachPill, isSelected && [styles.coachPillActive, { borderColor: primary }]]}
               onPress={() =>
                 setSelectedCoachId(isSelected || !coach._id ? null : coach._id)
               }
@@ -315,7 +318,7 @@ function AppointmentsPanel({
         <View style={{ marginTop: 20 }}>
           <Text style={styles.dayHeader}>AVAILABLE SLOTS</Text>
           {slots === undefined ? (
-            <ActivityIndicator color={Colors.primary} style={{ marginTop: 16 }} />
+            <ActivityIndicator color={primary} style={{ marginTop: 16 }} />
           ) : slots.length === 0 && myAppointment === null ? (
             <View style={styles.emptyCard}>
               <Text style={styles.emptyText}>No slots available this day</Text>
@@ -362,6 +365,7 @@ type TabMode = "classes" | "appointments";
 
 export default function ScheduleScreen() {
   const gym = useGymConfig();
+  const { primary } = useGymColors();
   const today = getTodayDate();
   const [selectedDate, setSelectedDate] = useState(today);
   const [mode, setMode] = useState<TabMode>("classes");
@@ -379,23 +383,23 @@ export default function ScheduleScreen() {
   if (mode === "classes" && (classes === undefined || myBookings === undefined)) {
     return (
       <View style={styles.centered}>
-        <ActivityIndicator color={Colors.primary} size="large" />
+        <ActivityIndicator color={primary} size="large" />
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={[]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.gymName}>{gym.name.toUpperCase()}</Text>
+        <Text style={[styles.gymName, { color: primary }]}>{gym.name.toUpperCase()}</Text>
         <Text style={styles.title}>Schedule</Text>
       </View>
 
       {/* Mode toggle */}
       <View style={styles.segmentRow}>
         <Pressable
-          style={[styles.segmentBtn, mode === "classes" && styles.segmentBtnActive]}
+          style={[styles.segmentBtn, mode === "classes" && [styles.segmentBtnActive, { backgroundColor: primary }]]}
           onPress={() => setMode("classes")}
         >
           <Text style={[styles.segmentText, mode === "classes" && styles.segmentTextActive]}>
@@ -403,7 +407,7 @@ export default function ScheduleScreen() {
           </Text>
         </Pressable>
         <Pressable
-          style={[styles.segmentBtn, mode === "appointments" && styles.segmentBtnActive]}
+          style={[styles.segmentBtn, mode === "appointments" && [styles.segmentBtnActive, { backgroundColor: primary }]]}
           onPress={() => setMode("appointments")}
         >
           <Text
@@ -428,7 +432,7 @@ export default function ScheduleScreen() {
           return (
             <Pressable
               key={d}
-              style={[styles.dayPill, isSelected && styles.dayPillActive]}
+              style={[styles.dayPill, isSelected && [styles.dayPillActive, { backgroundColor: primary, borderColor: primary }]]}
               onPress={() => setSelectedDate(d)}
             >
               <Text style={[styles.dayPillName, isSelected && styles.dayPillTextActive]}>
@@ -452,9 +456,9 @@ export default function ScheduleScreen() {
             {/* WOD of the day */}
             {wod ? (
               <View style={styles.wodCard}>
-                <Text style={styles.wodCardLabel}>WOD</Text>
+                <Text style={[styles.wodCardLabel, { color: primary }]}>WOD</Text>
                 <Text style={styles.wodCardTitle}>{wod.title}</Text>
-                <Text style={styles.wodCardMeta}>
+                <Text style={[styles.wodCardMeta, { color: primary }]}>
                   {wod.type.toUpperCase()}
                   {wod.description ? ` · ${wod.description}` : ""}
                 </Text>
@@ -464,7 +468,7 @@ export default function ScheduleScreen() {
                       const { num, label } = parseMovement(m);
                       return (
                         <View key={i} style={styles.wodMovementRow}>
-                          <Text style={styles.wodMovementNum}>{num ?? "·"}</Text>
+                          <Text style={[styles.wodMovementNum, { color: primary }]}>{num ?? "·"}</Text>
                           <Text style={styles.wodMovementLabel}>{label}</Text>
                         </View>
                       );
@@ -521,7 +525,6 @@ const styles = StyleSheet.create({
   gymName: {
     fontSize: 12,
     fontWeight: "800",
-    color: Colors.primary,
     letterSpacing: 2,
     textTransform: "uppercase",
     marginBottom: 4,
@@ -549,9 +552,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 8,
   },
-  segmentBtnActive: {
-    backgroundColor: Colors.primary,
-  },
+  segmentBtnActive: {},
   segmentText: {
     fontSize: 13,
     fontWeight: "700",
@@ -578,10 +579,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  dayPillActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
+  dayPillActive: {},
   dayPillName: {
     fontSize: 10,
     fontWeight: "700",
@@ -618,7 +616,6 @@ const styles = StyleSheet.create({
   wodCardLabel: {
     fontSize: 10,
     fontWeight: "800",
-    color: Colors.primary,
     letterSpacing: 2,
     textTransform: "uppercase",
     marginBottom: 6,
@@ -632,7 +629,6 @@ const styles = StyleSheet.create({
   wodCardMeta: {
     fontSize: 12,
     fontWeight: "700",
-    color: Colors.primary,
     letterSpacing: 0.5,
     marginBottom: 12,
   },
@@ -673,7 +669,6 @@ const styles = StyleSheet.create({
     width: 26,
     fontSize: 14,
     fontWeight: "800",
-    color: Colors.primary,
     textAlign: "right",
   },
   wodMovementLabel: { fontSize: 14, color: Colors.text, fontWeight: "500", flex: 1 },
@@ -686,7 +681,6 @@ const styles = StyleSheet.create({
 
   // Book buttons
   bookBtn: {
-    backgroundColor: Colors.primary,
     borderRadius: 8,
     paddingHorizontal: 20,
     paddingVertical: 9,
@@ -723,14 +717,12 @@ const styles = StyleSheet.create({
     minWidth: 70,
   },
   coachPillActive: {
-    borderColor: Colors.primary,
     backgroundColor: Colors.surfaceElevated,
   },
   coachAvatar: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.primary,
     justifyContent: "center",
     alignItems: "center",
   },

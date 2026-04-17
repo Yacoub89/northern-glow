@@ -12,9 +12,12 @@ import {
   View,
 } from "react-native";
 import { Colors } from "../../constants/Colors";
+import { useGymColors, useGymConfig } from "../../constants/GymConfig";
 
 export default function RegisterScreen() {
   const { signIn } = useAuthActions();
+  const { primary } = useGymColors();
+  const gym = useGymConfig();
 
   // Step 1: registration fields
   const [name, setName] = useState("");
@@ -31,6 +34,10 @@ export default function RegisterScreen() {
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password) {
       Alert.alert("Error", "Please fill in all fields");
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      Alert.alert("Error", "Please enter a valid email address");
       return;
     }
     if (password.length < 8) {
@@ -101,7 +108,7 @@ export default function RegisterScreen() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <View style={styles.inner}>
-          <Text style={styles.logo}>OCFit</Text>
+          <Text style={[styles.logo, { color: primary }]}>{gym.name}</Text>
           <Text style={styles.tagline}>Check your email</Text>
           <Text style={styles.subtitle}>
             We sent a 6-digit code to{"\n"}
@@ -121,7 +128,7 @@ export default function RegisterScreen() {
               textAlign="center"
             />
             <Pressable
-              style={[styles.button, loading && styles.buttonDisabled]}
+              style={[styles.button, { backgroundColor: primary }, loading && styles.buttonDisabled]}
               onPress={handleVerify}
               disabled={loading}
             >
@@ -133,11 +140,11 @@ export default function RegisterScreen() {
 
           <Pressable onPress={handleResend} disabled={loading} style={styles.resendRow}>
             <Text style={styles.footerText}>Didn't receive it? </Text>
-            <Text style={[styles.link, loading && { opacity: 0.5 }]}>Resend code</Text>
+            <Text style={[styles.link, { color: primary }, loading && { opacity: 0.5 }]}>Resend code</Text>
           </Pressable>
 
           <Pressable onPress={() => setStep("register")} style={styles.backRow}>
-            <Text style={styles.link}>← Back</Text>
+            <Text style={[styles.link, { color: primary }]}>← Back</Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>
@@ -151,7 +158,7 @@ export default function RegisterScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.inner}>
-        <Text style={styles.logo}>OCFit</Text>
+        <Text style={[styles.logo, { color: primary }]}>{gym.name}</Text>
         <Text style={styles.tagline}>Create your account</Text>
 
         <View style={styles.form}>
@@ -182,7 +189,7 @@ export default function RegisterScreen() {
             secureTextEntry
           />
           <Pressable
-            style={[styles.button, loading && styles.buttonDisabled]}
+            style={[styles.button, { backgroundColor: primary }, loading && styles.buttonDisabled]}
             onPress={handleRegister}
             disabled={loading}
           >
@@ -196,7 +203,7 @@ export default function RegisterScreen() {
           <Text style={styles.footerText}>Already have an account? </Text>
           <Link href="/(auth)/login" asChild>
             <Pressable>
-              <Text style={styles.link}>Sign In</Text>
+              <Text style={[styles.link, { color: primary }]}>Sign In</Text>
             </Pressable>
           </Link>
         </View>
@@ -211,7 +218,6 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 52,
     fontWeight: "900",
-    color: Colors.primary,
     textAlign: "center",
     letterSpacing: -2,
   },
@@ -250,7 +256,6 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
   },
   button: {
-    backgroundColor: Colors.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
@@ -260,7 +265,7 @@ const styles = StyleSheet.create({
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   footer: { flexDirection: "row", justifyContent: "center", marginTop: 32 },
   footerText: { color: Colors.textSecondary, fontSize: 15 },
-  link: { color: Colors.primary, fontSize: 15, fontWeight: "600" },
+  link: { fontSize: 15, fontWeight: "600" },
   resendRow: {
     flexDirection: "row",
     justifyContent: "center",

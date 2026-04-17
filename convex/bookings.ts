@@ -3,7 +3,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { DatabaseReader } from "./_generated/server";
-import { requireCoachOrAdmin } from "./helpers";
+import { requireAuth, requireCoachOrAdmin } from "./helpers";
 import { internal } from "./_generated/api";
 
 async function getWaitlisted(db: DatabaseReader, classId: Id<"classes">) {
@@ -104,7 +104,10 @@ export const getUserBookingForClass = query({
 export const getClassRoster = query({
   args: { classId: v.id("classes") },
   handler: async (ctx, { classId }) => {
-    await requireCoachOrAdmin(ctx);
+    const { gymId } = await requireCoachOrAdmin(ctx);
+    // Verify class belongs to the coach's gym
+    const cls = await ctx.db.get(classId);
+    if (cls?.gymId !== gymId) throw new Error("Class not found");
     const bookings = await ctx.db
       .query("bookings")
       .withIndex("by_class", (q) => q.eq("classId", classId))
@@ -207,11 +210,12 @@ export const uncheckIn = mutation({
 export const book = mutation({
   args: { classId: v.id("classes") },
   handler: async (ctx, { classId }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Unauthenticated");
+    const { userId, gymId } = await requireAuth(ctx);
 
     const cls = await ctx.db.get(classId);
     if (!cls) throw new Error("Class not found");
+    // Prevent booking a class from a different gym
+    if (cls.gymId !== gymId) throw new Error("Class not found");
 
     // Membership gate — coaches and admins always bypass
     const user = await ctx.db.get(userId);
@@ -225,17 +229,17 @@ export const book = mutation({
         throw new Error("An active membership is required to book classes");
       }
 
-      // 2x/week cap: count booked classes in the same calendar week as the target class
+      // 2x/week cap
       if (membership.plan === "twice_weekly") {
         const classDate = new Date(cls.date + "T00:00:00Z");
-        const dow = classDate.getUTCDay(); // 0=Sun
+        const dow = classDate.getUTCDay();
         const daysToMon = dow === 0 ? 6 : dow - 1;
         const mon = new Date(classDate);
         mon.setUTCDate(classDate.getUTCDate() - daysToMon);
         const sun = new Date(mon);
         sun.setUTCDate(mon.getUTCDate() + 7);
         const weekStart = mon.toISOString().split("T")[0];
-        const weekEnd = sun.toISOString().split("T")[0]; // exclusive
+        const weekEnd = sun.toISOString().split("T")[0];
 
         const userBookings = await ctx.db
           .query("bookings")
@@ -253,9 +257,7 @@ export const book = mutation({
         ).length;
 
         if (weekCount >= 2) {
-          throw new Error(
-            "You've reached your 2 classes/week limit for this week"
-          );
+          throw new Error("You've reached your 2 classes/week limit for this week");
         }
       }
     }
@@ -313,7 +315,6 @@ export const book = mutation({
       bookingResult = { status: "waitlist" as const, position };
     }
 
-    // Push notification to athlete
     const coach = await ctx.db.get(cls.coachId);
     if (user?.pushToken) {
       await ctx.scheduler.runAfter(0, internal.notifications.sendPush, {
@@ -327,7 +328,6 @@ export const book = mutation({
       });
     }
 
-    // Confirmation email to athlete
     if (user?.email) {
       await ctx.scheduler.runAfter(0, internal.email.sendClassBookingEmail, {
         email: user.email,
@@ -380,15 +380,14 @@ export const cancel = mutation({
           ctx.db.patch(classId, { bookedCount: newCount + 1 }),
           ...rest.map((b, i) => ctx.db.patch(b._id, { waitlistPosition: i + 1 })),
         ]);
-        // Notify promoted athlete
         const promotedUser = await ctx.db.get(first.userId);
         if (promotedUser?.pushToken) {
-          const cls = await ctx.db.get(classId);
+          const updatedCls = await ctx.db.get(classId);
           await ctx.scheduler.runAfter(0, internal.notifications.sendPush, {
             tokens: [promotedUser.pushToken],
             title: "You're off the waitlist!",
-            body: cls
-              ? `A spot opened up for the ${cls.startTime} class on ${cls.date}. You're booked!`
+            body: updatedCls
+              ? `A spot opened up for the ${updatedCls.startTime} class on ${updatedCls.date}. You're booked!`
               : "A spot opened up — you're now booked!",
             data: { type: "waitlist_promoted", classId },
           });

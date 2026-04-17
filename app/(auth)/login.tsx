@@ -12,10 +12,11 @@ import {
   View,
 } from "react-native";
 import { Colors } from "../../constants/Colors";
-import { useGymConfig } from "../../constants/GymConfig";
+import { useGymColors, useGymConfig } from "../../constants/GymConfig";
 
 export default function LoginScreen() {
   const gym = useGymConfig();
+  const { primary } = useGymColors();
   const { signIn } = useAuthActions();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -43,7 +44,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.inner}>
-        <Text style={styles.logo}>{gym.name}</Text>
+        <Text style={[styles.logo, { color: primary }]}>{gym.name}</Text>
         {gym.tagline ? <Text style={styles.tagline}>{gym.tagline}</Text> : null}
 
         <View style={styles.form}>
@@ -66,7 +67,7 @@ export default function LoginScreen() {
             secureTextEntry
           />
           <Pressable
-            style={[styles.button, loading && styles.buttonDisabled]}
+            style={[styles.button, { backgroundColor: primary }, loading && styles.buttonDisabled]}
             onPress={handleLogin}
             disabled={loading}
           >
@@ -80,7 +81,7 @@ export default function LoginScreen() {
           <Text style={styles.footerText}>Don't have an account? </Text>
           <Link href="/(auth)/register" asChild>
             <Pressable>
-              <Text style={styles.link}>Sign Up</Text>
+              <Text style={[styles.link, { color: primary }]}>Sign Up</Text>
             </Pressable>
           </Link>
         </View>
@@ -95,7 +96,6 @@ const styles = StyleSheet.create({
   logo: {
     fontSize: 52,
     fontWeight: "900",
-    color: Colors.primary,
     textAlign: "center",
     letterSpacing: -2,
   },
@@ -119,7 +119,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   button: {
-    backgroundColor: Colors.primary,
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: "center",
@@ -129,5 +128,5 @@ const styles = StyleSheet.create({
   buttonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   footer: { flexDirection: "row", justifyContent: "center", marginTop: 32 },
   footerText: { color: Colors.textSecondary, fontSize: 15 },
-  link: { color: Colors.primary, fontSize: 15, fontWeight: "600" },
+  link: { fontSize: 15, fontWeight: "600" },
 });

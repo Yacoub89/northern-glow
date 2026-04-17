@@ -2,9 +2,9 @@ import { internalMutation } from "./_generated/server";
 
 // ── Mock coaches ─────────────────────────────────────────────────────────────
 const COACHES = [
-  { name: "Coach Marcus", email: "marcus@ocfit.com" },
-  { name: "Coach Jess", email: "jess@ocfit.com" },
-  { name: "Coach Dev", email: "dev@ocfit.com" },
+  { name: "Coach Marcus", email: "marcus@northernglow.com" },
+  { name: "Coach Jess", email: "jess@northernglow.com" },
+  { name: "Coach Dev", email: "dev@northernglow.com" },
 ];
 
 // ── Mock WODs ────────────────────────────────────────────────────────────────
@@ -20,21 +20,14 @@ const WODS: {
     description: "21-15-9 reps for time of Thrusters and Pull-ups",
     type: "ForTime",
     movements: ["Thrusters (95/65 lb)", "Pull-ups"],
-    scalingNotes:
-      "Scale thrusters to 65/45 lb. Use banded pull-ups or ring rows.",
+    scalingNotes: "Scale thrusters to 65/45 lb. Use banded pull-ups or ring rows.",
   },
   {
     title: "Murph",
     description:
       "1 mile Run, 100 Pull-ups, 200 Push-ups, 300 Air Squats, 1 mile Run. Partition the pull-ups, push-ups, and squats as needed.",
     type: "ForTime",
-    movements: [
-      "Run (1 mile)",
-      "Pull-ups",
-      "Push-ups",
-      "Air Squats",
-      "Run (1 mile)",
-    ],
+    movements: ["Run (1 mile)", "Pull-ups", "Push-ups", "Air Squats", "Run (1 mile)"],
     scalingNotes: "Half Murph: 800m run, 50 pull-ups, 100 push-ups, 150 squats, 800m run.",
   },
   {
@@ -88,18 +81,14 @@ const WODS: {
   {
     title: "Gymnastics Conditioning",
     description:
-      "For time: 50-40-30-20-10 Double-Unders, 5-4-3-2-1 Muscle-Ups. Complete all double-unders then all muscle-ups at each station.",
+      "For time: 50-40-30-20-10 Double-Unders, 5-4-3-2-1 Muscle-Ups.",
     type: "Other",
-    movements: [
-      "Double-Unders",
-      "Ring Muscle-Ups",
-    ],
+    movements: ["Double-Unders", "Ring Muscle-Ups"],
     scalingNotes:
       "Sub double-unders with 2x single-unders. Sub muscle-ups with chest-to-bar pull-ups + ring dips.",
   },
 ];
 
-// ── Class time slots ─────────────────────────────────────────────────────────
 const TIME_SLOTS = ["05:30", "07:00", "09:00", "12:00", "16:30", "17:30"];
 
 function getDateStr(offsetDays: number): string {
@@ -108,41 +97,51 @@ function getDateStr(offsetDays: number): string {
   return d.toISOString().split("T")[0];
 }
 
-// ── Seed: insert mock data ──────────────────────────────────────────────────
+// ── Seed: insert mock data for a demo gym ────────────────────────────────────
 export const run = internalMutation({
   args: {},
   handler: async (ctx) => {
-    // 1. Create mock coaches
+    // 1. Create a demo gym
+    const gymId = await ctx.db.insert("gyms", {
+      name: "Demo CrossFit",
+      tagline: "Powered by NorthernGlow",
+      primaryColor: "#1BBFBF",
+      timezone: "America/New_York",
+    });
+
+    // 2. Create mock coaches linked to the gym
     const coachIds = await Promise.all(
       COACHES.map((c) =>
         ctx.db.insert("users", {
           name: c.name,
           email: c.email,
           role: "coach",
+          gymId,
         })
       )
     );
 
-    // 2. Create a WOD per day for the next 7 days + link classes
+    // 3. Create a WOD per day for the next 7 days + link classes
     for (let day = 0; day < 7; day++) {
       const date = getDateStr(day);
       const wod = WODS[day % WODS.length];
 
       const wodId = await ctx.db.insert("wods", {
+        gymId,
         date,
         ...wod,
         createdBy: coachIds[0],
       });
 
-      // Pick 3-4 time slots for this day
-      const numClasses = 3 + (day % 2); // alternates 3 and 4
+      const numClasses = 3 + (day % 2);
       const slots = TIME_SLOTS.slice(0, numClasses);
 
       for (let i = 0; i < slots.length; i++) {
         const coachId = coachIds[i % coachIds.length];
-        const bookedCount = Math.floor(Math.random() * 13); // 0-12 of 16
+        const bookedCount = Math.floor(Math.random() * 13);
 
         await ctx.db.insert("classes", {
+          gymId,
           date,
           startTime: slots[i],
           capacity: 16,
@@ -153,7 +152,36 @@ export const run = internalMutation({
       }
     }
 
-    console.log("✅ Seed complete — 3 coaches, 7 WODs, ~25 classes inserted.");
+    console.log("Seed complete — demo gym, 3 coaches, 7 WODs, ~25 classes inserted.");
+  },
+});
+
+// ── Clear ALL: wipe every app table ─────────────────────────────────────────
+export const clearAll = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    const tables = [
+      "appointments",
+      "coachAvailability",
+      "documentSignatures",
+      "documents",
+      "bookings",
+      "results",
+      "personalRecords",
+      "memberships",
+      "gymInvites",
+      "classes",
+      "wods",
+      "users",
+      "gyms",
+    ] as const;
+
+    for (const table of tables) {
+      const docs = await ctx.db.query(table).collect();
+      await Promise.all(docs.map((d) => ctx.db.delete(d._id)));
+    }
+
+    console.log("Cleared all table data.");
   },
 });
 
@@ -172,10 +200,18 @@ export const clear = internalMutation({
     const users = await ctx.db.query("users").collect();
     await Promise.all(
       users
-        .filter((u) => u.email?.endsWith("@ocfit.com"))
+        .filter((u) => u.email?.endsWith("@northernglow.com"))
         .map((u) => ctx.db.delete(u._id))
     );
 
-    console.log("🗑️  Cleared all seed data.");
+    // Remove demo gym
+    const gyms = await ctx.db.query("gyms").collect();
+    await Promise.all(
+      gyms
+        .filter((g) => g.name === "Demo CrossFit")
+        .map((g) => ctx.db.delete(g._id))
+    );
+
+    console.log("Cleared all seed data.");
   },
 });

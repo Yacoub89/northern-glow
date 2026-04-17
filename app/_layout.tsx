@@ -4,8 +4,21 @@ import { ConvexReactClient } from "convex/react";
 import Constants from "expo-constants";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
-import { Platform } from "react-native";
+import { Platform, View, ActivityIndicator } from "react-native";
 import { api } from "../convex/_generated/api";
+import { useFonts } from "expo-font";
+import {
+  SpaceGrotesk_600SemiBold,
+  SpaceGrotesk_700Bold,
+} from "@expo-google-fonts/space-grotesk";
+import {
+  Manrope_400Regular,
+  Manrope_500Medium,
+  Manrope_600SemiBold,
+  Manrope_700Bold,
+  Manrope_800ExtraBold,
+} from "@expo-google-fonts/manrope";
+import { Colors } from "../constants/Colors";
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
@@ -17,6 +30,19 @@ const tokenStorage = {
   setItem: SecureStore.setItemAsync,
   removeItem: SecureStore.deleteItemAsync,
 };
+
+// Links the authenticated user to their gym via a pending invite (runs once after login).
+function GymLinker() {
+  const { isAuthenticated } = useConvexAuth();
+  const checkAndAccept = useMutation(api.invites.checkAndAccept);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    checkAndAccept({}).catch(() => {});
+  }, [isAuthenticated]);
+
+  return null;
+}
 
 // Push notifications are native-only
 function PushTokenRegistrar() {
@@ -71,13 +97,32 @@ function PushTokenRegistrar() {
 }
 
 export default function RootLayout() {
+  const [fontsLoaded] = useFonts({
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+    Manrope_400Regular,
+    Manrope_500Medium,
+    Manrope_600SemiBold,
+    Manrope_700Bold,
+    Manrope_800ExtraBold,
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: Colors.background }}>
+        <ActivityIndicator color={Colors.primary} size="large" />
+      </View>
+    );
+  }
+
   return (
     <ConvexAuthProvider client={convex} storage={tokenStorage}>
+      <GymLinker />
       <PushTokenRegistrar />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="(auth)" />
-        <Stack.Screen name="wod-form" options={{ headerShown: false }} />
+
         <Stack.Screen
           name="class-form"
           options={{
@@ -92,6 +137,7 @@ export default function RootLayout() {
         <Stack.Screen name="membership" options={{ headerShown: false }} />
         <Stack.Screen name="roster" options={{ headerShown: false }} />
         <Stack.Screen name="kiosk" options={{ headerShown: false }} />
+        <Stack.Screen name="gym-settings" options={{ headerShown: false }} />
       </Stack>
     </ConvexAuthProvider>
   );
