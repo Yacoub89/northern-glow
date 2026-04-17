@@ -1,5 +1,7 @@
+import Constants from "expo-constants";
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
+import { Id } from "../convex/_generated/dataModel";
 import { Colors } from "./Colors";
 
 export type GymConfig = {
@@ -10,22 +12,38 @@ export type GymConfig = {
   logoUrl: string | null;
 };
 
-// Baked in at build time by build-gym.sh via app.config.js
+// The gymId is baked in at build time by build-gym.sh via app.config.js extra.
+// null in dev (no gym-specific build), a real Id<"gyms"> in production gym builds.
+const GYM_ID = (Constants.expoConfig?.extra?.gymId ?? null) as Id<"gyms"> | null;
+
+// Fallback shown only while the DB query is loading (or in dev with no gymId).
 const DEFAULT_CONFIG: GymConfig = {
-  name: process.env.EXPO_PUBLIC_GYM_NAME ?? "NorthernGlow",
+  name: Constants.expoConfig?.name ?? "NorthernGlow",
   tagline: "",
-  primaryColor: process.env.EXPO_PUBLIC_PRIMARY_COLOR ?? "#1BBFBF",
+  primaryColor: "#1BBFBF",
   timezone: "America/New_York",
   logoUrl: null,
 };
 
 /**
- * Returns the gym configuration for the currently authenticated user.
- * Before login (or while loading), falls back to build-time defaults
- * baked in via EXPO_PUBLIC_GYM_NAME and EXPO_PUBLIC_PRIMARY_COLOR.
+ * Returns the gym configuration.
+ *
+ * - Pre-auth: fetches by the gymId baked into the build (public, no auth needed).
+ * - Post-auth: fetches via the authenticated user's gym (also resolves logo URL).
+ * - Falls back to build-time defaults only while loading or in dev.
  */
 export function useGymConfig(): GymConfig {
-  const gym = useQuery(api.gyms.getMyGymFull);
+  // Post-auth query — also resolves storage URLs for logo
+  const gymFull = useQuery(api.gyms.getMyGymFull);
+
+  // Pre-auth query — public, uses gymId baked in at build time
+  const gymById = useQuery(
+    api.gyms.get,
+    GYM_ID ? { gymId: GYM_ID } : "skip"
+  );
+
+  // Prefer the post-auth result (has logo URL), fall back to pre-auth
+  const gym = gymFull ?? gymById;
 
   if (gym) {
     return {
@@ -33,7 +51,7 @@ export function useGymConfig(): GymConfig {
       tagline: gym.tagline,
       primaryColor: gym.primaryColor,
       timezone: gym.timezone,
-      logoUrl: gym.logoUrl ?? null,
+      logoUrl: gymFull?.logoUrl ?? null,
     };
   }
 

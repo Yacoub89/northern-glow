@@ -226,6 +226,7 @@ export default {
     },
     newArchEnabled: true,
     extra: {
+      gymId: "$GYM_ID",
       router: {},
       eas: {
         projectId: "83011cc3-770b-4dfc-a844-18100f134c30",

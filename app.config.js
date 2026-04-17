@@ -47,6 +47,7 @@ export default {
     },
     newArchEnabled: true,
     extra: {
+      gymId: "mh7cqfx7wkstt6rx28xnp7qehn84vfb4",
       router: {},
       eas: {
         projectId: "83011cc3-770b-4dfc-a844-18100f134c30",
