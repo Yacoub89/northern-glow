@@ -57,6 +57,10 @@ export const createCheckoutSession = action({
 
     const siteUrl = process.env.EXPO_PUBLIC_CONVEX_SITE_URL;
 
+    const gymSlug = gym
+      ? gym.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
+      : "ocfit";
+
     const session = await getStripe().checkout.sessions.create({
       customer_email: user.email ?? undefined,
       payment_method_types: ["card"],
@@ -70,8 +74,8 @@ export const createCheckoutSession = action({
           billingPeriod,
         },
       },
-      success_url: `${siteUrl}/stripe/checkout-return?status=success&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${siteUrl}/stripe/checkout-return?status=cancelled`,
+      success_url: `${siteUrl}/stripe/checkout-return?status=success&session_id={CHECKOUT_SESSION_ID}&scheme=${gymSlug}`,
+      cancel_url: `${siteUrl}/stripe/checkout-return?status=cancelled&scheme=${gymSlug}`,
     });
 
     return session.url!;
