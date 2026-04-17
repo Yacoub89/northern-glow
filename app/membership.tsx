@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import * as ExpoLinking from "expo-linking";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../convex/_generated/api";
 import { Colors } from "../constants/Colors";
@@ -104,9 +105,11 @@ export default function MembershipScreen() {
   const handleSubscribe = async () => {
     setLoading(true);
     try {
+      const returnUrl = ExpoLinking.createURL("membership");
       const url = await createCheckoutSession({
         plan: selectedPlan,
         billingPeriod: selectedPeriod,
+        returnUrl,
       });
       await Linking.openURL(url);
     } catch (e: any) {
@@ -119,7 +122,8 @@ export default function MembershipScreen() {
   const handleManage = async () => {
     setLoading(true);
     try {
-      const url = await createPortalSession({});
+      const returnUrl = ExpoLinking.createURL("membership");
+      const url = await createPortalSession({ returnUrl });
       await Linking.openURL(url);
     } catch (e: any) {
       Alert.alert("Error", e.message);

@@ -9,6 +9,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -303,6 +304,273 @@ function ClassCard({ cls, onDelete }: { cls: EnrichedClass; onDelete: (cls: Doc<
   );
 }
 
+// ─── Create Event Modal ───────────────────────────────────────────────────────
+
+const CAPACITY_OPTIONS = [10, 20, 30, 50, 100];
+
+function CreateEventModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+  const { primary } = useGymColors();
+  const createEvent = useMutation(api.events.create);
+
+  const today = getTodayDate();
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [date, setDate] = useState(today);
+  const [startTime, setStartTime] = useState("09:00");
+  const [endTime, setEndTime] = useState("");
+  const [location, setLocation] = useState("");
+  const [capacity, setCapacity] = useState<number | undefined>(undefined);
+  const [priceInput, setPriceInput] = useState("0");
+  const [saving, setSaving] = useState(false);
+
+  const resetForm = () => {
+    setTitle("");
+    setDescription("");
+    setDate(today);
+    setStartTime("09:00");
+    setEndTime("");
+    setLocation("");
+    setCapacity(undefined);
+    setPriceInput("0");
+  };
+
+  const handleSave = async () => {
+    if (!title.trim()) {
+      Alert.alert("Validation", "Event title is required.");
+      return;
+    }
+    const priceDollars = parseFloat(priceInput) || 0;
+    const priceCents = Math.round(priceDollars * 100);
+    setSaving(true);
+    try {
+      await createEvent({
+        title: title.trim(),
+        description: description.trim() || undefined,
+        date,
+        startTime,
+        endTime: endTime.trim() || undefined,
+        location: location.trim() || undefined,
+        capacity,
+        priceCents,
+      });
+      resetForm();
+      onClose();
+    } catch (e: any) {
+      Alert.alert("Error", e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" transparent>
+      <View style={md.overlay}>
+        <ScrollView
+          style={md.sheetScroll}
+          contentContainerStyle={md.sheetContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={md.title}>Create Event</Text>
+
+          <Text style={md.label}>Title *</Text>
+          <TextInput
+            style={md.input}
+            value={title}
+            onChangeText={setTitle}
+            placeholder="e.g. Summer Throwdown"
+            placeholderTextColor={Colors.textMuted}
+          />
+
+          <Text style={md.label}>Description</Text>
+          <TextInput
+            style={[md.input, md.inputMultiline]}
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Optional details about the event"
+            placeholderTextColor={Colors.textMuted}
+            multiline
+            numberOfLines={3}
+          />
+
+          <Text style={md.label}>Date (YYYY-MM-DD)</Text>
+          <TextInput
+            style={md.input}
+            value={date}
+            onChangeText={setDate}
+            placeholder="2026-06-15"
+            placeholderTextColor={Colors.textMuted}
+          />
+
+          <Text style={md.label}>Start Time</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={md.row}>
+            {TIME_PRESETS.map((t) => (
+              <Pressable
+                key={t}
+                style={[md.chip, startTime === t && [md.chipActive, { backgroundColor: primary, borderColor: primary }]]}
+                onPress={() => setStartTime(t)}
+              >
+                <Text style={[md.chipText, startTime === t && md.chipTextActive]}>{formatTime(t)}</Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          <Text style={md.label}>End Time</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={md.row}>
+            {["", ...TIME_PRESETS].map((t) => (
+              <Pressable
+                key={t || "none"}
+                style={[md.chip, endTime === t && [md.chipActive, { backgroundColor: primary, borderColor: primary }]]}
+                onPress={() => setEndTime(t)}
+              >
+                <Text style={[md.chipText, endTime === t && md.chipTextActive]}>
+                  {t ? formatTime(t) : "None"}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          <Text style={md.label}>Location</Text>
+          <TextInput
+            style={md.input}
+            value={location}
+            onChangeText={setLocation}
+            placeholder="e.g. Main gym floor"
+            placeholderTextColor={Colors.textMuted}
+          />
+
+          <Text style={md.label}>Capacity</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={md.row}>
+            {[undefined, ...CAPACITY_OPTIONS].map((c) => (
+              <Pressable
+                key={c ?? "unlimited"}
+                style={[md.chip, capacity === c && [md.chipActive, { backgroundColor: primary, borderColor: primary }]]}
+                onPress={() => setCapacity(c)}
+              >
+                <Text style={[md.chipText, capacity === c && md.chipTextActive]}>
+                  {c === undefined ? "Unlimited" : String(c)}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+
+          <Text style={md.label}>Price (0 = Free)</Text>
+          <TextInput
+            style={md.input}
+            value={priceInput}
+            onChangeText={setPriceInput}
+            placeholder="0"
+            placeholderTextColor={Colors.textMuted}
+            keyboardType="decimal-pad"
+          />
+
+          <View style={md.actions}>
+            <Pressable style={md.cancelBtn} onPress={() => { resetForm(); onClose(); }}>
+              <Text style={md.cancelText}>Cancel</Text>
+            </Pressable>
+            <Pressable
+              style={[md.saveBtn, { backgroundColor: primary }, saving && { opacity: 0.6 }]}
+              onPress={handleSave}
+              disabled={saving}
+            >
+              {saving
+                ? <ActivityIndicator color="#fff" />
+                : <Text style={md.saveText}>Create Event</Text>
+              }
+            </Pressable>
+          </View>
+        </ScrollView>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── Events Section ───────────────────────────────────────────────────────────
+
+function EventsSection() {
+  const { primary } = useGymColors();
+  const router = useRouter();
+  const [showModal, setShowModal] = useState(false);
+  const events = useQuery(api.events.listUpcoming);
+  const cancelEvent = useMutation(api.events.cancel);
+
+  const handleCancel = (event: Doc<"events">) => {
+    Alert.alert("Cancel Event", `Cancel "${event.title}"? Registrations will not be automatically refunded.`, [
+      { text: "Keep", style: "cancel" },
+      {
+        text: "Cancel Event",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await cancelEvent({ eventId: event._id });
+          } catch (e: any) {
+            Alert.alert("Error", e.message);
+          }
+        },
+      },
+    ]);
+  };
+
+  return (
+    <View style={sc.sectionBlock}>
+      <View style={sc.sectionHeaderRow}>
+        <Text style={sc.sectionLabel}>Events</Text>
+        <Pressable style={[sc.addSlotBtn, { backgroundColor: primary }]} onPress={() => setShowModal(true)}>
+          <Ionicons name="add" size={14} color={Colors.onPrimary} />
+          <Text style={sc.addSlotBtnText}>Create</Text>
+        </Pressable>
+      </View>
+
+      {events === undefined ? (
+        <ActivityIndicator color={primary} style={{ marginTop: 8 }} />
+      ) : events.length === 0 ? (
+        <View style={sc.emptyCard}>
+          <Text style={sc.emptyText}>No upcoming events</Text>
+          <Text style={sc.emptyHint}>Tap Create to add a paid or free event</Text>
+        </View>
+      ) : (
+        events.map((event) => {
+          const isFree = event.priceCents === 0;
+          const isFull = event.capacity !== undefined && event.registeredCount >= event.capacity;
+          return (
+            <View key={event._id} style={sc.eventRow}>
+              <Pressable
+                style={sc.eventRowContent}
+                onPress={() => router.push({ pathname: "/event-detail", params: { event_id: event._id } })}
+              >
+                <View style={sc.eventRowLeft}>
+                  <Text style={sc.eventRowTitle} numberOfLines={1}>{event.title}</Text>
+                  <Text style={sc.eventRowMeta}>
+                    {event.date}  ·  {formatTime(event.startTime)}
+                    {event.location ? `  ·  ${event.location}` : ""}
+                  </Text>
+                  <View style={sc.eventRowBadges}>
+                    <View style={[sc.eventBadge, { backgroundColor: isFree ? Colors.success + "22" : primary + "22" }]}>
+                      <Text style={[sc.eventBadgeText, { color: isFree ? Colors.success : primary }]}>
+                        {isFree ? "Free" : `$${(event.priceCents / 100).toFixed(event.priceCents % 100 === 0 ? 0 : 2)}`}
+                      </Text>
+                    </View>
+                    <View style={[sc.eventBadge, { backgroundColor: Colors.surfaceContainerHighest }]}>
+                      <Text style={sc.eventBadgeText}>
+                        {event.registeredCount}{event.capacity !== undefined ? `/${event.capacity}` : ""} registered
+                        {isFull ? " · Full" : ""}
+                      </Text>
+                    </View>
+                  </View>
+                </View>
+              </Pressable>
+              <Pressable style={[sc.deleteBtn, { marginRight: 12 }]} onPress={() => handleCancel(event)}>
+                <Ionicons name="trash-outline" size={16} color={Colors.error} />
+              </Pressable>
+            </View>
+          );
+        })
+      )}
+
+      <CreateEventModal visible={showModal} onClose={() => setShowModal(false)} />
+    </View>
+  );
+}
+
 // ─── Main screen ──────────────────────────────────────────────────────────────
 
 export default function ManageScreen() {
@@ -408,6 +676,9 @@ export default function ManageScreen() {
 
         {/* ── 1:1 Availability ── */}
         <AvailabilitySection />
+
+        {/* ── Events ── */}
+        <EventsSection />
 
         <Text style={sc.endLabel}>END OF DAY ROSTER</Text>
       </ScrollView>
@@ -660,6 +931,48 @@ const sc = StyleSheet.create({
     backgroundColor: Colors.error + "11",
   },
 
+  // Event rows
+  eventRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 8,
+    overflow: "hidden",
+  },
+  eventRowContent: {
+    flex: 1,
+    padding: 14,
+  },
+  eventRowLeft: { gap: 4 },
+  eventRowTitle: {
+    fontFamily: Fonts.bodySemi,
+    fontSize: 15,
+    color: Colors.text,
+  },
+  eventRowMeta: {
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
+  eventRowBadges: {
+    flexDirection: "row",
+    gap: 6,
+    marginTop: 6,
+  },
+  eventBadge: {
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+  },
+  eventBadgeText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 11,
+    color: Colors.textSecondary,
+  },
+
   // End + FAB
   endLabel: {
     textAlign: "center", fontFamily: Fonts.bodyBold,
@@ -680,17 +993,44 @@ const sc = StyleSheet.create({
 
 const md = StyleSheet.create({
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.7)", justifyContent: "flex-end" },
+  // Used by AddAvailabilityModal (non-scrollable)
   sheet: {
     backgroundColor: Colors.surface,
     borderTopLeftRadius: 20, borderTopRightRadius: 20,
     padding: 24, paddingBottom: 40,
     borderWidth: 1, borderColor: Colors.border,
   },
+  // Used by CreateEventModal (scrollable)
+  sheetScroll: {
+    backgroundColor: Colors.surface,
+    borderTopLeftRadius: 20, borderTopRightRadius: 20,
+    borderWidth: 1, borderColor: Colors.border,
+    maxHeight: "90%",
+  },
+  sheetContent: {
+    padding: 24, paddingBottom: 48,
+  },
   title: { fontFamily: Fonts.display, fontSize: 18, color: Colors.text, marginBottom: 20 },
   label: {
     fontFamily: Fonts.bodyBold, fontSize: FontSizes.labelSm,
     color: Colors.textSecondary, letterSpacing: 1,
     textTransform: "uppercase", marginBottom: 8, marginTop: 16,
+  },
+  input: {
+    backgroundColor: Colors.surfaceContainerHighest,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+    color: Colors.text,
+    fontFamily: Fonts.body,
+    fontSize: 14,
+  },
+  inputMultiline: {
+    minHeight: 72,
+    textAlignVertical: "top",
+    paddingTop: 11,
   },
   row: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
   chip: {

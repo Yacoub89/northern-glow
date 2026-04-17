@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useRouter } from "expo-router";
 import { api } from "../../convex/_generated/api";
 import { Doc, Id } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
@@ -359,9 +360,116 @@ function AppointmentsPanel({
   );
 }
 
+// ── Events tab ────────────────────────────────────────────────────────────────
+
+function formatEventDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatEventPrice(cents: number): string {
+  if (cents === 0) return "Free";
+  return `$${(cents / 100).toFixed(cents % 100 === 0 ? 0 : 2)}`;
+}
+
+function EventCard({ event }: { event: Doc<"events"> }) {
+  const { primary } = useGymColors();
+  const router = useRouter();
+  const isFree = event.priceCents === 0;
+  const isFull =
+    event.capacity !== undefined && event.registeredCount >= event.capacity;
+
+  return (
+    <Pressable
+      style={styles.eventCard}
+      onPress={() =>
+        router.push({ pathname: "/event-detail", params: { event_id: event._id } })
+      }
+    >
+      <View style={styles.eventCardTop}>
+        <View style={styles.eventInfo}>
+          <Text style={styles.eventTitle} numberOfLines={2}>
+            {event.title}
+          </Text>
+          <Text style={styles.eventMeta}>
+            {formatEventDate(event.date)}
+            {event.startTime ? `  ·  ${formatTime(event.startTime)}` : ""}
+          </Text>
+          {event.location ? (
+            <Text style={styles.eventLocation} numberOfLines={1}>
+              {event.location}
+            </Text>
+          ) : null}
+        </View>
+        <View style={styles.eventRight}>
+          <View
+            style={[
+              styles.eventPriceBadge,
+              isFree
+                ? { backgroundColor: Colors.success + "22" }
+                : { backgroundColor: primary + "22" },
+            ]}
+          >
+            <Text
+              style={[
+                styles.eventPriceText,
+                { color: isFree ? Colors.success : primary },
+              ]}
+            >
+              {formatEventPrice(event.priceCents)}
+            </Text>
+          </View>
+          {isFull && (
+            <Text style={styles.eventFull}>Full</Text>
+          )}
+        </View>
+      </View>
+      {event.capacity !== undefined && (
+        <Text style={styles.eventCapacity}>
+          {event.registeredCount} / {event.capacity} registered
+        </Text>
+      )}
+    </Pressable>
+  );
+}
+
+function EventsPanel() {
+  const { primary } = useGymColors();
+  const events = useQuery(api.events.listUpcoming);
+
+  if (events === undefined) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator color={primary} />
+      </View>
+    );
+  }
+
+  if (events.length === 0) {
+    return (
+      <View style={styles.emptyCard}>
+        <Text style={styles.emptyText}>No upcoming events</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View>
+      <Text style={styles.dayHeader}>UPCOMING EVENTS</Text>
+      {events.map((event) => (
+        <EventCard key={event._id} event={event} />
+      ))}
+    </View>
+  );
+}
+
 // ── Main screen ───────────────────────────────────────────────────────────────
 
-type TabMode = "classes" | "appointments";
+type TabMode = "classes" | "appointments" | "events";
 
 export default function ScheduleScreen() {
   const gym = useGymConfig();
@@ -419,13 +527,22 @@ export default function ScheduleScreen() {
             1:1 Training
           </Text>
         </Pressable>
+        <Pressable
+          style={[styles.segmentBtn, mode === "events" && [styles.segmentBtnActive, { backgroundColor: primary }]]}
+          onPress={() => setMode("events")}
+        >
+          <Text style={[styles.segmentText, mode === "events" && styles.segmentTextActive]}>
+            Events
+          </Text>
+        </Pressable>
       </View>
 
-      {/* Day picker */}
+      {/* Day picker — hidden on Events tab */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.dayPicker}
+        style={mode === "events" ? { display: "none" } : undefined}
       >
         {dates.map((d) => {
           const isSelected = d === selectedDate;
@@ -451,7 +568,9 @@ export default function ScheduleScreen() {
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
       >
-        {mode === "classes" ? (
+        {mode === "events" ? (
+          <EventsPanel />
+        ) : mode === "classes" ? (
           <>
             {/* WOD of the day */}
             {wod ? (
@@ -753,4 +872,41 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   emptyText: { color: Colors.textSecondary, fontSize: 15 },
+
+  // Event cards
+  eventCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  eventCardTop: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  eventInfo: { flex: 1 },
+  eventTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  eventMeta: { fontSize: 13, color: Colors.textSecondary, marginBottom: 2 },
+  eventLocation: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
+  eventRight: { alignItems: "flex-end", gap: 6 },
+  eventPriceBadge: {
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  eventPriceText: { fontSize: 13, fontWeight: "700" },
+  eventFull: { fontSize: 11, color: Colors.error, fontWeight: "600" },
+  eventCapacity: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    marginTop: 8,
+  },
 });

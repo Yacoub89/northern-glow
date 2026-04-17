@@ -135,6 +135,7 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen name="membership" options={{ headerShown: false }} />
+        <Stack.Screen name="event-detail" options={{ headerShown: false }} />
         <Stack.Screen name="roster" options={{ headerShown: false }} />
         <Stack.Screen name="kiosk" options={{ headerShown: false }} />
         <Stack.Screen name="gym-settings" options={{ headerShown: false }} />

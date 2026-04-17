@@ -16,6 +16,7 @@ import type * as classes from "../classes.js";
 import type * as crons from "../crons.js";
 import type * as documents from "../documents.js";
 import type * as email from "../email.js";
+import type * as events from "../events.js";
 import type * as gyms from "../gyms.js";
 import type * as helpers from "../helpers.js";
 import type * as http from "../http.js";
@@ -46,6 +47,7 @@ declare const fullApi: ApiFromModules<{
   crons: typeof crons;
   documents: typeof documents;
   email: typeof email;
+  events: typeof events;
   gyms: typeof gyms;
   helpers: typeof helpers;
   http: typeof http;

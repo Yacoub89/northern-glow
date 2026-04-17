@@ -225,4 +225,45 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_stripe_customer", ["stripeCustomerId"])
     .index("by_stripe_subscription", ["stripeSubscriptionId"]),
+
+  // ── Events ────────────────────────────────────────────────────────────────────
+
+  events: defineTable({
+    gymId: v.id("gyms"),
+    title: v.string(),
+    description: v.optional(v.string()),
+    date: v.string(),            // YYYY-MM-DD
+    startTime: v.string(),       // HH:MM (24h)
+    endTime: v.optional(v.string()),
+    location: v.optional(v.string()),
+    capacity: v.optional(v.number()), // undefined = unlimited
+    registeredCount: v.number(),
+    priceCents: v.number(),      // 0 = free
+    createdBy: v.id("users"),
+    status: v.union(
+      v.literal("upcoming"),
+      v.literal("cancelled"),
+      v.literal("completed"),
+    ),
+  })
+    .index("by_gym", ["gymId"])
+    .index("by_gym_date", ["gymId", "date"]),
+
+  eventRegistrations: defineTable({
+    eventId: v.id("events"),
+    userId: v.id("users"),
+    gymId: v.id("gyms"),
+    status: v.union(v.literal("registered"), v.literal("cancelled")),
+    paymentStatus: v.union(
+      v.literal("free"),
+      v.literal("paid"),
+      v.literal("pending"),
+    ),
+    stripeSessionId: v.optional(v.string()),
+    registeredAt: v.number(),
+  })
+    .index("by_event", ["eventId"])
+    .index("by_user", ["userId"])
+    .index("by_event_user", ["eventId", "userId"])
+    .index("by_stripe_session", ["stripeSessionId"]),
 });

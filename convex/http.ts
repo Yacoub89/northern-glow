@@ -40,7 +40,72 @@ http.route({
     const status = url.searchParams.get("status") ?? "cancelled";
     const sessionId = url.searchParams.get("session_id") ?? "";
     const scheme = url.searchParams.get("scheme") ?? "ocfit";
-    const deepLink = `${scheme}://membership?status=${status}${sessionId ? `&session_id=${encodeURIComponent(sessionId)}` : ""}`;
+    const returnUrl = url.searchParams.get("return_url");
+
+    let deepLink = "";
+    if (returnUrl) {
+      try {
+        const u = new URL(returnUrl);
+        u.searchParams.set("status", status);
+        if (sessionId) u.searchParams.set("session_id", sessionId);
+        deepLink = u.toString();
+      } catch (e) {
+        deepLink = `${scheme}://membership?status=${status}${sessionId ? `&session_id=${encodeURIComponent(sessionId)}` : ""}`;
+      }
+    } else {
+      deepLink = `${scheme}://membership?status=${status}${sessionId ? `&session_id=${encodeURIComponent(sessionId)}` : ""}`;
+    }
+
+    const html = `<!DOCTYPE html>
+<html>
+  <head><meta charset="utf-8" /><title>Redirecting…</title></head>
+  <body>
+    <script>window.location.replace("${deepLink}");</script>
+    <p>Redirecting back to the app…
+      <a href="${deepLink}">Tap here if nothing happens.</a>
+    </p>
+  </body>
+</html>`;
+
+    return new Response(html, {
+      status: 200,
+      headers: { "Content-Type": "text/html" },
+    });
+  }),
+});
+
+// After Stripe Event Checkout — redirects back into the app to the event detail screen
+http.route({
+  path: "/stripe/event-checkout-return",
+  method: "GET",
+  handler: httpAction(async (_ctx, req) => {
+    const url = new URL(req.url);
+    const status = url.searchParams.get("status") ?? "cancelled";
+    const sessionId = url.searchParams.get("session_id") ?? "";
+    const eventId = url.searchParams.get("event_id") ?? "";
+    const scheme = url.searchParams.get("scheme") ?? "ocfit";
+    const returnUrl = url.searchParams.get("return_url");
+
+    let deepLink = "";
+    if (returnUrl) {
+      try {
+        const u = new URL(returnUrl);
+        u.searchParams.set("status", status);
+        if (sessionId) u.searchParams.set("session_id", sessionId);
+        if (eventId) u.searchParams.set("event_id", eventId);
+        deepLink = u.toString();
+      } catch (e) {
+        const params = new URLSearchParams({ status });
+        if (sessionId) params.set("session_id", sessionId);
+        if (eventId) params.set("event_id", eventId);
+        deepLink = `${scheme}://event-detail?${params.toString()}`;
+      }
+    } else {
+      const params = new URLSearchParams({ status });
+      if (sessionId) params.set("session_id", sessionId);
+      if (eventId) params.set("event_id", eventId);
+      deepLink = `${scheme}://event-detail?${params.toString()}`;
+    }
 
     const html = `<!DOCTYPE html>
 <html>

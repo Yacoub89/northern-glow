@@ -36,8 +36,9 @@ export const createCheckoutSession = action({
   args: {
     plan: v.union(v.literal("unlimited"), v.literal("twice_weekly")),
     billingPeriod: v.union(v.literal("monthly"), v.literal("annual")),
+    returnUrl: v.optional(v.string()),
   },
-  handler: async (ctx, { plan, billingPeriod }) => {
+  handler: async (ctx, { plan, billingPeriod, returnUrl }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Unauthenticated");
 
@@ -74,8 +75,8 @@ export const createCheckoutSession = action({
           billingPeriod,
         },
       },
-      success_url: `${siteUrl}/stripe/checkout-return?status=success&session_id={CHECKOUT_SESSION_ID}&scheme=${gymSlug}`,
-      cancel_url: `${siteUrl}/stripe/checkout-return?status=cancelled&scheme=${gymSlug}`,
+      success_url: `${siteUrl}/stripe/checkout-return?status=success&session_id={CHECKOUT_SESSION_ID}&scheme=${gymSlug}${returnUrl ? `&return_url=${encodeURIComponent(returnUrl)}` : ""}`,
+      cancel_url: `${siteUrl}/stripe/checkout-return?status=cancelled&scheme=${gymSlug}${returnUrl ? `&return_url=${encodeURIComponent(returnUrl)}` : ""}`,
     });
 
     return session.url!;
@@ -83,8 +84,8 @@ export const createCheckoutSession = action({
 });
 
 export const createPortalSession = action({
-  args: {},
-  handler: async (ctx) => {
+  args: { returnUrl: v.optional(v.string()) },
+  handler: async (ctx, { returnUrl }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Unauthenticated");
 
@@ -96,7 +97,7 @@ export const createPortalSession = action({
     const siteUrl = process.env.EXPO_PUBLIC_CONVEX_SITE_URL;
     const session = await getStripe().billingPortal.sessions.create({
       customer: membership.stripeCustomerId,
-      return_url: `${siteUrl}/stripe/checkout-return?status=portal`,
+      return_url: `${siteUrl}/stripe/checkout-return?status=portal${returnUrl ? `&return_url=${encodeURIComponent(returnUrl)}` : ""}`,
     });
 
     return session.url;
@@ -136,6 +137,88 @@ export const syncFromSession = action({
       status: mapStatus(sub.status),
       currentPeriodEnd: sub.items.data[0].current_period_end * 1000,
     });
+  },
+});
+
+export const createEventCheckoutSession = action({
+  args: { eventId: v.id("events"), returnUrl: v.optional(v.string()) },
+  handler: async (ctx, { eventId, returnUrl }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Unauthenticated");
+
+    const { event, user } = await ctx.runQuery(
+      internal.events.getEventForCheckout,
+      { eventId, userId }
+    );
+    if (!event) throw new Error("Event not found");
+    if (event.priceCents === 0) throw new Error("This event is free — use registerFree instead");
+    if (event.status !== "upcoming") throw new Error("Event is not available");
+    if (event.capacity !== undefined && event.registeredCount >= event.capacity) {
+      throw new Error("Event is full");
+    }
+    if (!user) throw new Error("User not found");
+
+    const siteUrl = process.env.EXPO_PUBLIC_CONVEX_SITE_URL;
+    const gymSlug = event.gymId
+      ? (await ctx.runQuery(internal.gyms.getGymByUserId, { userId }))
+          ?.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") ?? "ocfit"
+      : "ocfit";
+
+    const session = await getStripe().checkout.sessions.create({
+      customer_email: user.email ?? undefined,
+      payment_method_types: ["card"],
+      mode: "payment",
+      line_items: [
+        {
+          price_data: {
+            currency: process.env.STRIPE_CURRENCY ?? "usd",
+            unit_amount: event.priceCents,
+            product_data: {
+              name: event.title,
+              description: event.description ?? undefined,
+            },
+          },
+          quantity: 1,
+        },
+      ],
+      payment_intent_data: {
+        metadata: {
+          convexUserId: userId,
+          convexEventId: eventId,
+        },
+      },
+      metadata: {
+        convexUserId: userId,
+        convexEventId: eventId,
+      },
+      success_url: `${siteUrl}/stripe/event-checkout-return?status=success&session_id={CHECKOUT_SESSION_ID}&event_id=${eventId}&scheme=${gymSlug}${returnUrl ? `&return_url=${encodeURIComponent(returnUrl)}` : ""}`,
+      cancel_url: `${siteUrl}/stripe/event-checkout-return?status=cancelled&event_id=${eventId}&scheme=${gymSlug}${returnUrl ? `&return_url=${encodeURIComponent(returnUrl)}` : ""}`,
+    });
+
+    // Insert a pending registration record so we can confirm it after payment
+    await ctx.runMutation(internal.events.insertPendingRegistration, {
+      eventId,
+      userId,
+      gymId: event.gymId,
+      stripeSessionId: session.id,
+    });
+
+    return session.url!;
+  },
+});
+
+export const syncEventFromSession = action({
+  args: { sessionId: v.string() },
+  handler: async (ctx, { sessionId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Unauthenticated");
+
+    const session = await getStripe().checkout.sessions.retrieve(sessionId);
+    if (session.payment_status === "paid") {
+      await ctx.runMutation(internal.events.confirmPaidRegistration, {
+        stripeSessionId: sessionId,
+      });
+    }
   },
 });
 
@@ -180,6 +263,14 @@ export const processWebhook = internalAction({
       await ctx.runMutation(internal.memberships.cancelMembership, {
         stripeSubscriptionId: sub.id,
       });
+    } else if (event.type === "checkout.session.completed") {
+      // Handle one-time event payments
+      const session = event.data.object as Stripe.Checkout.Session;
+      if (session.mode === "payment" && session.payment_status === "paid") {
+        await ctx.runMutation(internal.events.confirmPaidRegistration, {
+          stripeSessionId: session.id,
+        });
+      }
     }
   },
 });
