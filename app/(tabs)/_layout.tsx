@@ -1,6 +1,6 @@
 import { useConvexAuth, useQuery } from "convex/react";
 import { Redirect, Tabs, useRouter } from "expo-router";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../convex/_generated/api";
@@ -23,9 +23,19 @@ function SharedHeader() {
           <Text style={[hdr.avatarText, { color: primary }]}>{initial}</Text>
         </View>
       </Pressable>
-      <Text style={[hdr.brandName, { color: primary }]}>
-        {gym.name.toUpperCase()}
-      </Text>
+
+      {gym.logoUrl ? (
+        <Image
+          source={{ uri: gym.logoUrl }}
+          style={hdr.logo}
+          resizeMode="contain"
+        />
+      ) : (
+        <Text style={[hdr.brandName, { color: primary }]}>
+          {gym.name.toUpperCase()}
+        </Text>
+      )}
+
       <Pressable onPress={() => router.push("/(tabs)/profile")} hitSlop={12}>
         <Ionicons name="person-circle-outline" size={24} color={Colors.textSecondary} />
       </Pressable>
@@ -58,6 +68,10 @@ const hdr = StyleSheet.create({
     fontFamily: Fonts.display,
     fontSize: 18,
     letterSpacing: 2,
+  },
+  logo: {
+    height: 28,
+    width: 120,
   },
 });
 

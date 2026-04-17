@@ -2,6 +2,7 @@ import { httpRouter } from "convex/server";
 import { httpAction } from "./_generated/server";
 import { auth } from "./auth";
 import { internal } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
 
 const http = httpRouter();
 
@@ -54,6 +55,40 @@ http.route({
     return new Response(html, {
       status: 200,
       headers: { "Content-Type": "text/html" },
+    });
+  }),
+});
+
+// Gym build config — returns branding data + resolved asset URLs for the white-label build script.
+// Secured with the NORTHERNGLOW_BUILD_SECRET environment variable.
+http.route({
+  path: "/gym-build-config",
+  method: "GET",
+  handler: httpAction(async (ctx, req) => {
+    const url = new URL(req.url);
+    const secret = url.searchParams.get("secret");
+    const buildSecret = process.env.NORTHERNGLOW_BUILD_SECRET;
+
+    if (!buildSecret || secret !== buildSecret) {
+      return new Response("Unauthorized", { status: 401 });
+    }
+
+    const gymId = url.searchParams.get("gymId");
+    if (!gymId) {
+      return new Response("Missing gymId", { status: 400 });
+    }
+
+    const gym = await ctx.runQuery(internal.gyms.getGymForBuild, {
+      gymId: gymId as Id<"gyms">,
+    });
+
+    if (!gym) {
+      return new Response("Gym not found", { status: 404 });
+    }
+
+    return new Response(JSON.stringify(gym), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
     });
   }),
 });

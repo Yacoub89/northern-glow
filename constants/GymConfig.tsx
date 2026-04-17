@@ -1,57 +1,31 @@
 import { useQuery } from "convex/react";
-import { useEffect, useState } from "react";
 import { api } from "../convex/_generated/api";
 import { Colors } from "./Colors";
-
-import * as SecureStore from "expo-secure-store";
-const CACHE_KEY = "gymConfig";
 
 export type GymConfig = {
   name: string;
   tagline: string;
   primaryColor: string;
   timezone: string;
+  logoUrl: string | null;
 };
 
+// Baked in at build time by build-gym.sh via app.config.js
 const DEFAULT_CONFIG: GymConfig = {
-  name: "NorthernGlow",
-  tagline: "Powered by NorthernGlow",
-  primaryColor: "#1BBFBF",
+  name: process.env.EXPO_PUBLIC_GYM_NAME ?? "NorthernGlow",
+  tagline: "",
+  primaryColor: process.env.EXPO_PUBLIC_PRIMARY_COLOR ?? "#1BBFBF",
   timezone: "America/New_York",
+  logoUrl: null,
 };
 
 /**
  * Returns the gym configuration for the currently authenticated user.
- * Falls back to the last cached gym config (persisted across logouts),
- * then to the platform default if no cache exists.
+ * Before login (or while loading), falls back to build-time defaults
+ * baked in via EXPO_PUBLIC_GYM_NAME and EXPO_PUBLIC_PRIMARY_COLOR.
  */
 export function useGymConfig(): GymConfig {
-  const [cached, setCached] = useState<GymConfig | null>(null);
-  const gym = useQuery(api.gyms.getMyGym);
-
-  // Load cache on mount
-  useEffect(() => {
-    SecureStore.getItemAsync(CACHE_KEY).then((raw: string | null) => {
-      if (raw) {
-        try {
-          setCached(JSON.parse(raw));
-        } catch {}
-      }
-    });
-  }, []);
-
-  // When a live gym loads, update cache
-  useEffect(() => {
-    if (!gym) return;
-    const config: GymConfig = {
-      name: gym.name,
-      tagline: gym.tagline,
-      primaryColor: gym.primaryColor,
-      timezone: gym.timezone,
-    };
-    setCached(config);
-    SecureStore.setItemAsync(CACHE_KEY, JSON.stringify(config));
-  }, [gym]);
+  const gym = useQuery(api.gyms.getMyGymFull);
 
   if (gym) {
     return {
@@ -59,10 +33,11 @@ export function useGymConfig(): GymConfig {
       tagline: gym.tagline,
       primaryColor: gym.primaryColor,
       timezone: gym.timezone,
+      logoUrl: gym.logoUrl ?? null,
     };
   }
 
-  return cached ?? DEFAULT_CONFIG;
+  return DEFAULT_CONFIG;
 }
 
 /**

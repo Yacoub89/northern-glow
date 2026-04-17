@@ -63,6 +63,27 @@ export const updateSettings = mutation({
   },
 });
 
+/** Returns the gym config with resolved storage URLs for logo, app icon, and splash. */
+export const getMyGymFull = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const user = await ctx.db.get(userId);
+    if (!user?.gymId) return null;
+    const gym = await ctx.db.get(user.gymId);
+    if (!gym) return null;
+
+    const [logoUrl, appIconUrl, splashUrl] = await Promise.all([
+      gym.logoStorageId ? ctx.storage.getUrl(gym.logoStorageId) : null,
+      gym.appIconStorageId ? ctx.storage.getUrl(gym.appIconStorageId) : null,
+      gym.splashStorageId ? ctx.storage.getUrl(gym.splashStorageId) : null,
+    ]);
+
+    return { ...gym, logoUrl, appIconUrl, splashUrl };
+  },
+});
+
 /** Returns the public URL for the gym's stored logo. */
 export const getLogoUrl = query({
   args: { storageId: v.id("_storage") },
@@ -104,6 +125,35 @@ export const getGymIdForUser = internalQuery({
   handler: async (ctx, { userId }): Promise<Id<"gyms"> | null> => {
     const user = await ctx.db.get(userId);
     return user?.gymId ?? null;
+  },
+});
+
+/** Returns gym data with resolved asset URLs — used by the /gym-build-config HTTP endpoint. */
+export const getGymForBuild = internalQuery({
+  args: { gymId: v.id("gyms") },
+  handler: async (ctx, { gymId }) => {
+    const gym = await ctx.db.get(gymId);
+    if (!gym) return null;
+
+    const [logoUrl, appIconUrl, splashUrl] = await Promise.all([
+      gym.logoStorageId ? ctx.storage.getUrl(gym.logoStorageId) : null,
+      gym.appIconStorageId ? ctx.storage.getUrl(gym.appIconStorageId) : null,
+      gym.splashStorageId ? ctx.storage.getUrl(gym.splashStorageId) : null,
+    ]);
+
+    const slug = gym.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
+    return {
+      name: gym.name,
+      tagline: gym.tagline,
+      primaryColor: gym.primaryColor,
+      timezone: gym.timezone,
+      slug,
+      bundleId: `com.northernglow.${slug}`,
+      logoUrl,
+      appIconUrl,
+      splashUrl,
+    };
   },
 });
 
