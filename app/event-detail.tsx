@@ -56,7 +56,7 @@ export default function EventDetailScreen() {
   );
 
   const registerFree = useMutation(api.events.registerFree);
-  const cancelRegistration = useMutation(api.events.cancelRegistration);
+  const cancelRegistration = useAction(api.stripe.cancelEventRegistration);
   const createEventCheckoutSession = useAction(api.stripe.createEventCheckoutSession);
   const syncEventFromSession = useAction(api.stripe.syncEventFromSession);
 

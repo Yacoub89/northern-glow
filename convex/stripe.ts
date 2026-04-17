@@ -171,7 +171,7 @@ export const createEventCheckoutSession = action({
       line_items: [
         {
           price_data: {
-            currency: process.env.STRIPE_CURRENCY ?? "usd",
+            currency: process.env.STRIPE_CURRENCY ?? "cad",
             unit_amount: event.priceCents,
             product_data: {
               name: event.title,
@@ -219,6 +219,40 @@ export const syncEventFromSession = action({
         stripeSessionId: sessionId,
       });
     }
+  },
+});
+
+export const cancelEventRegistration = action({
+  args: { eventId: v.id("events") },
+  handler: async (ctx, { eventId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Unauthenticated");
+
+    const reg = await ctx.runQuery(internal.events.getRegistrationForCancel, {
+      eventId,
+      userId,
+    });
+    if (!reg) throw new Error("No active registration found");
+
+    if (reg.paymentStatus === "paid" && reg.stripeSessionId) {
+      const session = await getStripe().checkout.sessions.retrieve(
+        reg.stripeSessionId
+      );
+      if (session.payment_intent) {
+        try {
+          await getStripe().refunds.create({
+            payment_intent: session.payment_intent as string,
+          });
+        } catch (e: any) {
+          console.error("Refund failed or already refunded:", e.message);
+        }
+      }
+    }
+
+    await ctx.runMutation(internal.events.markRegistrationCancelled, {
+      registrationId: reg._id,
+      eventId,
+    });
   },
 });
 

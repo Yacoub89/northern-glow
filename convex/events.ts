@@ -108,24 +108,25 @@ export const registerFree = mutation({
   },
 });
 
-/** Cancel an event registration. */
-export const cancelRegistration = mutation({
-  args: { eventId: v.id("events") },
-  handler: async (ctx, { eventId }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Unauthenticated");
+// ── Internal cancel helpers (used by stripe.ts) ─────────────────────────
 
-    const registration = await ctx.db
+export const getRegistrationForCancel = internalQuery({
+  args: { eventId: v.id("events"), userId: v.id("users") },
+  handler: async (ctx, { eventId, userId }) => {
+    return await ctx.db
       .query("eventRegistrations")
       .withIndex("by_event_user", (q) =>
         q.eq("eventId", eventId).eq("userId", userId)
       )
       .filter((q) => q.neq(q.field("status"), "cancelled"))
       .first();
+  },
+});
 
-    if (!registration) throw new Error("No active registration found");
-
-    await ctx.db.patch(registration._id, { status: "cancelled" });
+export const markRegistrationCancelled = internalMutation({
+  args: { registrationId: v.id("eventRegistrations"), eventId: v.id("events") },
+  handler: async (ctx, { registrationId, eventId }) => {
+    await ctx.db.patch(registrationId, { status: "cancelled" });
 
     const event = await ctx.db.get(eventId);
     if (event && event.registeredCount > 0) {
