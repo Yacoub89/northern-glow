@@ -578,6 +578,9 @@ export default function ManageScreen() {
   const router = useRouter();
   const today = getTodayDate();
   const [selectedDate, setSelectedDate] = useState(today);
+  const [fabOpen, setFabOpen] = useState(false);
+  const [showAvailModal, setShowAvailModal] = useState(false);
+  const [showEventModal, setShowEventModal] = useState(false);
 
   const { monthDay, dayName } = formatNavDate(selectedDate);
 
@@ -683,10 +686,43 @@ export default function ManageScreen() {
         <Text style={sc.endLabel}>END OF DAY ROSTER</Text>
       </ScrollView>
 
+      {/* ── FAB backdrop ── */}
+      {fabOpen && (
+        <Pressable style={sc.fabBackdrop} onPress={() => setFabOpen(false)} />
+      )}
+
+      {/* ── FAB speed-dial menu ── */}
+      {fabOpen && (
+        <View style={sc.fabMenu}>
+          <Pressable style={sc.fabMenuItem} onPress={() => { setFabOpen(false); router.push("/class-form"); }}>
+            <Text style={sc.fabMenuLabel}>Class</Text>
+            <View style={[sc.fabMenuBtn, { backgroundColor: primary }]}>
+              <Ionicons name="barbell-outline" size={20} color={Colors.onPrimary} />
+            </View>
+          </Pressable>
+          <Pressable style={sc.fabMenuItem} onPress={() => { setFabOpen(false); setShowAvailModal(true); }}>
+            <Text style={sc.fabMenuLabel}>1:1</Text>
+            <View style={[sc.fabMenuBtn, { backgroundColor: primary }]}>
+              <Ionicons name="person-outline" size={20} color={Colors.onPrimary} />
+            </View>
+          </Pressable>
+          <Pressable style={sc.fabMenuItem} onPress={() => { setFabOpen(false); setShowEventModal(true); }}>
+            <Text style={sc.fabMenuLabel}>Event</Text>
+            <View style={[sc.fabMenuBtn, { backgroundColor: primary }]}>
+              <Ionicons name="calendar-outline" size={20} color={Colors.onPrimary} />
+            </View>
+          </Pressable>
+        </View>
+      )}
+
       {/* ── FAB ── */}
-      <Pressable style={[sc.fab, { backgroundColor: primary }]} onPress={() => router.push("/class-form")}>
-        <Ionicons name="add" size={26} color={Colors.onPrimary} />
+      <Pressable style={[sc.fab, { backgroundColor: primary }]} onPress={() => setFabOpen((o) => !o)}>
+        <Ionicons name={fabOpen ? "close" : "add"} size={26} color={Colors.onPrimary} />
       </Pressable>
+
+      {/* ── Modals triggered from FAB ── */}
+      <AddAvailabilityModal visible={showAvailModal} onClose={() => setShowAvailModal(false)} />
+      <CreateEventModal visible={showEventModal} onClose={() => setShowEventModal(false)} />
     </SafeAreaView>
   );
 }
@@ -986,6 +1022,32 @@ const sc = StyleSheet.create({
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3, shadowRadius: 8, elevation: 8,
+  },
+  fabBackdrop: {
+    position: "absolute", top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: "rgba(0,0,0,0.45)",
+  },
+  fabMenu: {
+    position: "absolute", bottom: 96, right: 22,
+    gap: 14,
+  },
+  fabMenuItem: {
+    flexDirection: "row", alignItems: "center", justifyContent: "flex-end", gap: 10,
+  },
+  fabMenuLabel: {
+    fontFamily: Fonts.bodyBold, fontSize: 13,
+    color: Colors.text,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: 12, paddingVertical: 6,
+    borderRadius: 8, borderWidth: 1, borderColor: Colors.border,
+    overflow: "hidden",
+  },
+  fabMenuBtn: {
+    width: 46, height: 46, borderRadius: 23,
+    alignItems: "center", justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2, shadowRadius: 4, elevation: 4,
   },
 });
 
