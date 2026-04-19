@@ -111,6 +111,7 @@ export const create = mutation({
 export const update = mutation({
   args: {
     id: v.id("wods"),
+    date: v.optional(v.string()),
     title: v.optional(v.string()),
     description: v.optional(v.string()),
     type: v.optional(WodType),
@@ -127,6 +128,13 @@ export const update = mutation({
     const { gymId } = await requireCoachOrAdmin(ctx);
     const wod = await ctx.db.get(id);
     if (wod?.gymId !== gymId) throw new Error("WOD not found");
+    if (updates.date && updates.date !== wod.date) {
+      const conflict = await ctx.db
+        .query("wods")
+        .withIndex("by_gym_date", (q) => q.eq("gymId", gymId).eq("date", updates.date!))
+        .first();
+      if (conflict) throw new Error("A WOD already exists for that date");
+    }
     await ctx.db.patch(id, updates);
   },
 });

@@ -1,3 +1,4 @@
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
@@ -53,6 +54,19 @@ function sessionLabel(startTime: string): string {
   return parseInt(startTime.split(":")[0], 10) < 12 ? "AM SESSION" : "PM SESSION";
 }
 
+// ─── Time helpers ─────────────────────────────────────────────────────────────
+
+function timeStrToDate(hhmm: string) {
+  const [h, m] = (hhmm || "09:00").split(":").map(Number);
+  const d = new Date();
+  d.setHours(h, m, 0, 0);
+  return d;
+}
+
+function dateToTimeStr(d: Date) {
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 type EnrichedClass = Doc<"classes"> & {
@@ -68,6 +82,7 @@ function AddAvailabilityModal({ visible, onClose }: { visible: boolean; onClose:
   const { primary } = useGymColors();
   const [dayOfWeek, setDayOfWeek] = useState(1);
   const [startTime, setStartTime] = useState("09:00");
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [duration, setDuration] = useState(60);
   const addAvailability = useMutation(api.appointments.addAvailability);
 
@@ -100,17 +115,25 @@ function AddAvailabilityModal({ visible, onClose }: { visible: boolean; onClose:
           </ScrollView>
 
           <Text style={md.label}>Start Time</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={md.row}>
-            {TIME_PRESETS.map((t) => (
-              <Pressable
-                key={t}
-                style={[md.chip, startTime === t && [md.chipActive, { backgroundColor: primary, borderColor: primary }]]}
-                onPress={() => setStartTime(t)}
-              >
-                <Text style={[md.chipText, startTime === t && md.chipTextActive]}>{formatTime(t)}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
+          <Pressable style={md.input} onPress={() => setShowStartTimePicker((v) => !v)}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <Text style={{ color: Colors.text, fontFamily: Fonts.body, fontSize: FontSizes.md }}>
+                {formatTime(startTime)}
+              </Text>
+              <Ionicons name="time-outline" size={18} color={Colors.textMuted} />
+            </View>
+          </Pressable>
+          {showStartTimePicker && (
+            <DateTimePicker
+              mode="time"
+              display="spinner"
+              value={timeStrToDate(startTime)}
+              minuteInterval={15}
+              onChange={(_, selected) => {
+                if (selected) setStartTime(dateToTimeStr(selected));
+              }}
+            />
+          )}
 
           <Text style={md.label}>Duration</Text>
           <View style={md.row}>
@@ -316,8 +339,11 @@ function CreateEventModal({ visible, onClose }: { visible: boolean; onClose: () 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [date, setDate] = useState(today);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [startTime, setStartTime] = useState("09:00");
+  const [showStartTimePicker, setShowStartTimePicker] = useState(false);
   const [endTime, setEndTime] = useState("");
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
   const [location, setLocation] = useState("");
   const [capacity, setCapacity] = useState<number | undefined>(undefined);
   const [priceInput, setPriceInput] = useState("0");
@@ -327,8 +353,11 @@ function CreateEventModal({ visible, onClose }: { visible: boolean; onClose: () 
     setTitle("");
     setDescription("");
     setDate(today);
+    setShowDatePicker(false);
     setStartTime("09:00");
+    setShowStartTimePicker(false);
     setEndTime("");
+    setShowEndTimePicker(false);
     setLocation("");
     setCapacity(undefined);
     setPriceInput("0");
@@ -392,42 +421,87 @@ function CreateEventModal({ visible, onClose }: { visible: boolean; onClose: () 
             numberOfLines={3}
           />
 
-          <Text style={md.label}>Date (YYYY-MM-DD)</Text>
-          <TextInput
-            style={md.input}
-            value={date}
-            onChangeText={setDate}
-            placeholder="2026-06-15"
-            placeholderTextColor={Colors.textMuted}
-          />
+          <Text style={md.label}>Date</Text>
+          <Pressable style={md.input} onPress={() => setShowDatePicker((v) => !v)}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <Text style={{ color: Colors.text, fontFamily: Fonts.body, fontSize: FontSizes.md }}>
+                {formatDate(date, { weekday: "long" })}
+              </Text>
+              <Ionicons name="calendar-outline" size={18} color={Colors.textMuted} />
+            </View>
+          </Pressable>
+          {showDatePicker && (
+            <DateTimePicker
+              mode="date"
+              display="inline"
+              value={(() => { const [y, m, d] = date.split("-").map(Number); return new Date(y, m - 1, d); })()}
+              minimumDate={new Date()}
+              accentColor={primary}
+              onChange={(_, selected) => {
+                if (selected) {
+                  const y = selected.getFullYear();
+                  const m = String(selected.getMonth() + 1).padStart(2, "0");
+                  const d = String(selected.getDate()).padStart(2, "0");
+                  setDate(`${y}-${m}-${d}`);
+                }
+              }}
+            />
+          )}
 
           <Text style={md.label}>Start Time</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={md.row}>
-            {TIME_PRESETS.map((t) => (
-              <Pressable
-                key={t}
-                style={[md.chip, startTime === t && [md.chipActive, { backgroundColor: primary, borderColor: primary }]]}
-                onPress={() => setStartTime(t)}
-              >
-                <Text style={[md.chipText, startTime === t && md.chipTextActive]}>{formatTime(t)}</Text>
-              </Pressable>
-            ))}
-          </ScrollView>
+          <Pressable style={md.input} onPress={() => setShowStartTimePicker((v) => !v)}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <Text style={{ color: Colors.text, fontFamily: Fonts.body, fontSize: FontSizes.md }}>
+                {formatTime(startTime)}
+              </Text>
+              <Ionicons name="time-outline" size={18} color={Colors.textMuted} />
+            </View>
+          </Pressable>
+          {showStartTimePicker && (
+            <DateTimePicker
+              mode="time"
+              display="spinner"
+              value={timeStrToDate(startTime)}
+              minuteInterval={15}
+              onChange={(_, selected) => {
+                if (selected) setStartTime(dateToTimeStr(selected));
+              }}
+            />
+          )}
 
           <Text style={md.label}>End Time</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={md.row}>
-            {["", ...TIME_PRESETS].map((t) => (
-              <Pressable
-                key={t || "none"}
-                style={[md.chip, endTime === t && [md.chipActive, { backgroundColor: primary, borderColor: primary }]]}
-                onPress={() => setEndTime(t)}
-              >
-                <Text style={[md.chipText, endTime === t && md.chipTextActive]}>
-                  {t ? formatTime(t) : "None"}
-                </Text>
-              </Pressable>
-            ))}
-          </ScrollView>
+          <Pressable
+            style={md.input}
+            onPress={() => setShowEndTimePicker((v) => !v)}
+          >
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <Text style={{ color: endTime ? Colors.text : Colors.textMuted, fontFamily: Fonts.body, fontSize: FontSizes.md }}>
+                {endTime ? formatTime(endTime) : "None (optional)"}
+              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                {endTime !== "" && (
+                  <Pressable
+                    hitSlop={8}
+                    onPress={(e) => { e.stopPropagation(); setEndTime(""); setShowEndTimePicker(false); }}
+                  >
+                    <Ionicons name="close-circle" size={18} color={Colors.textMuted} />
+                  </Pressable>
+                )}
+                <Ionicons name="time-outline" size={18} color={Colors.textMuted} />
+              </View>
+            </View>
+          </Pressable>
+          {showEndTimePicker && (
+            <DateTimePicker
+              mode="time"
+              display="spinner"
+              value={timeStrToDate(endTime || startTime)}
+              minuteInterval={15}
+              onChange={(_, selected) => {
+                if (selected) setEndTime(dateToTimeStr(selected));
+              }}
+            />
+          )}
 
           <Text style={md.label}>Location</Text>
           <TextInput

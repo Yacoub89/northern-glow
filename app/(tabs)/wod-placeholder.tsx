@@ -496,6 +496,7 @@ function CoachWodTab() {
     );
 
     const wodPayload = {
+      date,
       title: title.trim(),
       description: primaryDescription,
       type: primaryType,
