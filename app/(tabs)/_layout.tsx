@@ -114,8 +114,8 @@ export default function TabsLayout() {
         name="index"
         options={{
           tabBarLabel: "Home",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "home" : "home-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -126,8 +126,8 @@ export default function TabsLayout() {
         options={{
           tabBarLabel: "Schedule",
           href: isCoach ? null : undefined,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "calendar" : "calendar-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -138,8 +138,8 @@ export default function TabsLayout() {
         options={{
           tabBarLabel: "Manage",
           href: isCoach ? undefined : null,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "calendar" : "calendar-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -149,8 +149,8 @@ export default function TabsLayout() {
         name="wod-placeholder"
         options={{
           tabBarLabel: "WOD",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="barbell-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "stopwatch" : "stopwatch-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -160,8 +160,8 @@ export default function TabsLayout() {
         name="profile"
         options={{
           tabBarLabel: "Profile",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="person-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "person" : "person-outline"} size={size} color={color} />
           ),
         }}
       />

@@ -571,6 +571,7 @@ export default function ScheduleScreen() {
         ) : mode === "classes" ? (
           <>
             {/* WOD of the day */}
+            <Text style={[styles.dayHeader, { marginTop: 8 }]}>WORKOUT OF THE DAY</Text>
             {wod ? (
               <View style={styles.wodCard}>
                 <Text style={[styles.wodCardLabel, { color: primary }]}>WOD</Text>
