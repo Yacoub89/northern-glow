@@ -29,6 +29,7 @@ import type * as personalRecords from "../personalRecords.js";
 import type * as results from "../results.js";
 import type * as seed from "../seed.js";
 import type * as stripe from "../stripe.js";
+import type * as testHelpers from "../testHelpers.js";
 import type * as users from "../users.js";
 import type * as wods from "../wods.js";
 
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   results: typeof results;
   seed: typeof seed;
   stripe: typeof stripe;
+  testHelpers: typeof testHelpers;
   users: typeof users;
   wods: typeof wods;
 }>;

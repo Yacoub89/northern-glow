@@ -6,6 +6,15 @@ import { Id } from "./_generated/dataModel";
 
 const http = httpRouter();
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#x27;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+}
+
 auth.addHttpRoutes(http);
 
 // Stripe webhook — receives subscription lifecycle events
@@ -60,9 +69,9 @@ http.route({
 <html>
   <head><meta charset="utf-8" /><title>Redirecting…</title></head>
   <body>
-    <script>window.location.replace("${deepLink}");</script>
+    <script>window.location.replace(${JSON.stringify(deepLink)});</script>
     <p>Redirecting back to the app…
-      <a href="${deepLink}">Tap here if nothing happens.</a>
+      <a href="${escapeHtml(deepLink)}">Tap here if nothing happens.</a>
     </p>
   </body>
 </html>`;
@@ -111,9 +120,9 @@ http.route({
 <html>
   <head><meta charset="utf-8" /><title>Redirecting…</title></head>
   <body>
-    <script>window.location.replace("${deepLink}");</script>
+    <script>window.location.replace(${JSON.stringify(deepLink)});</script>
     <p>Redirecting back to the app…
-      <a href="${deepLink}">Tap here if nothing happens.</a>
+      <a href="${escapeHtml(deepLink)}">Tap here if nothing happens.</a>
     </p>
   </body>
 </html>`;
