@@ -17,7 +17,7 @@ import { api } from "../../convex/_generated/api";
 import { Colors } from "../../constants/Colors";
 import { Fonts, FontSizes } from "../../constants/Typography";
 import { useGymColors } from "../../constants/GymConfig";
-import { getTodayDate } from "../../utils/date";
+import { getTodayDate, formatDate, formatTime } from "../../utils/date";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -346,6 +346,77 @@ export default function HomeScreen() {
                 </View>
               </LinearGradient>
             </ScalePress>
+          </FadeIn>
+        )}
+
+        {/* ── My Upcoming Bookings ── */}
+        {!isCoach && upcomingBookings && upcomingBookings.length > 0 && (
+          <FadeIn style={sc.section} delay={200}>
+            <View style={sc.sectionRow}>
+              <Text style={sc.sectionTitle}>MY BOOKINGS</Text>
+              <Pressable onPress={() => router.push("/(tabs)/schedule")}>
+                <Text style={[sc.sectionAction, { color: primary }]}>VIEW ALL</Text>
+              </Pressable>
+            </View>
+
+            {upcomingBookings.map((item, idx) => {
+              const dateLabel = formatDate(item.cls.date, { relative: true, weekday: "short" });
+              const { hour, period } = splitFormattedTime(item.cls.startTime);
+              const isWaitlist = item.booking.status === "waitlist";
+
+              return (
+                <FadeIn key={item.booking._id} delay={240 + idx * 50}>
+                  <ScalePress style={sc.bookingCard}>
+                    <View style={[sc.bookingDateCol, { backgroundColor: primary }]}>
+                      <Text style={sc.bookingDateText}>{dateLabel.toUpperCase()}</Text>
+                    </View>
+                    <View style={sc.bookingTimeCol}>
+                      <Text style={[sc.bookingHour, { color: primary }]}>{hour}</Text>
+                      <Text style={sc.bookingPeriod}>{period}</Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={sc.bookingClassName}>
+                        {formatTime(item.cls.startTime)} CLASS
+                      </Text>
+                      <Text style={sc.bookingCoach}>{item.coachName}</Text>
+                    </View>
+                    <View
+                      style={[
+                        sc.bookingBadge,
+                        {
+                          backgroundColor: isWaitlist
+                            ? Colors.warning + "20"
+                            : Colors.success + "20",
+                        },
+                      ]}
+                    >
+                      <View
+                        style={[
+                          sc.statusDot,
+                          {
+                            backgroundColor: isWaitlist
+                              ? Colors.warning
+                              : Colors.success,
+                          },
+                        ]}
+                      />
+                      <Text
+                        style={[
+                          sc.bookingBadgeText,
+                          {
+                            color: isWaitlist ? Colors.warning : Colors.success,
+                          },
+                        ]}
+                      >
+                        {isWaitlist
+                          ? `WAITLIST #${item.booking.waitlistPosition}`
+                          : "BOOKED"}
+                      </Text>
+                    </View>
+                  </ScalePress>
+                </FadeIn>
+              );
+            })}
           </FadeIn>
         )}
 
@@ -797,5 +868,71 @@ const sc = StyleSheet.create({
     fontFamily: Fonts.bodyMed,
     fontSize: FontSizes.labelMd,
     color: Colors.textSecondary,
+  },
+
+  // Booking cards
+  bookingCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.surfaceContainerLow,
+    marginHorizontal: 20,
+    borderRadius: 14,
+    paddingRight: 12,
+    paddingVertical: 12,
+    marginBottom: 8,
+    gap: 12,
+    overflow: "hidden",
+  },
+  bookingDateCol: {
+    paddingHorizontal: 10,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
+  },
+  bookingDateText: {
+    fontFamily: Fonts.bodyExtra,
+    fontSize: FontSizes.labelSm,
+    color: Colors.onPrimary,
+    letterSpacing: 0.8,
+  },
+  bookingTimeCol: {
+    alignItems: "flex-end",
+    minWidth: 40,
+  },
+  bookingHour: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes.headlineSm,
+    lineHeight: 24,
+  },
+  bookingPeriod: {
+    fontFamily: Fonts.bodySemi,
+    fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary,
+  },
+  bookingClassName: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: FontSizes.labelLg,
+    color: Colors.text,
+    marginBottom: 2,
+  },
+  bookingCoach: {
+    fontFamily: Fonts.bodyMed,
+    fontSize: FontSizes.labelMd,
+    color: Colors.textSecondary,
+  },
+  bookingBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  bookingBadgeText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: FontSizes.labelSm,
+    letterSpacing: 0.5,
   },
 });
