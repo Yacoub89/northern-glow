@@ -41,9 +41,11 @@ describe("bookings.book", () => {
 
   test("athlete without membership cannot book", async () => {
     const t = convexTest(schema, modules);
-    const { gymId } = await seedGymAndUser(t, { role: "coach" });
+    const { gymId, userId: coachId } = await seedGymAndUser(t, { role: "coach" });
     const { userId: athleteId, identity } = await seedGymAndUser(t, { role: "athlete" });
-    const classId = await insertClass(t, gymId, athleteId);
+    // Move athlete into the same gym so the class is reachable
+    await t.run((ctx) => ctx.db.patch(athleteId, { gymId }));
+    const classId = await insertClass(t, gymId, coachId);
 
     await expect(
       t.withIdentity(identity).mutation(api.bookings.book, { classId })

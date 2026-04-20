@@ -112,24 +112,18 @@ describe("appointments.removeAvailability", () => {
 describe("appointments.getCoachAvailableSlots", () => {
   test("returns available slots for the coach on that day", async () => {
     const t = convexTest(schema, modules);
-    const { gymId, userId: coachId, identity: coachIdentity } = await seedGymAndUser(t, { role: "coach" });
-    const { identity: athleteIdentity } = await seedGymAndUser(t, { role: "athlete" });
-    // Move athlete into same gym
-    const athleteUserId = await t.run(async (ctx) => {
-      const users = await ctx.db.query("users").withIndex("by_gym", q => q.eq("gymId", gymId)).collect();
-      return users.find(u => u.role === "athlete")?._id;
-    });
-    if (athleteUserId) await t.run((ctx) => ctx.db.patch(athleteUserId, { gymId }));
+    const { gymId, userId: coachId, identity } = await seedGymAndUser(t, { role: "coach" });
 
-    // 2099-06-02 is a Monday (dayOfWeek = 1)
-    await t.withIdentity(coachIdentity).mutation(api.appointments.addAvailability, {
-      dayOfWeek: 1,
+    // 2099-06-02 is a Tuesday (dayOfWeek = 2)
+    await t.withIdentity(identity).mutation(api.appointments.addAvailability, {
+      dayOfWeek: 2,
       startTime: "09:00",
       durationMinutes: 60,
     });
 
+    // Query as the coach (same gym — requireAuth passes)
     const slots = await t
-      .withIdentity(coachIdentity)
+      .withIdentity(identity)
       .query(api.appointments.getCoachAvailableSlots, { coachId, date: "2099-06-02" });
 
     expect(slots).toHaveLength(1);
@@ -140,13 +134,14 @@ describe("appointments.getCoachAvailableSlots", () => {
     const t = convexTest(schema, modules);
     const { gymId, userId: coachId, identity } = await seedGymAndUser(t, { role: "coach" });
 
+    // 2099-06-02 is a Tuesday (dayOfWeek = 2)
     await t.withIdentity(identity).mutation(api.appointments.addAvailability, {
-      dayOfWeek: 1,
+      dayOfWeek: 2,
       startTime: "09:00",
       durationMinutes: 60,
     });
 
-    // Insert a confirmed appointment at 09:00 on 2099-06-02 (Monday)
+    // Insert a confirmed appointment at 09:00 on 2099-06-02 (Tuesday)
     const { userId: athleteId } = await seedGymAndUser(t, { role: "athlete" });
     await t.run((ctx) => ctx.db.patch(athleteId, { gymId }));
     await t.run((ctx) =>
