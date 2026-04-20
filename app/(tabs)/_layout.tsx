@@ -36,9 +36,8 @@ function SharedHeader() {
         </Text>
       )}
 
-      <Pressable onPress={() => router.push("/(tabs)/profile")} hitSlop={12}>
-        <Ionicons name="person-circle-outline" size={24} color={Colors.textSecondary} />
-      </Pressable>
+      {/* Spacer to keep header balanced */}
+      <View style={{ width: 34 }} />
     </View>
   );
 }
@@ -110,25 +109,37 @@ export default function TabsLayout() {
         tabBarLabelStyle: styles.tabLabel,
       }}
     >
-      {/* ── DASH (Home) — always visible ── */}
+      {/* ── Home — always visible ── */}
       <Tabs.Screen
         name="index"
         options={{
-          tabBarLabel: "DASH",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
+          tabBarLabel: "Home",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "home" : "home-outline"} size={size} color={color} />
           ),
         }}
       />
 
-      {/* ── Classes / Schedule — athletes only ── */}
+      {/* ── Schedule — athletes only ── */}
       <Tabs.Screen
         name="schedule"
         options={{
-          tabBarLabel: "CLASSES",
+          tabBarLabel: "Schedule",
           href: isCoach ? null : undefined,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="calendar-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "calendar" : "calendar-outline"} size={size} color={color} />
+          ),
+        }}
+      />
+
+      {/* ── Manage — coaches only ── */}
+      <Tabs.Screen
+        name="manage"
+        options={{
+          tabBarLabel: "Manage",
+          href: isCoach ? undefined : null,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "calendar" : "calendar-outline"} size={size} color={color} />
           ),
         }}
       />
@@ -138,56 +149,27 @@ export default function TabsLayout() {
         name="wod-placeholder"
         options={{
           tabBarLabel: "WOD",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="barbell-outline" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "stopwatch" : "stopwatch-outline"} size={size} color={color} />
           ),
         }}
       />
 
-      {/* ── Stats / History — athletes only ── */}
-      <Tabs.Screen
-        name="history"
-        options={{
-          tabBarLabel: "STATS",
-          href: isCoach ? null : undefined,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="bar-chart-outline" size={size} color={color} />
-          ),
-        }}
-      />
-
-      {/* ── Documents — coaches only ── */}
-      <Tabs.Screen
-        name="documents"
-        options={{
-          tabBarLabel: "DOCS",
-          href: isCoach ? undefined : null,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="document-text" size={size} color={color} />
-          ),
-        }}
-      />
-
-      {/* ── Manage — coaches only ── */}
-      <Tabs.Screen
-        name="manage"
-        options={{
-          tabBarLabel: "MANAGE",
-          href: isCoach ? undefined : null,
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="create-outline" size={size} color={color} />
-          ),
-        }}
-      />
-
-      {/* ── Hidden screens ── */}
-      <Tabs.Screen name="members" options={{ href: null }} />
-
-      {/* ── Profile — hidden from tab bar, accessible via top bar ── */}
+      {/* ── Profile — visible to all ── */}
       <Tabs.Screen
         name="profile"
-        options={{ href: null }}
+        options={{
+          tabBarLabel: "Profile",
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? "person" : "person-outline"} size={size} color={color} />
+          ),
+        }}
       />
+
+      {/* ── Hidden screens (accessible via navigation, not tabs) ── */}
+      <Tabs.Screen name="history" options={{ href: null }} />
+      <Tabs.Screen name="documents" options={{ href: null }} />
+      <Tabs.Screen name="members" options={{ href: null }} />
     </Tabs>
   );
 }
@@ -207,6 +189,6 @@ const styles = StyleSheet.create({
   tabLabel: {
     fontSize: 10,
     fontFamily: Fonts.bodyBold,
-    letterSpacing: 0.8,
+    letterSpacing: 0.4,
   },
 });

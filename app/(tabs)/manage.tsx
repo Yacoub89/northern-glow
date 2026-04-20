@@ -247,9 +247,9 @@ function VelocityCard({ classes }: { classes: EnrichedClass[] }) {
 
   return (
     <View style={sc.velocityCard}>
-      <Text style={sc.velocityLabel}>DAILY VELOCITY</Text>
+      <Text style={sc.velocityLabel}>CAPACITY</Text>
       <Text style={[sc.velocityPct, { color: primary }]}>{pct}%</Text>
-      <Text style={sc.velocitySubLabel}>DAILY CAPACITY</Text>
+      <Text style={sc.velocitySubLabel}>BOOKED TODAY</Text>
       <View style={sc.progressTrack}>
         <View style={[sc.progressFill, { width: `${pct}%` as any, backgroundColor: primary }]} />
       </View>
@@ -693,11 +693,7 @@ export default function ManageScreen() {
 
         {/* ── Page header ── */}
         <View style={sc.pageHeader}>
-          <Text style={[sc.pageEyebrow, { color: primary }]}>MANAGEMENT HUB</Text>
-          <Text style={sc.pageTitle}>SCHEDULE</Text>
-          <Text style={sc.pageSubtitle}>
-            Modify class slots, monitor capacity, and deploy new programming sessions.
-          </Text>
+          <Text style={sc.pageTitle}>Schedule</Text>
         </View>
 
         {/* ── Date navigator ── */}
@@ -714,14 +710,14 @@ export default function ManageScreen() {
           </Pressable>
         </View>
 
-        {/* ── Deploy Class card ── */}
+        {/* ── Add Class card ── */}
         <Pressable style={[sc.deployCard, { borderColor: primary + "44" }]} onPress={() => router.push("/class-form")}>
           <View style={[sc.deployIcon, { borderColor: primary + "66" }]}>
             <Ionicons name="add" size={22} color={primary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={sc.deployTitle}>DEPLOY CLASS</Text>
-            <Text style={sc.deploySubtitle}>Create a new slot in the daily roster.</Text>
+            <Text style={sc.deployTitle}>Add Class</Text>
+            <Text style={sc.deploySubtitle}>Schedule a new class</Text>
           </View>
           <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
         </Pressable>
@@ -742,7 +738,7 @@ export default function ManageScreen() {
           ) : dayClasses.length === 0 ? (
             <View style={sc.emptyCard}>
               <Text style={sc.emptyText}>No classes scheduled</Text>
-              <Text style={sc.emptyHint}>Tap Deploy Class to add one</Text>
+              <Text style={sc.emptyHint}>Tap Add Class above to create one</Text>
             </View>
           ) : (
             (dayClasses as EnrichedClass[]).map((cls) => (
@@ -756,8 +752,6 @@ export default function ManageScreen() {
 
         {/* ── Events ── */}
         <EventsSection />
-
-        <Text style={sc.endLabel}>END OF DAY ROSTER</Text>
       </ScrollView>
 
       {/* ── FAB backdrop ── */}
@@ -810,24 +804,11 @@ const sc = StyleSheet.create({
 
   // Page header
   pageHeader: { paddingHorizontal: 22, paddingTop: 18, paddingBottom: 8 },
-  pageEyebrow: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: FontSizes.labelSm,
-    letterSpacing: 2,
-    marginBottom: 4,
-  },
   pageTitle: {
     fontFamily: Fonts.display,
-    fontSize: 42,
+    fontSize: 28,
     color: Colors.text,
-    letterSpacing: -1,
-    marginBottom: 10,
-  },
-  pageSubtitle: {
-    fontFamily: Fonts.body,
-    fontSize: 13,
-    color: Colors.textSecondary,
-    lineHeight: 19,
+    letterSpacing: -0.5,
   },
 
   // Date navigator
@@ -880,7 +861,6 @@ const sc = StyleSheet.create({
     fontFamily: Fonts.display,
     fontSize: FontSizes.titleMd,
     color: Colors.text,
-    letterSpacing: 0.5,
     marginBottom: 3,
   },
   deploySubtitle: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary },
@@ -1083,12 +1063,7 @@ const sc = StyleSheet.create({
     color: Colors.textSecondary,
   },
 
-  // End + FAB
-  endLabel: {
-    textAlign: "center", fontFamily: Fonts.bodyBold,
-    fontSize: FontSizes.labelSm, color: Colors.textMuted,
-    letterSpacing: 2, marginTop: 8, marginBottom: 8,
-  },
+  // FAB
   fab: {
     position: "absolute", bottom: 28, right: 22,
     width: 56, height: 56, borderRadius: 28,

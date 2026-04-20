@@ -17,9 +17,8 @@ import { useRouter } from "expo-router";
 import { api } from "../../convex/_generated/api";
 import { Doc } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
-import { Fonts, FontSizes } from "../../constants/Typography";
+import { Fonts } from "../../constants/Typography";
 import { useGymColors } from "../../constants/GymConfig";
-import { formatDate, formatTime } from "../../utils/date";
 
 function ConfirmModal({
   visible,
@@ -80,8 +79,6 @@ export default function ProfileScreen() {
   const stats = useQuery(api.users.getMyStats, isCoachOrAdmin ? "skip" : undefined);
   const membership = useQuery(api.memberships.getMyMembership);
   const prs = useQuery(api.personalRecords.getMyPRs, isCoachOrAdmin ? "skip" : undefined);
-  const upcomingBookings = useQuery(api.bookings.getMyUpcoming, isCoachOrAdmin ? "skip" : undefined);
-  const cancelBooking = useMutation(api.bookings.cancel);
   const upsertPR = useMutation(api.personalRecords.upsert);
   const removePR = useMutation(api.personalRecords.remove);
 
@@ -107,23 +104,6 @@ export default function ProfileScreen() {
     .join("")
     .toUpperCase()
     .slice(0, 2);
-
-  const handleCancelBooking = (classId: Doc<"bookings">["classId"], label: string) => {
-    setConfirm({
-      title: "Cancel Booking",
-      message: `Cancel your booking for ${label}?`,
-      confirmLabel: "Cancel Booking",
-      destructive: true,
-      onConfirm: async () => {
-        setConfirm(null);
-        try {
-          await cancelBooking({ classId });
-        } catch (e: any) {
-          Alert.alert("Error", e.message);
-        }
-      },
-    });
-  };
 
   const handleSavePR = async () => {
     if (!prMovement.trim() || !prScore.trim()) return;
@@ -309,21 +289,6 @@ export default function ProfileScreen() {
           </>
         )}
 
-        {/* Documents — athletes only */}
-        {!isCoachOrAdmin && (
-          <>
-            <Text style={[styles.sectionLabel, { marginBottom: 10 }]}>Documents</Text>
-            <Pressable
-              style={[styles.settingsRow, { marginBottom: 28 }]}
-              onPress={() => router.push("/(tabs)/documents")}
-            >
-              <Ionicons name="document-text" size={20} color={primary} style={{ marginRight: 12 }} />
-              <Text style={styles.settingsRowText}>Documents & Waivers</Text>
-              <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
-            </Pressable>
-          </>
-        )}
-
         {/* Personal Records — athletes only */}
         {!isCoachOrAdmin && (
           <>
@@ -356,56 +321,16 @@ export default function ProfileScreen() {
               </View>
             )}
 
-            {/* Upcoming Bookings */}
-            <View style={[styles.sectionHeader, { marginTop: 8 }]}>
-              <Text style={styles.sectionLabel}>My Upcoming Bookings</Text>
-            </View>
+            {/* Documents & Waivers */}
+            <Pressable
+              style={[styles.settingsRow, { marginTop: 8 }]}
+              onPress={() => router.push("/(tabs)/documents")}
+            >
+              <Ionicons name="document-text" size={20} color={primary} style={{ marginRight: 12 }} />
+              <Text style={styles.settingsRowText}>Documents & Waivers</Text>
+              <Ionicons name="chevron-forward" size={16} color={Colors.textSecondary} />
+            </Pressable>
 
-            {upcomingBookings === undefined ? (
-              <ActivityIndicator color={primary} style={{ marginBottom: 20 }} />
-            ) : upcomingBookings.length === 0 ? (
-              <View style={styles.emptyCard}>
-                <Ionicons name="calendar-outline" size={28} color={Colors.textMuted} style={{ marginBottom: 8 }} />
-                <Text style={styles.emptyText}>No upcoming bookings</Text>
-                <Pressable onPress={() => router.push("/(tabs)/schedule")} style={{ marginTop: 10 }}>
-                  <Text style={[styles.viewScheduleLink, { color: primary }]}>View Schedule</Text>
-                </Pressable>
-              </View>
-            ) : (
-              upcomingBookings.map(({ booking, cls, coachName }) => (
-                <View key={booking._id} style={styles.bookingCard}>
-                  <View>
-                    <Text style={styles.bookingDate}>
-                      {formatDate(cls.date, { relative: true, weekday: "short" })} · {formatTime(cls.startTime)}
-                      {booking.status === "waitlist" ? " · Waitlist" : ""}
-                    </Text>
-                    <Text style={styles.bookingCoach}>Coach {coachName}</Text>
-                  </View>
-                  <Pressable
-                    style={styles.cancelBtn}
-                    onPress={() =>
-                      handleCancelBooking(
-                        cls._id,
-                        `${formatDate(cls.date, { relative: true, weekday: "short" })} ${formatTime(cls.startTime)}`
-                      )
-                    }
-                  >
-                    <Text style={styles.cancelBtnText}>Cancel</Text>
-                  </Pressable>
-                </View>
-              ))
-            )}
-
-            {/* Current Program */}
-            <View style={[styles.sectionHeader, { marginTop: 8 }]}>
-              <Text style={styles.sectionLabel}>Current Program</Text>
-            </View>
-            <View style={styles.programCard}>
-              <View style={styles.programOverlay}>
-                <Text style={styles.programTag}>CURRENT PROGRAM</Text>
-                <Text style={styles.programTitle}>Arctic Strength II</Text>
-              </View>
-            </View>
           </>
         )}
       </ScrollView>
@@ -621,29 +546,6 @@ const styles = StyleSheet.create({
   prMovement: { fontSize: 16, color: Colors.text, fontWeight: "500" },
   prScore: { fontSize: 16, fontWeight: "700" },
 
-  // Bookings
-  bookingCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 16,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  bookingDate: { fontSize: 16, fontWeight: "700", color: Colors.text, marginBottom: 2 },
-  bookingCoach: { fontSize: 13, color: Colors.textSecondary },
-  cancelBtn: {
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  cancelBtnText: { color: Colors.textSecondary, fontWeight: "600", fontSize: 13 },
-
   emptyCard: {
     backgroundColor: Colors.surface,
     borderRadius: 14,
@@ -654,34 +556,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   emptyText: { color: Colors.textSecondary, fontSize: 14, fontFamily: Fonts.bodyMed },
-  viewScheduleLink: { fontFamily: Fonts.bodySemi, fontSize: 14 },
-
-  // Current Program
-  programCard: {
-    borderRadius: 16,
-    overflow: "hidden",
-    height: 120,
-    backgroundColor: Colors.surfaceContainerLow,
-    marginBottom: 20,
-    justifyContent: "flex-end",
-  },
-  programOverlay: {
-    padding: 16,
-    backgroundColor: "rgba(4, 19, 41, 0.55)",
-    borderRadius: 16,
-  },
-  programTag: {
-    fontFamily: Fonts.bodyExtra,
-    fontSize: FontSizes.labelSm,
-    color: Colors.primary,
-    letterSpacing: 1.5,
-    marginBottom: 4,
-  },
-  programTitle: {
-    fontFamily: Fonts.display,
-    fontSize: FontSizes.headlineSm,
-    color: Colors.text,
-  },
 
   // PR Modal
   modalOverlay: {
