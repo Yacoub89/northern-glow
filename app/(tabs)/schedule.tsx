@@ -14,7 +14,7 @@ import { useRouter } from "expo-router";
 import { api } from "../../convex/_generated/api";
 import { Doc, Id } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
-import { useGymColors, useGymConfig } from "../../constants/GymConfig";
+import { useGymColors } from "../../constants/GymConfig";
 import { formatTime, getTodayDate } from "../../utils/date";
 
 
@@ -472,7 +472,6 @@ function EventsPanel() {
 type TabMode = "classes" | "appointments" | "events";
 
 export default function ScheduleScreen() {
-  const gym = useGymConfig();
   const { primary } = useGymColors();
   const today = getTodayDate();
   const [selectedDate, setSelectedDate] = useState(today);
@@ -500,7 +499,6 @@ export default function ScheduleScreen() {
     <SafeAreaView style={styles.container} edges={[]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={[styles.gymName, { color: primary }]}>{gym.name.toUpperCase()}</Text>
         <Text style={styles.title}>Schedule</Text>
       </View>
 
@@ -640,13 +638,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 12,
-  },
-  gymName: {
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    marginBottom: 4,
   },
   title: {
     fontSize: 28,

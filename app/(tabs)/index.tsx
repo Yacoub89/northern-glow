@@ -59,25 +59,6 @@ function splitFormattedTime(time: string): { hour: string; period: string } {
   };
 }
 
-function getLast7Days(): string[] {
-  const days: string[] = [];
-  const today = new Date();
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    days.push(d.toISOString().split("T")[0]);
-  }
-  return days;
-}
-
-function getDayAbbr(dateStr: string): string {
-  const [y, mo, d] = dateStr.split("-").map(Number);
-  return new Date(y, mo - 1, d)
-    .toLocaleDateString("en-US", { weekday: "short" })
-    .toUpperCase()
-    .slice(0, 3);
-}
-
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function HomeScreen() {
@@ -123,12 +104,6 @@ export default function HomeScreen() {
 
   // Today's classes with my booking status
   const todayClassList = todayClasses ?? [];
-
-  // Last 7 days for performance chart
-  const last7 = getLast7Days();
-  const attendedDates = new Set(
-    attendanceStats?.checkInHistory?.map((h) => h.date) ?? []
-  );
 
   return (
     <SafeAreaView style={sc.container} edges={[]}>
@@ -340,47 +315,6 @@ export default function HomeScreen() {
           )}
         </View>
 
-        {/* ── Performance Breakdown ── */}
-        {!isCoach && attendanceStats != null && (
-          <View style={sc.section}>
-            <View style={sc.sectionRow}>
-              <Text style={sc.sectionTitle}>PERFORMANCE BREAKDOWN</Text>
-            </View>
-            <View style={sc.barChart}>
-              {last7.map((dateStr, i) => {
-                const attended = attendedDates.has(dateStr);
-                const isToday = dateStr === today;
-                const dayLabel = getDayAbbr(dateStr);
-                return (
-                  <View key={i} style={sc.barCol}>
-                    <View style={sc.barTrack}>
-                      <View
-                        style={[
-                          sc.bar,
-                          {
-                            height: attended ? 64 : 16,
-                            backgroundColor: attended
-                              ? primary
-                              : Colors.surfaceContainerHighest,
-                          },
-                        ]}
-                      />
-                    </View>
-                    <Text
-                      style={[
-                        sc.barLabel,
-                        isToday && { color: primary },
-                      ]}
-                    >
-                      {dayLabel}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -397,33 +331,6 @@ const sc = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   scroll: { paddingBottom: 100 },
-
-  // Top bar
-  topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: 8,
-    paddingBottom: 4,
-  },
-  avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderWidth: 1.5,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarText: {
-    fontFamily: Fonts.display,
-    fontSize: 13,
-  },
-  brandName: {
-    fontFamily: Fonts.display,
-    fontSize: 18,
-    letterSpacing: 2,
-  },
 
   // WOD Hero
   wodHero: {
@@ -642,33 +549,4 @@ const sc = StyleSheet.create({
     color: Colors.textSecondary,
   },
 
-  // Performance breakdown bar chart
-  barChart: {
-    flexDirection: "row",
-    alignItems: "flex-end",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    gap: 6,
-  },
-  barCol: {
-    flex: 1,
-    alignItems: "center",
-    gap: 6,
-  },
-  barTrack: {
-    height: 80,
-    justifyContent: "flex-end",
-    width: "100%",
-  },
-  bar: {
-    width: "100%",
-    borderRadius: 4,
-    minHeight: 4,
-  },
-  barLabel: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: 9,
-    color: Colors.textSecondary,
-    letterSpacing: 0.5,
-  },
 });
