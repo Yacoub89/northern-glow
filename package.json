@@ -8,7 +8,9 @@
     "ios": "expo run:ios",
     "convex:dev": "npx convex dev",
     "seed": "npx convex run --no-push seed:run",
-    "seed:clear": "npx convex run --no-push seed:clear"
+    "seed:clear": "npx convex run --no-push seed:clear",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@convex-dev/auth": "^0.0.71",
@@ -52,7 +54,10 @@
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
+    "@edge-runtime/vm": "^5.0.0",
     "@types/react": "~19.1.10",
-    "typescript": "~5.9.2"
+    "convex-test": "^0.0.49",
+    "typescript": "~5.9.2",
+    "vitest": "^4.1.4"
   }
 }

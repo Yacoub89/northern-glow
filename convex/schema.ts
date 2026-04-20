@@ -247,7 +247,8 @@ export default defineSchema({
     ),
   })
     .index("by_gym", ["gymId"])
-    .index("by_gym_date", ["gymId", "date"]),
+    .index("by_gym_date", ["gymId", "date"])
+    .index("by_gym_status_date", ["gymId", "status", "date"]),
 
   eventRegistrations: defineTable({
     eventId: v.id("events"),
@@ -265,5 +266,7 @@ export default defineSchema({
     .index("by_event", ["eventId"])
     .index("by_user", ["userId"])
     .index("by_event_user", ["eventId", "userId"])
+    .index("by_event_user_status", ["eventId", "userId", "status"])
+    .index("by_event_status", ["eventId", "status"])
     .index("by_stripe_session", ["stripeSessionId"]),
 });

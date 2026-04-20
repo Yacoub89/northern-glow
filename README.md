@@ -155,7 +155,26 @@ eas update --branch production --message "Fix login bug"
 
 ---
 
-## 8. TypeScript
+## 8. Testing
+
+Convex backend functions are tested with [vitest](https://vitest.dev) + [convex-test](https://github.com/get-convex/convex-test). Test files live inside `convex/` alongside the source they cover.
+
+```bash
+# Run all tests once
+npm test
+# Equivalent: npx vitest run
+
+# Watch mode (re-runs on save)
+npm run test:watch
+# Equivalent: npx vitest
+
+# Run a specific test file
+npx vitest run convex/events.test.ts
+```
+
+---
+
+## 9. TypeScript
 
 ```bash
 # Type check (no emit)
@@ -174,6 +193,8 @@ npx tsc --noEmit
 | Android Emulator | `npm run android` |
 | Seed database | `npm run seed` |
 | Clear seed data | `npm run seed:clear` |
+| Run tests | `npm test` |
+| Watch tests | `npm run test:watch` |
 | Deploy backend | `npx convex deploy` |
 | Preview build (both) | `eas build --profile preview --platform all` |
 | Production build (both) | `eas build --profile production --platform all` |

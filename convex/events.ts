@@ -7,6 +7,7 @@ import {
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
+import { internal } from "./_generated/api";
 
 // ── Public queries ────────────────────────────────────────────────────────────
 
@@ -22,10 +23,9 @@ export const listUpcoming = query({
     const today = new Date().toISOString().slice(0, 10);
     return await ctx.db
       .query("events")
-      .withIndex("by_gym_date", (q) =>
-        q.eq("gymId", user.gymId!).gte("date", today)
+      .withIndex("by_gym_status_date", (q) =>
+        q.eq("gymId", user.gymId!).eq("status", "upcoming").gte("date", today)
       )
-      .filter((q) => q.neq(q.field("status"), "cancelled"))
       .order("asc")
       .take(50);
   },
@@ -47,10 +47,9 @@ export const getMyRegistration = query({
     if (!userId) return null;
     return await ctx.db
       .query("eventRegistrations")
-      .withIndex("by_event_user", (q) =>
-        q.eq("eventId", eventId).eq("userId", userId)
+      .withIndex("by_event_user_status", (q) =>
+        q.eq("eventId", eventId).eq("userId", userId).eq("status", "registered")
       )
-      .filter((q) => q.neq(q.field("status"), "cancelled"))
       .first();
   },
 });
@@ -115,10 +114,9 @@ export const getRegistrationForCancel = internalQuery({
   handler: async (ctx, { eventId, userId }) => {
     return await ctx.db
       .query("eventRegistrations")
-      .withIndex("by_event_user", (q) =>
-        q.eq("eventId", eventId).eq("userId", userId)
+      .withIndex("by_event_user_status", (q) =>
+        q.eq("eventId", eventId).eq("userId", userId).eq("status", "registered")
       )
-      .filter((q) => q.neq(q.field("status"), "cancelled"))
       .first();
   },
 });
@@ -177,7 +175,7 @@ export const create = mutation({
   },
 });
 
-/** Admin: cancel an event. */
+/** Admin: cancel an event, cancel all active registrations, and refund paid ones. */
 export const cancel = mutation({
   args: { eventId: v.id("events") },
   handler: async (ctx, { eventId }) => {
@@ -187,6 +185,24 @@ export const cancel = mutation({
     if (user?.role !== "admin" && user?.role !== "coach") {
       throw new Error("Not authorized");
     }
+
+    // Cancel every active registration; schedule Stripe refunds for paid ones
+    const registrations = await ctx.db
+      .query("eventRegistrations")
+      .withIndex("by_event_status", (q) =>
+        q.eq("eventId", eventId).eq("status", "registered")
+      )
+      .take(200);
+
+    for (const reg of registrations) {
+      await ctx.db.patch(reg._id, { status: "cancelled" });
+      if (reg.paymentStatus === "paid" && reg.stripeSessionId) {
+        await ctx.scheduler.runAfter(0, internal.stripe.refundEventRegistration, {
+          stripeSessionId: reg.stripeSessionId,
+        });
+      }
+    }
+
     await ctx.db.patch(eventId, { status: "cancelled" });
   },
 });
@@ -224,6 +240,10 @@ export const insertPendingRegistration = internalMutation({
       .first();
 
     if (existing) {
+      // Never overwrite a registration that has already been paid
+      if (existing.status === "registered" && existing.paymentStatus === "paid") {
+        throw new Error("Already registered and paid for this event");
+      }
       await ctx.db.patch(existing._id, {
         status: "registered",
         paymentStatus: "pending",

@@ -158,6 +158,15 @@ export const createEventCheckoutSession = action({
     }
     if (!user) throw new Error("User not found");
 
+    // Prevent double-registration: block if a paid registration already exists
+    const existingReg = await ctx.runQuery(internal.events.getRegistrationForCancel, {
+      eventId,
+      userId,
+    });
+    if (existingReg && existingReg.paymentStatus === "paid") {
+      throw new Error("Already registered for this event");
+    }
+
     const siteUrl = process.env.EXPO_PUBLIC_CONVEX_SITE_URL;
     const gymSlug = event.gymId
       ? (await ctx.runQuery(internal.gyms.getGymByUserId, { userId }))
@@ -304,6 +313,24 @@ export const processWebhook = internalAction({
         await ctx.runMutation(internal.events.confirmPaidRegistration, {
           stripeSessionId: session.id,
         });
+      }
+    }
+  },
+});
+
+/** Issue a full refund for a paid event registration. Scheduled by events.cancel. */
+export const refundEventRegistration = internalAction({
+  args: { stripeSessionId: v.string() },
+  handler: async (_ctx, { stripeSessionId }) => {
+    const stripe = getStripe();
+    const session = await stripe.checkout.sessions.retrieve(stripeSessionId);
+    if (session.payment_intent) {
+      try {
+        await stripe.refunds.create({
+          payment_intent: session.payment_intent as string,
+        });
+      } catch (e: any) {
+        console.error("Refund failed for session", stripeSessionId, ":", e.message);
       }
     }
   },
