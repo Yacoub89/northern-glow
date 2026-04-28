@@ -11,10 +11,15 @@ export const generateUploadUrl = mutation({
   },
 });
 
+/** Resolve the file URL for a document the caller has access to (same gym). */
 export const getDocumentUrl = query({
-  args: { storageId: v.id("_storage") },
-  handler: async (ctx, { storageId }) => {
-    return await ctx.storage.getUrl(storageId);
+  args: { documentId: v.id("documents") },
+  handler: async (ctx, { documentId }) => {
+    const { gymId } = await requireAuth(ctx);
+    const doc = await ctx.db.get(documentId);
+    if (!doc || doc.gymId !== gymId) return null;
+    if (!doc.fileStorageId) return null;
+    return await ctx.storage.getUrl(doc.fileStorageId);
   },
 });
 

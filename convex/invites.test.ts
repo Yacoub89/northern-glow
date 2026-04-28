@@ -10,9 +10,9 @@ const modules = import.meta.glob("./**/*.ts");
 // ── invites.createGymWithAdmin ────────────────────────────────────────────────
 
 describe("invites.createGymWithAdmin", () => {
-  test("authenticated user without a gym can create one and become admin", async () => {
+  test("super-admin without a gym can create one and become admin", async () => {
+    process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = "founder@test.com";
     const t = convexTest(schema, modules);
-    // Create a user with no gym
     const userId = await t.run((ctx) =>
       ctx.db.insert("users", { name: "Founder", email: "founder@test.com" })
     );
@@ -33,9 +33,31 @@ describe("invites.createGymWithAdmin", () => {
     expect(user?.role).toBe("admin");
   });
 
-  test("user already in a gym cannot create another", async () => {
+  test("non-super-admin cannot create a gym", async () => {
+    process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = "founder@test.com";
     const t = convexTest(schema, modules);
-    const { identity } = await seedGymAndUser(t, { role: "admin" });
+    const userId = await t.run((ctx) =>
+      ctx.db.insert("users", { name: "Random", email: "random@test.com" })
+    );
+    const identity = { subject: `${userId}|session` };
+
+    await expect(
+      t.withIdentity(identity).mutation(api.invites.createGymWithAdmin, {
+        gymName: "Sneaky Gym",
+        tagline: "...",
+        primaryColor: "#000",
+        timezone: "UTC",
+      })
+    ).rejects.toThrow("Unauthorized");
+  });
+
+  test("super-admin already in a gym cannot create another", async () => {
+    process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = "founder@test.com";
+    const t = convexTest(schema, modules);
+    const { identity } = await seedGymAndUser(t, {
+      role: "admin",
+      email: "founder@test.com",
+    });
 
     await expect(
       t.withIdentity(identity).mutation(api.invites.createGymWithAdmin, {

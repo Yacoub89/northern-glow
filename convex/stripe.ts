@@ -253,7 +253,15 @@ export const cancelEventRegistration = action({
             payment_intent: session.payment_intent as string,
           });
         } catch (e: any) {
-          console.error("Refund failed or already refunded:", e.message);
+          // Already-refunded is idempotent; a real failure must abort the
+          // cancellation so the customer isn't left charged but unregistered.
+          const code = e?.code ?? "";
+          const msg = (e?.message ?? "").toLowerCase();
+          if (code !== "charge_already_refunded" && !msg.includes("already refunded")) {
+            throw new Error(
+              `Refund failed: ${e?.message ?? "unknown error"} — please contact support.`
+            );
+          }
         }
       }
     }
@@ -330,7 +338,15 @@ export const refundEventRegistration = internalAction({
           payment_intent: session.payment_intent as string,
         });
       } catch (e: any) {
-        console.error("Refund failed for session", stripeSessionId, ":", e.message);
+        const code = e?.code ?? "";
+        const msg = (e?.message ?? "").toLowerCase();
+        // Idempotent on already-refunded; rethrow real failures so the
+        // scheduler retries and the failure is visible in logs.
+        if (code !== "charge_already_refunded" && !msg.includes("already refunded")) {
+          throw new Error(
+            `Refund failed for session ${stripeSessionId}: ${e?.message ?? "unknown error"}`
+          );
+        }
       }
     }
   },

@@ -67,10 +67,13 @@ export const setRole = mutation({
     role: v.union(v.literal("athlete"), v.literal("coach"), v.literal("admin")),
   },
   handler: async (ctx, { userId, role }) => {
-    const { gymId, user: caller } = await requireAuth(ctx);
+    const { userId: callerId, gymId, user: caller } = await requireAuth(ctx);
     if (caller.role !== "admin") throw new Error("Only admins can change roles");
     const target = await ctx.db.get(userId);
     if (target?.gymId !== gymId) throw new Error("User not in your gym");
+    if (callerId === userId && role !== "admin") {
+      throw new Error("Cannot demote yourself — ask another admin to do it");
+    }
     await ctx.db.patch(userId, { role });
   },
 });
@@ -78,10 +81,13 @@ export const setRole = mutation({
 export const promoteToCoach = mutation({
   args: { userId: v.id("users") },
   handler: async (ctx, { userId }) => {
-    const { gymId, user: caller } = await requireAuth(ctx);
+    const { userId: callerId, gymId, user: caller } = await requireAuth(ctx);
     if (caller.role !== "admin") throw new Error("Unauthorized");
     const target = await ctx.db.get(userId);
     if (target?.gymId !== gymId) throw new Error("User not in your gym");
+    if (callerId === userId) {
+      throw new Error("Cannot change your own role — ask another admin to do it");
+    }
     await ctx.db.patch(userId, { role: "coach" });
   },
 });

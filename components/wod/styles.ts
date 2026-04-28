@@ -1,0 +1,455 @@
+import { StyleSheet } from "react-native";
+import { Colors } from "../../constants/Colors";
+import { Fonts, FontSizes } from "../../constants/Typography";
+
+export const wodStyles = StyleSheet.create({
+  container: { flex: 1, backgroundColor: Colors.background },
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: Colors.background,
+  },
+  scroll: { paddingBottom: 60 },
+
+  // Page header (create/edit form)
+  pageHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 20,
+  },
+  pageTitle: {
+    fontFamily: Fonts.display,
+    fontSize: 28,
+    color: Colors.text,
+    letterSpacing: 1,
+  },
+  pageTitleUnderline: {
+    height: 3,
+    borderRadius: 2,
+    marginTop: 6,
+    width: "100%",
+  },
+  coachBadge: {
+    fontFamily: Fonts.bodyExtra,
+    fontSize: FontSizes.labelSm,
+    letterSpacing: 1.5,
+    marginTop: 6,
+  },
+
+  // Read view header
+  readHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 20,
+  },
+  readGymName: {
+    fontFamily: Fonts.bodyExtra,
+    fontSize: FontSizes.labelSm,
+    letterSpacing: 2,
+    textTransform: "uppercase",
+    marginBottom: 4,
+  },
+  readTitle: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes.displayMd,
+    color: Colors.text,
+  },
+  editBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
+    borderWidth: 1.5,
+  },
+  editBtnText: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes.labelSm,
+    letterSpacing: 1,
+  },
+
+  sectionLabel: {
+    fontFamily: Fonts.bodyExtra,
+    fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary,
+    letterSpacing: 1.5,
+    textTransform: "uppercase",
+    marginHorizontal: 20,
+    marginBottom: 12,
+  },
+
+  // WOD read card
+  readCard: {
+    backgroundColor: Colors.surfaceContainerLow,
+    marginHorizontal: 20,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 8,
+  },
+  readWodTitle: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes.headlineMd,
+    color: Colors.text,
+    marginBottom: 6,
+  },
+  readWodMeta: {
+    fontFamily: Fonts.bodySemi,
+    fontSize: FontSizes.labelMd,
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  readPartBlock: { marginTop: 16, gap: 6 },
+  readPartLabel: {
+    fontFamily: Fonts.bodyExtra,
+    fontSize: FontSizes.labelSm,
+    letterSpacing: 1.2,
+    marginBottom: 6,
+  },
+  readPartDetail: {
+    fontFamily: Fonts.bodySemi,
+    fontSize: FontSizes.labelLg,
+    color: Colors.text,
+  },
+
+  movementRow: { flexDirection: "row", alignItems: "baseline", gap: 14 },
+  movementNum: {
+    width: 28,
+    fontFamily: Fonts.display,
+    fontSize: 16,
+    textAlign: "right",
+  },
+  movementLabel: {
+    fontFamily: Fonts.bodyMed,
+    fontSize: FontSizes.labelLg,
+    color: Colors.text,
+    flex: 1,
+  },
+
+  noWodBanner: {
+    marginHorizontal: 20,
+    padding: 32,
+    backgroundColor: Colors.surfaceContainerLow,
+    borderRadius: 16,
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 24,
+  },
+  noWodText: {
+    fontFamily: Fonts.bodyMed,
+    fontSize: FontSizes.labelLg,
+    color: Colors.textSecondary,
+  },
+
+  // Form layout
+  formScroll: { paddingHorizontal: 20, paddingBottom: 20 },
+  formFieldGroup: { marginBottom: 14 },
+  formFieldLabel: {
+    fontFamily: Fonts.bodyExtra,
+    fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary,
+    letterSpacing: 1.2,
+    marginBottom: 8,
+  },
+  formInput: {
+    backgroundColor: Colors.surfaceContainerLow,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: Colors.text,
+    fontFamily: Fonts.bodyMed,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: Colors.outlineVariant,
+  },
+  selectRow: { flexDirection: "row", alignItems: "center" },
+  twoFieldRow: { flexDirection: "row", gap: 12, marginBottom: 14 },
+
+  // Part card
+  partCard: {
+    backgroundColor: Colors.surfaceContainerLow,
+    borderRadius: 16,
+    marginBottom: 16,
+    overflow: "hidden",
+  },
+  partHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderLeftWidth: 3,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.outlineVariant,
+  },
+  partTitle: {
+    fontFamily: Fonts.bodyExtra,
+    fontSize: FontSizes.labelMd,
+    letterSpacing: 1.5,
+  },
+  partHeaderRight: { flexDirection: "row", alignItems: "center", gap: 10 },
+  partRemoveBtn: { padding: 4 },
+  partCounter: {
+    fontFamily: Fonts.bodySemi,
+    fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary,
+    letterSpacing: 1,
+  },
+
+  partNameRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    padding: 14,
+    paddingBottom: 0,
+  },
+  partNameChip: {
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderWidth: 1.5,
+    borderColor: Colors.outlineVariant,
+    backgroundColor: Colors.background,
+  },
+  partNameChipText: {
+    fontFamily: Fonts.bodySemi,
+    fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary,
+    letterSpacing: 0.5,
+  },
+
+  partFieldGroup: { paddingHorizontal: 16, paddingTop: 14 },
+  partFieldLabel: {
+    fontFamily: Fonts.bodyExtra,
+    fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary,
+    letterSpacing: 1.2,
+    marginBottom: 8,
+  },
+  partInput: {
+    backgroundColor: Colors.background,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: Colors.text,
+    fontFamily: Fonts.bodyMed,
+    fontSize: 14,
+    borderWidth: 1,
+    borderColor: Colors.outlineVariant,
+  },
+  partMultiline: { minHeight: 80, marginBottom: 14 },
+  partDescMultiline: { minHeight: 110, marginBottom: 4 },
+
+  threeColRow: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+  },
+  threeColItem: { flex: 1 },
+
+  twoColRow: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 14,
+  },
+  twoColItem: { flex: 1 },
+  typeChipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
+  typeChip: {
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderWidth: 1.5,
+    borderColor: Colors.outlineVariant,
+    backgroundColor: Colors.background,
+  },
+  typeChipText: {
+    fontFamily: Fonts.bodySemi,
+    fontSize: 12,
+    color: Colors.textSecondary,
+  },
+
+  autoScoreNotice: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 16,
+  },
+  autoScoreText: {
+    fontFamily: Fonts.bodySemi,
+    fontSize: FontSizes.labelSm,
+    letterSpacing: 0.5,
+    flex: 1,
+  },
+
+  // Add part
+  addPartBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.outlineVariant,
+    borderStyle: "dashed",
+    marginBottom: 10,
+  },
+  addPartBtnText: {
+    fontFamily: Fonts.bodyExtra,
+    fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary,
+    letterSpacing: 1.5,
+  },
+
+  // Bottom bar
+  bottomBar: {
+    flexDirection: "row",
+    gap: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.outlineVariant,
+    backgroundColor: Colors.background,
+  },
+  discardBtn: {
+    flex: 1,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: Colors.outlineVariant,
+  },
+  discardBtnText: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes.labelLg,
+    color: Colors.textSecondary,
+    letterSpacing: 1,
+  },
+  publishBtnWrapper: {
+    flex: 2,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  publishBtnText: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes.labelLg,
+    color: Colors.onPrimary,
+    letterSpacing: 1,
+  },
+
+  // Athlete log form
+  formSection: {
+    backgroundColor: Colors.surfaceContainerLow,
+    marginHorizontal: 20,
+    marginBottom: 12,
+    borderRadius: 16,
+    padding: 16,
+  },
+  scaleRow: { flexDirection: "row", gap: 8 },
+  scaleBtn: {
+    flex: 1,
+    borderRadius: 10,
+    paddingVertical: 11,
+    alignItems: "center",
+    backgroundColor: Colors.background,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  scaleBtnActive: {},
+  scaleBtnText: {
+    color: Colors.textSecondary,
+    fontFamily: Fonts.bodyBold,
+    fontSize: 14,
+  },
+  scaleBtnTextActive: { color: "#fff" },
+  saveBtn: {
+    marginHorizontal: 20,
+    borderRadius: 14,
+    paddingVertical: 16,
+    alignItems: "center",
+  },
+  saveBtnText: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes.labelLg,
+    color: "#fff",
+    letterSpacing: 0.5,
+  },
+
+  // Modals
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.6)",
+    justifyContent: "flex-end",
+  },
+  modalSheet: {
+    backgroundColor: Colors.surfaceContainerLow,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 40,
+    alignItems: "center",
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: Colors.border,
+    borderRadius: 2,
+    marginBottom: 16,
+  },
+  modalDoneBtn: {
+    marginTop: 16,
+    borderRadius: 12,
+    paddingHorizontal: 48,
+    paddingVertical: 14,
+    alignItems: "center",
+    width: "100%",
+  },
+  modalDoneBtnText: {
+    color: Colors.onPrimary,
+    fontFamily: Fonts.display,
+    fontSize: 16,
+  },
+  accessModalSheet: {
+    backgroundColor: Colors.surfaceContainerLow,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 40,
+  },
+  accessModalTitle: {
+    fontFamily: Fonts.bodyExtra,
+    fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary,
+    letterSpacing: 1.5,
+    marginBottom: 16,
+    textAlign: "center",
+  },
+  accessOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    marginBottom: 6,
+  },
+  accessOptionText: {
+    fontFamily: Fonts.bodySemi,
+    fontSize: FontSizes.labelLg,
+    color: Colors.text,
+    letterSpacing: 0.5,
+  },
+});

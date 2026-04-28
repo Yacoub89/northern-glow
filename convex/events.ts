@@ -31,11 +31,17 @@ export const listUpcoming = query({
   },
 });
 
-/** Get a single event by ID. */
+/** Get a single event by ID. Scoped to the caller's gym. */
 export const get = query({
   args: { eventId: v.id("events") },
   handler: async (ctx, { eventId }) => {
-    return await ctx.db.get(eventId);
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const user = await ctx.db.get(userId);
+    if (!user?.gymId) return null;
+    const event = await ctx.db.get(eventId);
+    if (!event || event.gymId !== user.gymId) return null;
+    return event;
   },
 });
 
@@ -231,7 +237,25 @@ export const insertPendingRegistration = internalMutation({
     stripeSessionId: v.string(),
   },
   handler: async (ctx, args) => {
-    // Replace any existing cancelled registration or create new
+    // Re-check capacity inside the mutation to close the oversell race:
+    // count paid + pending registrations against the event's capacity.
+    const event = await ctx.db.get(args.eventId);
+    if (!event) throw new Error("Event not found");
+    if (event.status !== "upcoming") throw new Error("Event is not available");
+
+    if (event.capacity !== undefined) {
+      const activeRegs = await ctx.db
+        .query("eventRegistrations")
+        .withIndex("by_event_status", (q) =>
+          q.eq("eventId", args.eventId).eq("status", "registered")
+        )
+        .collect();
+      const heldByOthers = activeRegs.filter((r) => r.userId !== args.userId).length;
+      if (heldByOthers >= event.capacity) {
+        throw new Error("Event is full");
+      }
+    }
+
     const existing = await ctx.db
       .query("eventRegistrations")
       .withIndex("by_event_user", (q) =>

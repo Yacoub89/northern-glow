@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
+import { requireAuth } from "./helpers";
 
 export const getMyResults = query({
   args: {},
@@ -35,6 +36,11 @@ export const getByWod = query({
 export const getWodStats = query({
   args: { wodId: v.id("wods") },
   handler: async (ctx, { wodId }) => {
+    const { gymId } = await requireAuth(ctx);
+    const wod = await ctx.db.get(wodId);
+    if (!wod || wod.gymId !== gymId) {
+      return { count: 0, scores: [] };
+    }
     const results = await ctx.db
       .query("results")
       .withIndex("by_wod", (q) => q.eq("wodId", wodId))
@@ -55,8 +61,10 @@ export const log = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Unauthenticated");
+    const { userId, gymId } = await requireAuth(ctx);
+    // Only allow logging results against WODs in the caller's gym.
+    const wod = await ctx.db.get(args.wodId);
+    if (!wod || wod.gymId !== gymId) throw new Error("WOD not found");
 
     const existing = await ctx.db
       .query("results")
@@ -78,6 +86,7 @@ export const log = mutation({
     return await ctx.db.insert("results", {
       ...args,
       userId,
+      gymId,
       loggedAt: Date.now(),
     });
   },

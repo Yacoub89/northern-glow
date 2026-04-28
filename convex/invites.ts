@@ -1,11 +1,20 @@
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { requireCoachOrAdmin } from "./helpers";
+import { requireCoachOrAdmin, requireSuperAdmin } from "./helpers";
 import { internal } from "./_generated/api";
 
 function generateInviteCode(): string {
-  return Math.random().toString(36).slice(2, 10).toUpperCase();
+  // 8-char base32 code from 5 random bytes (~40 bits of CSPRNG entropy).
+  const bytes = new Uint8Array(5);
+  crypto.getRandomValues(bytes);
+  const alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // omit ambiguous I,O,0,1
+  let out = "";
+  for (let i = 0; i < bytes.length; i++) {
+    out += alphabet[bytes[i] & 0x1f];
+    out += alphabet[(bytes[i] >> 5) & 0x07 | ((bytes[(i + 1) % bytes.length] & 0x03) << 3)];
+  }
+  return out.slice(0, 8);
 }
 
 // ── Admin: manage invites ─────────────────────────────────────────────────────
@@ -109,10 +118,13 @@ export const checkAndAccept = mutation({
 
     if (!user.email) return { status: "no_email" as const };
 
+    // Pick the most recently created pending invite. If the same email has
+    // pending invites at multiple gyms, the newest one wins.
     const invite = await ctx.db
       .query("gymInvites")
       .withIndex("by_email", (q) => q.eq("email", user.email!.toLowerCase()))
       .filter((q) => q.eq(q.field("status"), "pending"))
+      .order("desc")
       .first();
 
     if (!invite) return { status: "no_invite" as const };
@@ -143,8 +155,8 @@ export const checkAndAccept = mutation({
 
 /**
  * Creates a gym and links the authenticated user to it as admin.
- * Used by the NorthernGlow web portal on first login.
- * Only works if the caller has no gym yet.
+ * Used by the NorthernGlow web portal. Restricted to super-admins
+ * (NORTHERNGLOW_SUPERADMIN_EMAILS allowlist) to preserve the invite-only model.
  */
 export const createGymWithAdmin = mutation({
   args: {
@@ -154,10 +166,8 @@ export const createGymWithAdmin = mutation({
     timezone: v.string(),
   },
   handler: async (ctx, { gymName, tagline, primaryColor, timezone }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Unauthenticated");
-    const user = await ctx.db.get(userId);
-    if (user?.gymId) throw new Error("You are already part of a gym");
+    const { userId, user } = await requireSuperAdmin(ctx);
+    if (user.gymId) throw new Error("You are already part of a gym");
     const gymId = await ctx.db.insert("gyms", {
       name: gymName,
       tagline,

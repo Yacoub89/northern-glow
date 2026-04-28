@@ -37,3 +37,24 @@ export async function requireCoachOrAdmin(
   }
   return { userId, gymId };
 }
+
+/**
+ * Asserts the caller is a NorthernGlow super-admin. The allowlist is configured
+ * via the NORTHERNGLOW_SUPERADMIN_EMAILS env var (comma-separated).
+ */
+export async function requireSuperAdmin(
+  ctx: QueryCtx | MutationCtx
+): Promise<{ userId: Id<"users">; user: Doc<"users"> }> {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) throw new Error("Unauthenticated");
+  const user = await ctx.db.get(userId);
+  if (!user?.email) throw new Error("Unauthorized");
+  const allowlist = (process.env.NORTHERNGLOW_SUPERADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+  if (!allowlist.includes(user.email.toLowerCase())) {
+    throw new Error("Unauthorized");
+  }
+  return { userId, user };
+}

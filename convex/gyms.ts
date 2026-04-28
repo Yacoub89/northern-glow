@@ -2,6 +2,7 @@ import { internalMutation, internalQuery, mutation, query } from "./_generated/s
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
+import { requireSuperAdmin } from "./helpers";
 
 // ── Public queries ────────────────────────────────────────────────────────────
 
@@ -17,10 +18,24 @@ export const getMyGym = query({
   },
 });
 
-/** Returns a gym by its id (used by the web admin portal). */
+/** Returns a gym by its id. Caller must be a member of the gym, or a super-admin. */
 export const get = query({
   args: { gymId: v.id("gyms") },
   handler: async (ctx, { gymId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Unauthenticated");
+    const user = await ctx.db.get(userId);
+    if (!user) throw new Error("Unauthenticated");
+
+    const isMember = user.gymId === gymId;
+    const allowlist = (process.env.NORTHERNGLOW_SUPERADMIN_EMAILS ?? "")
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+    const isSuperAdmin =
+      !!user.email && allowlist.includes(user.email.toLowerCase());
+
+    if (!isMember && !isSuperAdmin) throw new Error("Unauthorized");
     return await ctx.db.get(gymId);
   },
 });
@@ -29,6 +44,7 @@ export const get = query({
 export const list = query({
   args: {},
   handler: async (ctx) => {
+    await requireSuperAdmin(ctx);
     return await ctx.db.query("gyms").take(200);
   },
 });
@@ -56,6 +72,20 @@ export const updateSettings = mutation({
     const user = await ctx.db.get(userId);
     if (user?.role !== "admin") throw new Error("Only admins can update gym settings");
     if (!user.gymId) throw new Error("No gym associated with this account");
+
+    const priceFields = [
+      "stripeUnlimitedMonthlyPriceId",
+      "stripeUnlimitedAnnualPriceId",
+      "stripeTwiceWeeklyMonthlyPriceId",
+      "stripeTwiceWeeklyAnnualPriceId",
+    ] as const;
+    for (const field of priceFields) {
+      const val = args[field];
+      if (val !== undefined && val !== "" && !val.startsWith("price_")) {
+        throw new Error(`${field} must be a Stripe price ID (price_…)`);
+      }
+    }
+
     const updates = Object.fromEntries(
       Object.entries(args).filter(([, val]) => val !== undefined)
     );
@@ -84,10 +114,19 @@ export const getMyGymFull = query({
   },
 });
 
-/** Returns the public URL for the gym's stored logo. */
+/** Returns the public URL for the caller's gym's stored logo. */
 export const getLogoUrl = query({
   args: { storageId: v.id("_storage") },
   handler: async (ctx, { storageId }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const user = await ctx.db.get(userId);
+    if (!user?.gymId) return null;
+    const gym = await ctx.db.get(user.gymId);
+    if (!gym) return null;
+    // Only resolve URLs for storage IDs that belong to this gym's branding.
+    const allowed = [gym.logoStorageId, gym.appIconStorageId, gym.splashStorageId];
+    if (!allowed.includes(storageId)) return null;
     return await ctx.storage.getUrl(storageId);
   },
 });

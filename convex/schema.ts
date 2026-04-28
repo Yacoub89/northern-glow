@@ -141,6 +141,8 @@ export default defineSchema({
     .index("by_user_movement", ["userId", "movement"]),
 
   results: defineTable({
+    // Optional during a backfill window; new rows always populate it.
+    gymId: v.optional(v.id("gyms")),
     wodId: v.id("wods"),
     userId: v.id("users"),
     classId: v.optional(v.id("classes")),
@@ -151,7 +153,8 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_wod", ["wodId"])
-    .index("by_user_wod", ["userId", "wodId"]),
+    .index("by_user_wod", ["userId", "wodId"])
+    .index("by_gym_user", ["gymId", "userId"]),
 
   documents: defineTable({
     gymId: v.id("gyms"),

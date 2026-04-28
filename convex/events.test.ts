@@ -73,21 +73,31 @@ describe("events.create", () => {
 describe("events.get", () => {
   test("returns event by ID", async () => {
     const t = convexTest(schema, modules);
-    const { gymId, userId } = await seedGymAndUser(t, { role: "admin" });
+    const { gymId, userId, identity } = await seedGymAndUser(t, { role: "admin" });
     const eventId = await insertEvent(t, gymId, userId);
 
-    const event = await t.query(api.events.get, { eventId });
+    const event = await t.withIdentity(identity).query(api.events.get, { eventId });
     expect(event?._id).toBe(eventId);
     expect(event?.title).toBe("Summer Throwdown");
   });
 
   test("returns null for a deleted event", async () => {
     const t = convexTest(schema, modules);
-    const { gymId, userId } = await seedGymAndUser(t);
+    const { gymId, userId, identity } = await seedGymAndUser(t);
     const eventId = await insertEvent(t, gymId, userId);
     await t.run((ctx) => ctx.db.delete(eventId));
 
-    const result = await t.query(api.events.get, { eventId });
+    const result = await t.withIdentity(identity).query(api.events.get, { eventId });
+    expect(result).toBeNull();
+  });
+
+  test("returns null for an event in a different gym", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId: otherGymId, userId: otherUserId } = await seedGymAndUser(t);
+    const eventId = await insertEvent(t, otherGymId, otherUserId);
+
+    const { identity } = await seedGymAndUser(t, { email: "outsider@test.com" });
+    const result = await t.withIdentity(identity).query(api.events.get, { eventId });
     expect(result).toBeNull();
   });
 });

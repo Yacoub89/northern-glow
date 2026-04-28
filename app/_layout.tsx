@@ -38,7 +38,9 @@ function GymLinker() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    checkAndAccept({}).catch(() => {});
+    checkAndAccept({}).catch((err) => {
+      console.warn("Failed to link user to gym via invite:", err);
+    });
   }, [isAuthenticated]);
 
   return null;

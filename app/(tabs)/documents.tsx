@@ -218,7 +218,7 @@ export default function DocumentsScreen() {
 
   const pdfUrl = useQuery(
     api.documents.getDocumentUrl,
-    signDoc?.fileStorageId ? { storageId: signDoc.fileStorageId } : "skip"
+    signDoc?.fileStorageId ? { documentId: signDoc._id } : "skip"
   );
 
   const generateUploadUrl = useMutation(api.documents.generateUploadUrl);

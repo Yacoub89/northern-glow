@@ -151,10 +151,12 @@ export const getMyAttendanceStats = query({
     // Year start
     const yearStart = `${now.getFullYear()}-01-01`;
 
+    // Collect all of the user's bookings — the by_user index makes this cheap
+    // and avoids silently truncating stats for active members past 500 sessions.
     const bookings = await ctx.db
       .query("bookings")
       .withIndex("by_user", (q) => q.eq("userId", userId))
-      .take(500);
+      .collect();
 
     const bookedPast = bookings.filter((b) => b.status === "booked");
 
@@ -273,6 +275,9 @@ export const book = mutation({
       throw new Error("Already booked for this class");
     }
 
+    // Capacity check + bookedCount patch are read-then-write, but Convex's
+    // OCC retries the whole mutation on conflict, so concurrent books can't
+    // oversell the class.
     const isFull = cls.bookedCount >= cls.capacity;
 
     let bookingResult: { status: "booked" } | { status: "waitlist"; position: number };
@@ -348,8 +353,7 @@ export const book = mutation({
 export const cancel = mutation({
   args: { classId: v.id("classes") },
   handler: async (ctx, { classId }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Unauthenticated");
+    const { userId } = await requireAuth(ctx);
 
     const booking = await ctx.db
       .query("bookings")
