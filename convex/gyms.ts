@@ -23,9 +23,9 @@ export const get = query({
   args: { gymId: v.id("gyms") },
   handler: async (ctx, { gymId }) => {
     const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Unauthenticated");
+    if (!userId) return null;
     const user = await ctx.db.get(userId);
-    if (!user) throw new Error("Unauthenticated");
+    if (!user) return null;
 
     const isMember = user.gymId === gymId;
     const allowlist = (process.env.NORTHERNGLOW_SUPERADMIN_EMAILS ?? "")

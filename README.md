@@ -10,8 +10,11 @@ Everything you need from first install to shipping a build.
 # Install dependencies
 npm install
 
+# Install EAS CLI globally (one-time, required for builds)
+npm install -g eas-cli
+
 # Log in to Expo (required for EAS builds)
-npx eas login
+eas login
 
 # Log in to Convex (required for backend deploys)
 npx convex login

@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -205,7 +206,7 @@ export default function ProfileScreen() {
                   <>
                     <Text style={styles.membershipTitle}>
                       {membership.plan === "unlimited" ? "Unlimited" : "2× per Week"} ·{" "}
-                      {membership.billingPeriod === "monthly" ? "Monthly" : "3-Month"}
+                      {membership.billingPeriod === "monthly" ? "Monthly" : "Annual"}
                     </Text>
                     <Text style={styles.membershipSub}>
                       Renews{" "}
