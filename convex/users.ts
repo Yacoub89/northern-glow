@@ -12,6 +12,21 @@ export const getMe = query({
   },
 });
 
+export const isSuperAdmin = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return false;
+    const user = await ctx.db.get(userId);
+    if (!user?.email) return false;
+    const allowlist = (process.env.NORTHERNGLOW_SUPERADMIN_EMAILS ?? "")
+      .split(",")
+      .map((e) => e.trim().toLowerCase())
+      .filter(Boolean);
+    return allowlist.includes(user.email.toLowerCase());
+  },
+});
+
 export const getMyStats = query({
   args: {},
   handler: async (ctx) => {

@@ -386,3 +386,48 @@ export const sendAppointmentEmail = internalAction({
     }
   },
 });
+
+// ── Admin portal invite email ─────────────────────────────────────────────────
+
+export const sendAdminPortalInviteEmail = internalAction({
+  args: {
+    email: v.string(),
+    gymName: v.string(),
+    inviteCode: v.string(),
+  },
+  handler: async (_ctx, { email, gymName }) => {
+    const apiKey = process.env.AUTH_RESEND_KEY;
+    const from = process.env.AUTH_EMAIL_FROM ?? `NorthernGlow <noreply@example.com>`;
+    const portalUrl = process.env.ADMIN_PORTAL_URL ?? "https://admin.northernglow.app";
+    if (!apiKey) {
+      console.warn("AUTH_RESEND_KEY not set — skipping admin portal invite email");
+      return;
+    }
+
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to: [email],
+        subject: `You've been invited to manage ${gymName} on NorthernGlow`,
+        html: `
+          <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
+            <h2 style="color:#111">You're set up as the admin for ${gymName}</h2>
+            <p>NorthernGlow has set up a gym account for <strong>${gymName}</strong> and made you its admin.</p>
+            <p>To get started, visit the admin portal and create an account using <strong>this email address</strong>. Your gym will be linked automatically.</p>
+            <a href="${portalUrl}" style="display:inline-block;background:#1BBFBF;color:#000;font-weight:700;padding:12px 24px;border-radius:8px;text-decoration:none;font-size:14px;margin:16px 0">${portalUrl}</a>
+            <p style="color:#555;font-size:13px">This invite expires in 7 days. If you didn't expect this email, you can safely ignore it.</p>
+          </div>`,
+        text: `You're set up as the admin for ${gymName} on NorthernGlow. Go to ${portalUrl} and create an account using this email address. Your gym will be linked automatically.`,
+      }),
+    });
+
+    if (!res.ok) {
+      console.error("Admin portal invite email failed:", await res.text());
+    }
+  },
+});
