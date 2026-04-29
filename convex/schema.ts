@@ -20,6 +20,27 @@ export default defineSchema({
     stripeUnlimitedAnnualPriceId: v.optional(v.string()),
     stripeTwiceWeeklyMonthlyPriceId: v.optional(v.string()),
     stripeTwiceWeeklyAnnualPriceId: v.optional(v.string()),
+    // Custom domain for the admin portal (e.g. "admin.theirgym.com")
+    customDomain: v.optional(v.string()),
+    // Per-gym email sending domain (e.g. "theirgym.com") — verified via Resend
+    emailDomain: v.optional(v.string()),
+    resendDomainId: v.optional(v.string()),
+    emailDomainStatus: v.optional(
+      v.union(v.literal("pending"), v.literal("verified"), v.literal("failed"))
+    ),
+    emailDomainRecords: v.optional(
+      v.array(
+        v.object({
+          record: v.string(),
+          name: v.string(),
+          type: v.string(),
+          ttl: v.string(),
+          status: v.string(),
+          value: v.string(),
+          priority: v.optional(v.number()),
+        })
+      )
+    ),
   }),
 
   gymInvites: defineTable({

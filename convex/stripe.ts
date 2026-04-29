@@ -60,7 +60,7 @@ export const createCheckoutSession = action({
 
     const gymSlug = gym
       ? gym.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")
-      : "ocfit";
+      : "northernglow";
 
     const session = await getStripe().checkout.sessions.create({
       customer_email: user.email ?? undefined,
@@ -170,8 +170,8 @@ export const createEventCheckoutSession = action({
     const siteUrl = process.env.EXPO_PUBLIC_CONVEX_SITE_URL;
     const gymSlug = event.gymId
       ? (await ctx.runQuery(internal.gyms.getGymByUserId, { userId }))
-          ?.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") ?? "ocfit"
-      : "ocfit";
+          ?.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") ?? "northernglow"
+      : "northernglow";
 
     const session = await getStripe().checkout.sessions.create({
       customer_email: user.email ?? undefined,

@@ -1,4 +1,17 @@
 import { mutation, query } from "./_generated/server";
+
+// Resolves the "from" address for a gym: uses its verified email domain if set,
+// otherwise falls back to the global AUTH_EMAIL_FROM env var.
+function gymFromAddress(gym: {
+  name: string;
+  emailDomain?: string;
+  emailDomainStatus?: string;
+}): string | undefined {
+  if (gym.emailDomain && gym.emailDomainStatus === "verified") {
+    return `${gym.name} <noreply@${gym.emailDomain}>`;
+  }
+  return undefined;
+}
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { requireCoachOrAdmin, requireSuperAdmin } from "./helpers";
@@ -62,6 +75,7 @@ export const send = mutation({
       gymName: gym?.name ?? "your gym",
       inviteCode,
       role,
+      fromAddress: gym ? gymFromAddress(gym) : undefined,
     });
   },
 });
@@ -144,6 +158,7 @@ export const checkAndAccept = mutation({
         email: user.email,
         name: user.name,
         gymName: gym?.name ?? "your gym",
+        fromAddress: gym ? gymFromAddress(gym) : undefined,
       });
     }
 
@@ -164,8 +179,10 @@ export const superAdminCreateGym = mutation({
     primaryColor: v.string(),
     timezone: v.string(),
     adminEmail: v.string(),
+    customDomain: v.optional(v.string()),
+    emailDomain: v.optional(v.string()),
   },
-  handler: async (ctx, { gymName, tagline, primaryColor, timezone, adminEmail }) => {
+  handler: async (ctx, { gymName, tagline, primaryColor, timezone, adminEmail, customDomain, emailDomain }) => {
     const { userId } = await requireSuperAdmin(ctx);
 
     const normalizedEmail = adminEmail.toLowerCase().trim();
@@ -175,7 +192,16 @@ export const superAdminCreateGym = mutation({
       tagline,
       primaryColor,
       timezone,
+      ...(customDomain ? { customDomain } : {}),
+      ...(emailDomain ? { emailDomain, emailDomainStatus: "pending" } : {}),
     });
+
+    if (emailDomain) {
+      await ctx.scheduler.runAfter(0, internal.gyms.registerResendDomain, {
+        gymId,
+        emailDomain,
+      });
+    }
 
     // Expire any existing pending invite for this email
     const existing = await ctx.db
@@ -200,10 +226,15 @@ export const superAdminCreateGym = mutation({
       expiresAt,
     });
 
+    const portalUrl = customDomain
+      ? `https://${customDomain}`
+      : undefined;
+
     await ctx.scheduler.runAfter(0, internal.email.sendAdminPortalInviteEmail, {
       email: normalizedEmail,
       gymName,
       inviteCode,
+      ...(portalUrl ? { portalUrl } : {}),
     });
 
     return gymId;
@@ -272,10 +303,14 @@ export const superAdminResendInvite = mutation({
       expiresAt,
     });
 
+    const portalUrl = gym.customDomain ? `https://${gym.customDomain}` : undefined;
+
     await ctx.scheduler.runAfter(0, internal.email.sendAdminPortalInviteEmail, {
       email: normalizedEmail,
       gymName: gym.name,
       inviteCode,
+      fromAddress: gymFromAddress(gym),
+      ...(portalUrl ? { portalUrl } : {}),
     });
   },
 });

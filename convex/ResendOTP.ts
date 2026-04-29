@@ -30,6 +30,7 @@ export const ResendOTP: EmailConfig = {
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": `otp-${email}-${token}`,
       },
       body: JSON.stringify({
         from,

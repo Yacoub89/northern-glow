@@ -92,10 +92,12 @@ export const sendWelcomeEmail = internalAction({
     email: v.string(),
     name: v.optional(v.string()),
     gymName: v.string(),
+    fromAddress: v.optional(v.string()),
   },
-  handler: async (_ctx, { email, name, gymName }) => {
+  handler: async (_ctx, { email, name, gymName, fromAddress }) => {
     const apiKey = process.env.AUTH_RESEND_KEY;
-    const from = process.env.AUTH_EMAIL_FROM ?? `${gymName} <noreply@example.com>`;
+    const from =
+      fromAddress ?? process.env.AUTH_EMAIL_FROM ?? `${gymName} <noreply@example.com>`;
     if (!apiKey) {
       console.warn("AUTH_RESEND_KEY not set — skipping welcome email");
       return;
@@ -109,6 +111,7 @@ export const sendWelcomeEmail = internalAction({
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": `welcome-${email}`,
       },
       body: JSON.stringify({
         from,
@@ -143,22 +146,26 @@ export const sendInviteEmail = internalAction({
     gymName: v.string(),
     inviteCode: v.string(),
     role: v.union(v.literal("athlete"), v.literal("coach"), v.literal("admin")),
+    fromAddress: v.optional(v.string()),
   },
-  handler: async (_ctx, { email, gymName, inviteCode, role }) => {
+  handler: async (_ctx, { email, gymName, inviteCode, role, fromAddress }) => {
     const apiKey = process.env.AUTH_RESEND_KEY;
-    const from = process.env.AUTH_EMAIL_FROM ?? `${gymName} <noreply@example.com>`;
+    const from =
+      fromAddress ?? process.env.AUTH_EMAIL_FROM ?? `${gymName} <noreply@example.com>`;
     if (!apiKey) {
       console.warn("AUTH_RESEND_KEY not set — skipping invite email");
       return;
     }
 
-    const roleLabel = role === "admin" ? "Admin" : role === "coach" ? "Coach" : "Athlete";
+    const roleLabel =
+      role === "admin" ? "Admin" : role === "coach" ? "Coach" : "Athlete";
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": `invite-${inviteCode}`,
       },
       body: JSON.stringify({
         from,
@@ -194,10 +201,15 @@ export const sendClassBookingEmail = internalAction({
     coachName: v.string(),
     status: v.union(v.literal("booked"), v.literal("waitlist")),
     waitlistPosition: v.optional(v.number()),
+    fromAddress: v.optional(v.string()),
   },
-  handler: async (_ctx, { email, name, date, startTime, coachName, status, waitlistPosition }) => {
+  handler: async (
+    _ctx,
+    { email, name, date, startTime, coachName, status, waitlistPosition, fromAddress }
+  ) => {
     const apiKey = process.env.AUTH_RESEND_KEY;
-    const from = process.env.AUTH_EMAIL_FROM ?? "noreply@example.com";
+    const from =
+      fromAddress ?? process.env.AUTH_EMAIL_FROM ?? "noreply@example.com";
     if (!apiKey) {
       console.warn("AUTH_RESEND_KEY not set — skipping class booking email");
       return;
@@ -227,6 +239,7 @@ export const sendClassBookingEmail = internalAction({
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": `booking-${email}-${date}-${startTime}-${status}`,
       },
       body: JSON.stringify({
         from,
@@ -266,10 +279,26 @@ export const sendAppointmentEmail = internalAction({
     durationMinutes: v.number(),
     notes: v.optional(v.string()),
     gymName: v.optional(v.string()),
+    fromAddress: v.optional(v.string()),
   },
-  handler: async (_ctx, { athleteEmail, athleteName, coachEmail, coachName, date, startTime, durationMinutes, notes, gymName = "your gym" }) => {
+  handler: async (
+    _ctx,
+    {
+      athleteEmail,
+      athleteName,
+      coachEmail,
+      coachName,
+      date,
+      startTime,
+      durationMinutes,
+      notes,
+      gymName = "your gym",
+      fromAddress,
+    }
+  ) => {
     const apiKey = process.env.AUTH_RESEND_KEY;
-    const from = process.env.AUTH_EMAIL_FROM ?? "noreply@example.com";
+    const from =
+      fromAddress ?? process.env.AUTH_EMAIL_FROM ?? "noreply@example.com";
     if (!apiKey) {
       console.warn("AUTH_RESEND_KEY not set — skipping appointment email");
       return;
@@ -348,7 +377,11 @@ export const sendAppointmentEmail = internalAction({
       sends.push(
         fetch("https://api.resend.com/emails", {
           method: "POST",
-          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "Idempotency-Key": `appt-athlete-${athleteEmail}-${date}-${startTime}`,
+          },
           body: JSON.stringify({
             from,
             to: [athleteEmail],
@@ -365,7 +398,11 @@ export const sendAppointmentEmail = internalAction({
       sends.push(
         fetch("https://api.resend.com/emails", {
           method: "POST",
-          headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+            "Idempotency-Key": `appt-coach-${coachEmail}-${athleteEmail}-${date}-${startTime}`,
+          },
           body: JSON.stringify({
             from,
             to: [coachEmail],
@@ -394,11 +431,18 @@ export const sendAdminPortalInviteEmail = internalAction({
     email: v.string(),
     gymName: v.string(),
     inviteCode: v.string(),
+    fromAddress: v.optional(v.string()),
+    portalUrl: v.optional(v.string()),
   },
-  handler: async (_ctx, { email, gymName }) => {
+  handler: async (
+    _ctx,
+    { email, gymName, inviteCode, fromAddress, portalUrl: portalUrlArg }
+  ) => {
     const apiKey = process.env.AUTH_RESEND_KEY;
-    const from = process.env.AUTH_EMAIL_FROM ?? `NorthernGlow <noreply@example.com>`;
-    const portalUrl = process.env.ADMIN_PORTAL_URL ?? "https://admin.northernglow.app";
+    const from =
+      fromAddress ?? process.env.AUTH_EMAIL_FROM ?? `NorthernGlow <noreply@example.com>`;
+    const portalUrl =
+      portalUrlArg ?? process.env.ADMIN_PORTAL_URL ?? "https://admin.northernglow.app";
     if (!apiKey) {
       console.warn("AUTH_RESEND_KEY not set — skipping admin portal invite email");
       return;
@@ -409,6 +453,7 @@ export const sendAdminPortalInviteEmail = internalAction({
       headers: {
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
+        "Idempotency-Key": `admin-invite-${inviteCode}`,
       },
       body: JSON.stringify({
         from,

@@ -48,7 +48,7 @@ http.route({
     const url = new URL(req.url);
     const status = url.searchParams.get("status") ?? "cancelled";
     const sessionId = url.searchParams.get("session_id") ?? "";
-    const scheme = url.searchParams.get("scheme") ?? "ocfit";
+    const scheme = url.searchParams.get("scheme") ?? "northernglow";
     const returnUrl = url.searchParams.get("return_url");
 
     let deepLink = "";
@@ -92,7 +92,7 @@ http.route({
     const status = url.searchParams.get("status") ?? "cancelled";
     const sessionId = url.searchParams.get("session_id") ?? "";
     const eventId = url.searchParams.get("event_id") ?? "";
-    const scheme = url.searchParams.get("scheme") ?? "ocfit";
+    const scheme = url.searchParams.get("scheme") ?? "northernglow";
     const returnUrl = url.searchParams.get("return_url");
 
     let deepLink = "";
