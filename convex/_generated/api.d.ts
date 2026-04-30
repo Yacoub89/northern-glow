@@ -21,6 +21,7 @@ import type * as gyms from "../gyms.js";
 import type * as helpers from "../helpers.js";
 import type * as http from "../http.js";
 import type * as invites from "../invites.js";
+import type * as leads from "../leads.js";
 import type * as memberships from "../memberships.js";
 import type * as migrations from "../migrations.js";
 import type * as notificationQueries from "../notificationQueries.js";
@@ -53,6 +54,7 @@ declare const fullApi: ApiFromModules<{
   helpers: typeof helpers;
   http: typeof http;
   invites: typeof invites;
+  leads: typeof leads;
   memberships: typeof memberships;
   migrations: typeof migrations;
   notificationQueries: typeof notificationQueries;

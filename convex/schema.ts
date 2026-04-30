@@ -295,4 +295,24 @@ export default defineSchema({
     .index("by_event_user_status", ["eventId", "userId", "status"])
     .index("by_event_status", ["eventId", "status"])
     .index("by_stripe_session", ["stripeSessionId"]),
+
+  // ── Gym leads (public requests from landing page) ─────────────────────────
+
+  gymLeads: defineTable({
+    type: v.union(v.literal("info"), v.literal("signup")),
+    name: v.string(),
+    email: v.string(),
+    gymName: v.optional(v.string()),
+    city: v.optional(v.string()),
+    memberCount: v.optional(v.string()),
+    message: v.optional(v.string()),
+    status: v.union(
+      v.literal("new"),
+      v.literal("contacted"),
+      v.literal("converted"),
+      v.literal("dismissed"),
+    ),
+  })
+    .index("by_status", ["status"])
+    .index("by_type_status", ["type", "status"]),
 });

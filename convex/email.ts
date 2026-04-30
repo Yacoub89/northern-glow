@@ -424,6 +424,82 @@ export const sendAppointmentEmail = internalAction({
   },
 });
 
+// ── Lead notification email (notifies NorthernGlow team) ─────────────────────
+
+export const sendLeadNotificationEmail = internalAction({
+  args: {
+    type: v.union(v.literal("info"), v.literal("signup")),
+    name: v.string(),
+    email: v.string(),
+    gymName: v.optional(v.string()),
+    city: v.optional(v.string()),
+    memberCount: v.optional(v.string()),
+    message: v.optional(v.string()),
+  },
+  handler: async (_ctx, args) => {
+    const apiKey = process.env.AUTH_RESEND_KEY;
+    const notifyEmail =
+      process.env.NORTHERNGLOW_NOTIFY_EMAIL ?? "yacoub.abdulla89@gmail.com";
+    const from =
+      process.env.AUTH_EMAIL_FROM ?? "NorthernGlow <noreply@example.com>";
+    if (!apiKey) {
+      console.warn("AUTH_RESEND_KEY not set — skipping lead notification email");
+      return;
+    }
+
+    const subject =
+      args.type === "signup"
+        ? `New signup request: ${args.gymName ?? args.name}`
+        : `New info request from ${args.name}`;
+
+    const rows = [
+      ["Type", args.type === "signup" ? "Signup request" : "Info request"],
+      ["Name", args.name],
+      ["Email", args.email],
+      ...(args.gymName ? [["Gym", args.gymName]] : []),
+      ...(args.city ? [["City", args.city]] : []),
+      ...(args.memberCount ? [["Members", args.memberCount]] : []),
+      ...(args.message ? [["Message", args.message]] : []),
+    ]
+      .map(
+        ([label, val]) =>
+          `<tr><td style="padding:6px 0;color:#555;width:100px;vertical-align:top">${label}</td><td style="padding:6px 0;font-weight:600">${val}</td></tr>`
+      )
+      .join("");
+
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from,
+        to: [notifyEmail],
+        subject,
+        html: `<div style="font-family:sans-serif;max-width:480px"><h2 style="color:#111">${subject}</h2><table style="width:100%;border-collapse:collapse">${rows}</table></div>`,
+        text: [
+          subject,
+          "",
+          `Type: ${args.type}`,
+          `Name: ${args.name}`,
+          `Email: ${args.email}`,
+          args.gymName ? `Gym: ${args.gymName}` : "",
+          args.city ? `City: ${args.city}` : "",
+          args.memberCount ? `Members: ${args.memberCount}` : "",
+          args.message ? `Message: ${args.message}` : "",
+        ]
+          .filter(Boolean)
+          .join("\n"),
+      }),
+    });
+
+    if (!res.ok) {
+      console.error("Lead notification email failed:", await res.text());
+    }
+  },
+});
+
 // ── Admin portal invite email ─────────────────────────────────────────────────
 
 export const sendAdminPortalInviteEmail = internalAction({
