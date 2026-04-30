@@ -5,6 +5,7 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -13,6 +14,11 @@ import {
   TextInput,
   View,
 } from "react-native";
+
+const IOS_BUILD_URL =
+  "https://expo.dev/accounts/yacoub89/projects/northernglow/builds/6d13dca8-0cd2-42fd-bd2b-1c75b2ccaa08";
+const ANDROID_BUILD_URL =
+  "https://expo.dev/accounts/yacoub89/projects/northernglow/builds/227add0c-6f9f-463f-a533-667fa59a9011";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
@@ -246,6 +252,34 @@ export default function RegisterScreen() {
             </Pressable>
           </Link>
         </View>
+
+        {Platform.OS === "web" && (
+          <View style={styles.downloadSection}>
+            <Text style={styles.downloadLabel}>Download our app</Text>
+            <View style={styles.downloadButtons}>
+              <Pressable
+                style={[styles.downloadBtn, { borderColor: Colors.border }]}
+                onPress={() => Linking.openURL(IOS_BUILD_URL)}
+              >
+                <Ionicons name="logo-apple" size={20} color={Colors.text} />
+                <View>
+                  <Text style={styles.downloadBtnSub}>Download for</Text>
+                  <Text style={styles.downloadBtnPlatform}>iOS</Text>
+                </View>
+              </Pressable>
+              <Pressable
+                style={[styles.downloadBtn, { borderColor: Colors.border }]}
+                onPress={() => Linking.openURL(ANDROID_BUILD_URL)}
+              >
+                <Ionicons name="logo-google-playstore" size={20} color={Colors.text} />
+                <View>
+                  <Text style={styles.downloadBtnSub}>Download for</Text>
+                  <Text style={styles.downloadBtnPlatform}>Android</Text>
+                </View>
+              </Pressable>
+            </View>
+          </View>
+        )}
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -336,5 +370,35 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     marginTop: 24,
+  },
+
+  downloadSection: { marginTop: 40, alignItems: "center", gap: 12 },
+  downloadLabel: {
+    color: Colors.textMuted,
+    fontFamily: Fonts.body,
+    fontSize: 12,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  downloadButtons: { flexDirection: "row", gap: 10 },
+  downloadBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    backgroundColor: Colors.surface,
+  },
+  downloadBtnSub: {
+    color: Colors.textMuted,
+    fontFamily: Fonts.body,
+    fontSize: 10,
+  },
+  downloadBtnPlatform: {
+    color: Colors.text,
+    fontFamily: Fonts.bodyBold,
+    fontSize: 14,
   },
 });
