@@ -74,6 +74,8 @@ export default defineSchema({
     pushToken: v.optional(v.string()),
     // Optional until the user accepts their gym invite
     gymId: v.optional(v.id("gyms")),
+    agreedToTermsAt: v.optional(v.string()),    // ISO timestamp
+    agreedToTermsVersion: v.optional(v.string()), // e.g. "v1"
   })
     .index("email", ["email"])
     .index("by_gym", ["gymId"]),

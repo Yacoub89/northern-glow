@@ -67,6 +67,18 @@ export const listMembers = query({
   },
 });
 
+export const agreeToTerms = mutation({
+  args: { version: v.string() },
+  handler: async (ctx, { version }) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    await ctx.db.patch(userId, {
+      agreedToTermsAt: new Date().toISOString(),
+      agreedToTermsVersion: version,
+    });
+  },
+});
+
 export const savePushToken = mutation({
   args: { token: v.string() },
   handler: async (ctx, { token }) => {
