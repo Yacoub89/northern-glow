@@ -4,7 +4,7 @@ import { ConvexReactClient } from "convex/react";
 import Constants from "expo-constants";
 import { Stack } from "expo-router";
 import { useEffect } from "react";
-import { Platform, View, ActivityIndicator } from "react-native";
+import { Platform, StyleSheet, View, ActivityIndicator } from "react-native";
 import { api } from "../convex/_generated/api";
 import { useFonts } from "expo-font";
 import {
@@ -117,31 +117,53 @@ export default function RootLayout() {
     );
   }
 
+  const stack = (
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(auth)" />
+
+      <Stack.Screen
+        name="class-form"
+        options={{
+          presentation: "modal",
+          headerShown: true,
+          title: "Add Class",
+          headerStyle: { backgroundColor: "#131328" },
+          headerTintColor: "#FFFFFF",
+          headerTitleStyle: { fontWeight: "700" },
+        }}
+      />
+      <Stack.Screen name="membership" options={{ headerShown: false }} />
+      <Stack.Screen name="event-detail" options={{ headerShown: false }} />
+      <Stack.Screen name="roster" options={{ headerShown: false }} />
+      <Stack.Screen name="kiosk" options={{ headerShown: false }} />
+      <Stack.Screen name="gym-settings" options={{ headerShown: false }} />
+    </Stack>
+  );
+
   return (
     <ConvexAuthProvider client={convex} storage={tokenStorage}>
       <GymLinker />
       <PushTokenRegistrar />
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="(auth)" />
-
-        <Stack.Screen
-          name="class-form"
-          options={{
-            presentation: "modal",
-            headerShown: true,
-            title: "Add Class",
-            headerStyle: { backgroundColor: "#131328" },
-            headerTintColor: "#FFFFFF",
-            headerTitleStyle: { fontWeight: "700" },
-          }}
-        />
-        <Stack.Screen name="membership" options={{ headerShown: false }} />
-        <Stack.Screen name="event-detail" options={{ headerShown: false }} />
-        <Stack.Screen name="roster" options={{ headerShown: false }} />
-        <Stack.Screen name="kiosk" options={{ headerShown: false }} />
-        <Stack.Screen name="gym-settings" options={{ headerShown: false }} />
-      </Stack>
+      {Platform.OS === "web" ? (
+        <View style={webStyles.outer}>
+          <View style={webStyles.inner}>{stack}</View>
+        </View>
+      ) : stack}
     </ConvexAuthProvider>
   );
 }
+
+const webStyles = Platform.OS === "web" ? StyleSheet.create({
+  outer: {
+    flex: 1,
+    backgroundColor: Colors.background,
+    alignItems: "center",
+  },
+  inner: {
+    flex: 1,
+    width: "100%",
+    maxWidth: 430,
+    overflow: "hidden",
+  },
+}) : { outer: {}, inner: {} };
