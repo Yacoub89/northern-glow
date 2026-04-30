@@ -3,21 +3,27 @@ import { Link, router } from "expo-router";
 import { useRef, useState } from "react";
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
+import { Fonts } from "../../constants/Typography";
 import { useGymColors, useGymConfig } from "../../constants/GymConfig";
 
 export default function RegisterScreen() {
   const { signIn } = useAuthActions();
   const { primary } = useGymColors();
   const gym = useGymConfig();
+  const insets = useSafeAreaInsets();
 
   // Step 1: registration fields
   const [name, setName] = useState("");
@@ -100,6 +106,25 @@ export default function RegisterScreen() {
     }
   };
 
+  // Shared branded top bar
+  const HeaderBar = ({ onBack }: { onBack?: () => void }) => (
+    <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+      {onBack ? (
+        <Pressable onPress={onBack} hitSlop={10} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={20} color={primary} />
+        </Pressable>
+      ) : (
+        <View style={styles.headerSpacer} />
+      )}
+      {gym.logoUrl ? (
+        <Image source={{ uri: gym.logoUrl }} style={styles.logoImage} resizeMode="contain" />
+      ) : (
+        <Text style={[styles.brandName, { color: primary }]}>{gym.name.toUpperCase()}</Text>
+      )}
+      <View style={styles.headerSpacer} />
+    </View>
+  );
+
   // ─── Verify screen ──────────────────────────────────────────────────────────
   if (step === "verify") {
     return (
@@ -107,9 +132,17 @@ export default function RegisterScreen() {
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <View style={styles.inner}>
-          <Text style={[styles.logo, { color: primary }]}>{gym.name}</Text>
-          <Text style={styles.tagline}>Check your email</Text>
+        <HeaderBar onBack={() => setStep("register")} />
+
+        <ScrollView
+          contentContainerStyle={[
+            styles.scrollContent,
+            { paddingBottom: Math.max(insets.bottom, 16) + 16 },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={styles.title}>Check your email</Text>
           <Text style={styles.subtitle}>
             We sent a 6-digit code to{"\n"}
             <Text style={styles.emailHighlight}>{email.trim()}</Text>
@@ -140,13 +173,11 @@ export default function RegisterScreen() {
 
           <Pressable onPress={handleResend} disabled={loading} style={styles.resendRow}>
             <Text style={styles.footerText}>Didn't receive it? </Text>
-            <Text style={[styles.link, { color: primary }, loading && { opacity: 0.5 }]}>Resend code</Text>
+            <Text style={[styles.link, { color: primary }, loading && { opacity: 0.5 }]}>
+              Resend code
+            </Text>
           </Pressable>
-
-          <Pressable onPress={() => setStep("register")} style={styles.backRow}>
-            <Text style={[styles.link, { color: primary }]}>← Back</Text>
-          </Pressable>
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     );
   }
@@ -157,9 +188,17 @@ export default function RegisterScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={styles.inner}>
-        <Text style={[styles.logo, { color: primary }]}>{gym.name}</Text>
-        <Text style={styles.tagline}>Create your account</Text>
+      <HeaderBar onBack={() => router.back()} />
+
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom, 16) + 16 },
+        ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.title}>Create Account</Text>
 
         <View style={styles.form}>
           <TextInput
@@ -207,36 +246,62 @@ export default function RegisterScreen() {
             </Pressable>
           </Link>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  inner: { flex: 1, justifyContent: "center", paddingHorizontal: 32 },
-  logo: {
-    fontSize: 52,
-    fontWeight: "900",
-    textAlign: "center",
-    letterSpacing: -2,
+
+  // Top bar — same visual language as SharedHeader
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
-  tagline: {
-    fontSize: 15,
-    color: Colors.textSecondary,
-    textAlign: "center",
-    marginBottom: 12,
+  headerSpacer: { width: 34 },
+  backButton: {
+    width: 34,
+    height: 34,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  logoImage: { height: 28, width: 120 },
+  brandName: {
+    fontFamily: Fonts.display,
+    fontSize: 18,
+    letterSpacing: 2,
+  },
+
+  // Scrollable form area
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 32,
+    paddingTop: 48,
+    justifyContent: "center",
+  },
+  title: {
+    fontFamily: Fonts.display,
+    fontSize: 28,
+    color: Colors.text,
+    marginBottom: 28,
   },
   subtitle: {
-    fontSize: 14,
+    fontFamily: Fonts.body,
+    fontSize: 15,
     color: Colors.textSecondary,
-    textAlign: "center",
-    marginBottom: 32,
+    marginTop: -16,
+    marginBottom: 28,
     lineHeight: 22,
   },
   emailHighlight: {
+    fontFamily: Fonts.bodySemi,
     color: Colors.text,
-    fontWeight: "600",
   },
   form: { gap: 12 },
   input: {
@@ -245,13 +310,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     color: Colors.text,
+    fontFamily: Fonts.body,
     fontSize: 16,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   codeInput: {
+    fontFamily: Fonts.display,
     fontSize: 28,
-    fontWeight: "700",
     letterSpacing: 12,
     paddingVertical: 18,
   },
@@ -262,17 +328,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  buttonText: { color: "#fff", fontFamily: Fonts.bodyBold, fontSize: 16 },
   footer: { flexDirection: "row", justifyContent: "center", marginTop: 32 },
-  footerText: { color: Colors.textSecondary, fontSize: 15 },
-  link: { fontSize: 15, fontWeight: "600" },
+  footerText: { color: Colors.textSecondary, fontFamily: Fonts.body, fontSize: 15 },
+  link: { fontSize: 15, fontFamily: Fonts.bodySemi },
   resendRow: {
     flexDirection: "row",
     justifyContent: "center",
     marginTop: 24,
-  },
-  backRow: {
-    alignItems: "center",
-    marginTop: 16,
   },
 });

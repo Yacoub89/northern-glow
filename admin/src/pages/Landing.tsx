@@ -138,7 +138,7 @@ const S = {
   } as const,
 
   // How it works
-  stepsGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 32, marginTop: 56 } as const,
+  stepsGrid: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 32, marginTop: 56 } as const,
   stepNum: {
     width: 36, height: 36, borderRadius: "50%",
     background: TEAL_DIM, border: `1px solid ${TEAL_BORDER}`,
@@ -355,7 +355,6 @@ function Nav({ onLogin }: { onLogin: () => void }) {
         </div>
         <div style={S.navRight}>
           <button style={S.btnGhost} onClick={onLogin}>Sign in</button>
-          <button style={S.btnPrimary} onClick={onLogin}>Get started</button>
         </div>
       </div>
     </nav>
@@ -375,7 +374,7 @@ function Hero({ onApply, onLearnMore }: { onApply: () => void; onLearnMore: () =
       </h1>
       <p style={S.heroSub}>
         NorthernGlow handles athlete management, WOD programming, class bookings,
-        and billing — so you can focus on coaching.
+        and member management — so you can focus on coaching.
       </p>
       <div style={S.heroActions}>
         <button style={S.btnHeroPrimary} onClick={onApply}>
@@ -449,7 +448,7 @@ function Features() {
         <h2 style={S.h2}>One platform,<br />zero duct tape.</h2>
         <p style={S.h2Sub}>
           Stop juggling six apps. NorthernGlow replaces your scheduling tool,
-          WOD tracker, billing software, and member portal.
+          WOD tracker, and member portal.
         </p>
         <div style={S.featuresGrid}>
           {FEATURES.map(({ icon, title, desc }) => (
@@ -472,19 +471,20 @@ function PrvnSpotlight() {
         <div style={S.spotlightGrid}>
           {/* Left — copy */}
           <div style={S.spotlightLeft}>
-            <div style={S.sectionLabel}>PRVN integration</div>
+            <div style={S.sectionLabel}>Programming import</div>
             <h2 style={S.h2}>
-              Import PRVN programming<br />
+              Import your programming<br />
               <span style={{ color: TEAL }}>straight from Google Docs.</span>
             </h2>
             <p style={{ fontSize: 17, color: MUTED, lineHeight: 1.7, marginBottom: 32 }}>
-              If your gym runs PRVN Fitness programming, you already get your
-              weekly blocks in a Google Doc. NorthernGlow reads that doc directly
-              — parsing each WOD, labeling it by type, and publishing it to your
-              athletes automatically.
+              Whether you run PRVN, CompTrain, Misfit Athletics, or write your
+              own programming, NorthernGlow reads your Google Doc directly —
+              parsing each WOD, labeling it by type, and publishing it to your
+              athletes automatically. Any Google Doc-based programming works.
             </p>
             <div style={{ display: "flex", flexDirection: "column" as const, gap: 14 }}>
               {[
+                "Works with PRVN, CompTrain, Misfit, or any Google Doc",
                 "Paste a Google Doc URL — nothing to install",
                 "WODs parsed by type: AMRAP, ForTime, EMOM, Strength",
                 "Athletes see tomorrow's workout the moment you publish",
@@ -553,11 +553,16 @@ const STEPS = [
   },
   {
     n: "2",
+    title: "We migrate your data",
+    desc: "Already on another platform? We transfer your member list, class history, and programming so you don't start from scratch.",
+  },
+  {
+    n: "3",
     title: "Invite your athletes",
     desc: "Athletes download the NorthernGlow app, enter your gym code, and they're in. No spreadsheets, no manual imports.",
   },
   {
-    n: "3",
+    n: "4",
     title: "Coach like you always have",
     desc: "Paste your Google Doc link for the week's programming, post WODs, manage classes, and let the platform handle the rest.",
   },

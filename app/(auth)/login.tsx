@@ -3,21 +3,26 @@ import { Link } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../../constants/Colors";
+import { Fonts } from "../../constants/Typography";
 import { useGymColors, useGymConfig } from "../../constants/GymConfig";
 
 export default function LoginScreen() {
   const gym = useGymConfig();
   const { primary } = useGymColors();
   const { signIn } = useAuthActions();
+  const insets = useSafeAreaInsets();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -46,9 +51,29 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={styles.inner}>
-        <Text style={[styles.logo, { color: primary }]}>{gym.name}</Text>
-        {gym.tagline ? <Text style={styles.tagline}>{gym.tagline}</Text> : null}
+      {/* Branded top bar — mirrors SharedHeader style */}
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+        <View style={styles.headerSpacer} />
+        {gym.logoUrl ? (
+          <Image source={{ uri: gym.logoUrl }} style={styles.logoImage} resizeMode="contain" />
+        ) : (
+          <Text style={[styles.brandName, { color: primary }]}>{gym.name.toUpperCase()}</Text>
+        )}
+        <View style={styles.headerSpacer} />
+      </View>
+
+      <ScrollView
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: Math.max(insets.bottom, 16) + 16 },
+        ]}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <Text style={styles.title}>Sign In</Text>
+        {gym.tagline ? (
+          <Text style={styles.tagline}>{gym.tagline}</Text>
+        ) : null}
 
         <View style={styles.form}>
           <TextInput
@@ -88,27 +113,52 @@ export default function LoginScreen() {
             </Pressable>
           </Link>
         </View>
-      </View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  inner: { flex: 1, justifyContent: "center", paddingHorizontal: 32 },
-  logo: {
-    fontSize: 52,
-    fontWeight: "900",
-    textAlign: "center",
-    letterSpacing: -2,
+
+  // Top bar — same visual language as SharedHeader
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  headerSpacer: { width: 34 },
+  logoImage: { height: 28, width: 120 },
+  brandName: {
+    fontFamily: Fonts.display,
+    fontSize: 18,
+    letterSpacing: 2,
+  },
+
+  // Scrollable form area
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: 32,
+    paddingTop: 48,
+    justifyContent: "center",
+  },
+  title: {
+    fontFamily: Fonts.display,
+    fontSize: 28,
+    color: Colors.text,
+    marginBottom: 28,
   },
   tagline: {
-    fontSize: 15,
+    fontFamily: Fonts.body,
+    fontSize: 14,
     color: Colors.textSecondary,
-    textAlign: "center",
-    marginBottom: 52,
-    letterSpacing: 1,
-    textTransform: "uppercase",
+    marginTop: -20,
+    marginBottom: 28,
+    letterSpacing: 0.5,
   },
   form: { gap: 12 },
   input: {
@@ -117,6 +167,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 14,
     color: Colors.text,
+    fontFamily: Fonts.body,
     fontSize: 16,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -128,8 +179,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  buttonText: { color: "#fff", fontFamily: Fonts.bodyBold, fontSize: 16 },
   footer: { flexDirection: "row", justifyContent: "center", marginTop: 32 },
-  footerText: { color: Colors.textSecondary, fontSize: 15 },
-  link: { fontSize: 15, fontWeight: "600" },
+  footerText: { color: Colors.textSecondary, fontFamily: Fonts.body, fontSize: 15 },
+  link: { fontSize: 15, fontFamily: Fonts.bodySemi },
 });
