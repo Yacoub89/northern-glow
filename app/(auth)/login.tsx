@@ -120,35 +120,35 @@ export default function LoginScreen() {
             </Pressable>
           </Link>
         </View>
-
-        {Platform.OS === "web" && (
-          <View style={styles.downloadSection}>
-            <Text style={styles.downloadLabel}>Download our app</Text>
-            <View style={styles.downloadButtons}>
-              <Pressable
-                style={[styles.downloadBtn, { borderColor: Colors.border }]}
-                onPress={() => Linking.openURL(IOS_BUILD_URL)}
-              >
-                <Ionicons name="logo-apple" size={20} color={Colors.text} />
-                <View>
-                  <Text style={styles.downloadBtnSub}>Download for</Text>
-                  <Text style={styles.downloadBtnPlatform}>iOS</Text>
-                </View>
-              </Pressable>
-              <Pressable
-                style={[styles.downloadBtn, { borderColor: Colors.border }]}
-                onPress={() => Linking.openURL(ANDROID_BUILD_URL)}
-              >
-                <Ionicons name="logo-google-playstore" size={20} color={Colors.text} />
-                <View>
-                  <Text style={styles.downloadBtnSub}>Download for</Text>
-                  <Text style={styles.downloadBtnPlatform}>Android</Text>
-                </View>
-              </Pressable>
-            </View>
-          </View>
-        )}
       </ScrollView>
+
+      {Platform.OS === "web" && (
+        <View style={[styles.downloadBar, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
+          <Text style={styles.downloadLabel}>Download our app</Text>
+          <View style={styles.downloadButtons}>
+            <Pressable
+              style={[styles.downloadBtn, { borderColor: Colors.border }]}
+              onPress={() => Linking.openURL(IOS_BUILD_URL)}
+            >
+              <Ionicons name="logo-apple" size={20} color={Colors.text} />
+              <View>
+                <Text style={styles.downloadBtnSub}>Download for</Text>
+                <Text style={styles.downloadBtnPlatform}>iOS</Text>
+              </View>
+            </Pressable>
+            <Pressable
+              style={[styles.downloadBtn, { borderColor: Colors.border }]}
+              onPress={() => Linking.openURL(ANDROID_BUILD_URL)}
+            >
+              <Ionicons name="logo-google-playstore" size={20} color={Colors.text} />
+              <View>
+                <Text style={styles.downloadBtnSub}>Download for</Text>
+                <Text style={styles.downloadBtnPlatform}>Android</Text>
+              </View>
+            </Pressable>
+          </View>
+        </View>
+      )}
     </KeyboardAvoidingView>
   );
 }
