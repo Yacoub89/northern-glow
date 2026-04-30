@@ -6,7 +6,8 @@ node_modules/
 .DS_Store
 .expo/
 /android
-/ios
+/ios/Pods
+/ios/build
 dist/
 
 # White-label build: backed-up originals (created by build-gym.sh, never commit)
