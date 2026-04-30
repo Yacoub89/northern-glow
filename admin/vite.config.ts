@@ -7,6 +7,8 @@ export default defineConfig({
   resolve: {
     alias: {
       "@convex": resolve(__dirname, "../convex"),
+      // Force convex bare imports in ../convex/ files to resolve from admin's node_modules
+      convex: resolve(__dirname, "node_modules/convex"),
     },
   },
 });
