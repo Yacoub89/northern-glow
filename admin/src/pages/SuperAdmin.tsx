@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
-import { Id } from "@convex/_generated/dataModel";
+import { Doc, Id } from "@convex/_generated/dataModel";
 
 const S = {
   h1: { fontSize: 24, fontWeight: 700, marginBottom: 8 },
@@ -297,6 +297,100 @@ function DomainEditor({ gym, onClose }: { gym: Gym; onClose: () => void }) {
   );
 }
 
+// ── Leads panel ──────────────────────────────────────────────────────────────
+
+const STATUS_COLORS: Record<string, [string, string]> = {
+  new: ["#1BBFBF22", "#1BBFBF"],
+  contacted: ["#FF9F0A22", "#FF9F0A"],
+  converted: ["#34C75922", "#34C759"],
+  dismissed: ["#55555522", "#555555"],
+};
+
+function Leads({ onPrefillForm }: { onPrefillForm: (fields: { gymName: string; adminEmail: string }) => void }) {
+  const leads = useQuery(api.leads.listLeads);
+  const updateStatus = useMutation(api.leads.updateLeadStatus);
+  const [updating, setUpdating] = useState<string | null>(null);
+
+  const handleStatus = async (leadId: Id<"gymLeads">, status: Doc<"gymLeads">["status"]) => {
+    setUpdating(leadId);
+    try {
+      await updateStatus({ leadId, status });
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  if (leads === undefined) return <p style={{ color: "#666", fontSize: 13 }}>Loading…</p>;
+  if (leads.length === 0) return <p style={{ color: "#666", fontSize: 13 }}>No leads yet.</p>;
+
+  return (
+    <table style={S.table}>
+      <thead>
+        <tr>
+          <th style={S.th}>Type</th>
+          <th style={S.th}>Name</th>
+          <th style={S.th}>Email</th>
+          <th style={S.th}>Gym / Details</th>
+          <th style={S.th}>Status</th>
+          <th style={S.th}></th>
+        </tr>
+      </thead>
+      <tbody>
+        {leads.map((lead) => {
+          const [bg, color] = STATUS_COLORS[lead.status] ?? ["#33333322", "#aaa"];
+          const isUpdating = updating === lead._id;
+          return (
+            <tr key={lead._id}>
+              <td style={S.td}>
+                <span style={S.badge(lead.type === "signup" ? "#1BBFBF22" : "#FF9F0A22", lead.type === "signup" ? "#1BBFBF" : "#FF9F0A")}>
+                  {lead.type === "signup" ? "signup" : "info"}
+                </span>
+              </td>
+              <td style={S.td}>{lead.name}</td>
+              <td style={S.td}>{lead.email}</td>
+              <td style={{ ...S.td, fontSize: 12, color: "#aaa", maxWidth: 200 }}>
+                {lead.gymName && <div>{lead.gymName}</div>}
+                {lead.city && <div style={{ color: "#666" }}>{lead.city}</div>}
+                {lead.memberCount && <div style={{ color: "#666" }}>{lead.memberCount} members</div>}
+                {lead.message && <div style={{ color: "#666", fontStyle: "italic" }}>{lead.message.slice(0, 60)}{lead.message.length > 60 ? "…" : ""}</div>}
+              </td>
+              <td style={S.td}>
+                <span style={S.badge(bg, color)}>{lead.status}</span>
+              </td>
+              <td style={{ ...S.td, whiteSpace: "nowrap" as const }}>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" as const }}>
+                  {lead.status === "new" && (
+                    <button style={S.btnSmall} disabled={isUpdating} onClick={() => handleStatus(lead._id, "contacted")}>
+                      Contacted
+                    </button>
+                  )}
+                  {lead.type === "signup" && lead.status !== "converted" && lead.status !== "dismissed" && (
+                    <button
+                      style={S.btnSmall}
+                      disabled={isUpdating}
+                      onClick={() => {
+                        onPrefillForm({ gymName: lead.gymName ?? lead.name, adminEmail: lead.email });
+                        handleStatus(lead._id, "converted");
+                      }}
+                    >
+                      Create gym
+                    </button>
+                  )}
+                  {lead.status !== "dismissed" && lead.status !== "converted" && (
+                    <button style={S.btnDanger} disabled={isUpdating} onClick={() => handleStatus(lead._id, "dismissed")}>
+                      Dismiss
+                    </button>
+                  )}
+                </div>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function SuperAdmin() {
@@ -317,6 +411,11 @@ export default function SuperAdmin() {
   const [success, setSuccess] = useState("");
   const [expandedGym, setExpandedGym] = useState<Id<"gyms"> | null>(null);
   const [editingDomains, setEditingDomains] = useState<Id<"gyms"> | null>(null);
+
+  const prefillForm = ({ gymName, adminEmail }: { gymName: string; adminEmail: string }) => {
+    setForm((f) => ({ ...f, gymName, adminEmail }));
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const set = (field: keyof typeof form) =>
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
@@ -491,6 +590,12 @@ export default function SuperAdmin() {
             </table>
           )}
         </div>
+      </div>
+
+      {/* Leads — full width */}
+      <div style={{ ...S.card, marginTop: 0 }}>
+        <div style={S.cardTitle}>Incoming leads</div>
+        <Leads onPrefillForm={prefillForm} />
       </div>
     </div>
   );

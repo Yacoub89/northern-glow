@@ -1,4 +1,7 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useMutation } from "convex/react";
+import { api } from "@convex/_generated/api";
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 // Colors derived from the app icon: deep navy bg + electric cyan glow
@@ -160,6 +163,184 @@ const S = {
   footerRight: { fontSize: 13, color: DIM } as const,
 };
 
+// ── Modal styles ──────────────────────────────────────────────────────────────
+
+const M = {
+  overlay: {
+    position: "fixed" as const, inset: 0,
+    background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)",
+    display: "flex", alignItems: "center", justifyContent: "center",
+    zIndex: 1000, padding: 16,
+  },
+  box: {
+    background: "#0F1E36", border: `1px solid ${BORDER_BRIGHT}`,
+    borderRadius: 16, padding: "40px 36px", width: "100%", maxWidth: 480,
+  },
+  title: { fontSize: 22, fontWeight: 800, marginBottom: 8, color: TEXT } as const,
+  sub: { fontSize: 14, color: MUTED, marginBottom: 28, lineHeight: 1.6 } as const,
+  group: { marginBottom: 18 } as const,
+  label: { display: "block", fontSize: 13, color: MUTED, marginBottom: 6, fontWeight: 500 } as const,
+  input: {
+    width: "100%", background: "#0B1525", border: `1px solid ${BORDER_BRIGHT}`,
+    borderRadius: 8, padding: "11px 14px", color: TEXT, fontSize: 14,
+    outline: "none", boxSizing: "border-box" as const,
+  },
+  textarea: {
+    width: "100%", background: "#0B1525", border: `1px solid ${BORDER_BRIGHT}`,
+    borderRadius: 8, padding: "11px 14px", color: TEXT, fontSize: 14,
+    outline: "none", boxSizing: "border-box" as const,
+    resize: "vertical" as const, minHeight: 90, fontFamily: "inherit",
+  },
+  actions: { display: "flex", gap: 10, marginTop: 24 } as const,
+  btnSubmit: {
+    flex: 1, padding: "12px 0", borderRadius: 8, border: "none",
+    background: TEAL, color: "#000", fontSize: 14, fontWeight: 700, cursor: "pointer",
+  } as const,
+  btnCancel: {
+    padding: "12px 20px", borderRadius: 8, border: `1px solid ${BORDER_BRIGHT}`,
+    background: "transparent", color: MUTED, fontSize: 14, cursor: "pointer",
+  } as const,
+  success: { color: "#34C759", fontSize: 13, marginTop: 14, textAlign: "center" as const } as const,
+  error: { color: "#ff453a", fontSize: 13, marginTop: 14 } as const,
+};
+
+// ── Learn More modal ──────────────────────────────────────────────────────────
+
+function LearnMoreModal({ onClose }: { onClose: () => void }) {
+  const submitLead = useMutation(api.leads.submitGymLead);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus("loading");
+    setErrorMsg("");
+    try {
+      await submitLead({ type: "info", name: name.trim(), email: email.trim(), message: message.trim() || undefined });
+      setStatus("done");
+    } catch {
+      setStatus("error");
+      setErrorMsg("Something went wrong. Please try again.");
+    }
+  };
+
+  return (
+    <div style={M.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div style={M.box}>
+        <div style={M.title}>Want to learn more?</div>
+        <div style={M.sub}>Drop your details and we'll reach out with info on how NorthernGlow can work for your gym.</div>
+        {status === "done" ? (
+          <div style={M.success}>
+            Got it! We'll be in touch soon.
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <div style={M.group}>
+              <label style={M.label}>Your name</label>
+              <input style={M.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Alex Smith" required />
+            </div>
+            <div style={M.group}>
+              <label style={M.label}>Email address</label>
+              <input style={M.input} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="alex@yourgym.com" required />
+            </div>
+            <div style={M.group}>
+              <label style={M.label}>Anything specific you'd like to know? <span style={{ color: DIM }}>(optional)</span></label>
+              <textarea style={M.textarea} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="e.g. pricing, integrations, how onboarding works…" />
+            </div>
+            {status === "error" && <div style={M.error}>{errorMsg}</div>}
+            <div style={M.actions}>
+              <button style={M.btnCancel} type="button" onClick={onClose}>Cancel</button>
+              <button style={M.btnSubmit} type="submit" disabled={status === "loading"}>
+                {status === "loading" ? "Sending…" : "Send request"}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Apply for Access modal ────────────────────────────────────────────────────
+
+function ApplyModal({ onClose }: { onClose: () => void }) {
+  const submitLead = useMutation(api.leads.submitGymLead);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [gymName, setGymName] = useState("");
+  const [city, setCity] = useState("");
+  const [memberCount, setMemberCount] = useState("");
+  const [status, setStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setStatus("loading");
+    setErrorMsg("");
+    try {
+      await submitLead({
+        type: "signup",
+        name: name.trim(),
+        email: email.trim(),
+        gymName: gymName.trim(),
+        city: city.trim() || undefined,
+        memberCount: memberCount.trim() || undefined,
+      });
+      setStatus("done");
+    } catch {
+      setStatus("error");
+      setErrorMsg("Something went wrong. Please try again.");
+    }
+  };
+
+  return (
+    <div style={M.overlay} onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div style={M.box}>
+        <div style={M.title}>Apply for access</div>
+        <div style={M.sub}>Tell us about your gym and we'll get you set up. Takes under 2 minutes.</div>
+        {status === "done" ? (
+          <div style={M.success}>
+            Application received! We'll be in touch within 24 hours.
+          </div>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <div style={M.group}>
+              <label style={M.label}>Your name</label>
+              <input style={M.input} value={name} onChange={(e) => setName(e.target.value)} placeholder="Alex Smith" required />
+            </div>
+            <div style={M.group}>
+              <label style={M.label}>Email address</label>
+              <input style={M.input} type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="alex@yourgym.com" required />
+            </div>
+            <div style={M.group}>
+              <label style={M.label}>Gym name</label>
+              <input style={M.input} value={gymName} onChange={(e) => setGymName(e.target.value)} placeholder="CrossFit Northside" required />
+            </div>
+            <div style={M.group}>
+              <label style={M.label}>City / location <span style={{ color: DIM }}>(optional)</span></label>
+              <input style={M.input} value={city} onChange={(e) => setCity(e.target.value)} placeholder="Toronto, ON" />
+            </div>
+            <div style={M.group}>
+              <label style={M.label}>Approximate number of members <span style={{ color: DIM }}>(optional)</span></label>
+              <input style={M.input} value={memberCount} onChange={(e) => setMemberCount(e.target.value)} placeholder="e.g. 80" />
+            </div>
+            {status === "error" && <div style={M.error}>{errorMsg}</div>}
+            <div style={M.actions}>
+              <button style={M.btnCancel} type="button" onClick={onClose}>Cancel</button>
+              <button style={M.btnSubmit} type="submit" disabled={status === "loading"}>
+                {status === "loading" ? "Submitting…" : "Submit application"}
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
 // ── Components ────────────────────────────────────────────────────────────────
 
 function Nav({ onLogin }: { onLogin: () => void }) {
@@ -181,7 +362,7 @@ function Nav({ onLogin }: { onLogin: () => void }) {
   );
 }
 
-function Hero({ onLogin }: { onLogin: () => void }) {
+function Hero({ onApply, onLearnMore }: { onApply: () => void; onLearnMore: () => void }) {
   return (
     <div style={S.hero}>
       <div style={S.pill}>
@@ -197,11 +378,11 @@ function Hero({ onLogin }: { onLogin: () => void }) {
         and billing — so you can focus on coaching.
       </p>
       <div style={S.heroActions}>
-        <button style={S.btnHeroPrimary} onClick={onLogin}>
-          Get your gym set up →
+        <button style={S.btnHeroPrimary} onClick={onApply}>
+          Apply for access →
         </button>
-        <button style={S.btnHeroGhost} onClick={() => document.getElementById("prvn-section")?.scrollIntoView({ behavior: "smooth" })}>
-          See PRVN integration
+        <button style={S.btnHeroGhost} onClick={onLearnMore}>
+          Learn more
         </button>
       </div>
     </div>
@@ -402,7 +583,7 @@ function HowItWorks() {
   );
 }
 
-function CtaBanner({ onLogin }: { onLogin: () => void }) {
+function CtaBanner({ onApply, onLearnMore }: { onApply: () => void; onLearnMore: () => void }) {
   return (
     <div style={S.section(BG)}>
       <div style={S.inner}>
@@ -415,9 +596,12 @@ function CtaBanner({ onLogin }: { onLogin: () => void }) {
           <p style={S.ctaSub}>
             Get NorthernGlow set up for your gym today. No contract, no setup fee.
           </p>
-          <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-            <button style={{ ...S.btnHeroPrimary, fontSize: 15 }} onClick={onLogin}>
-              Get started →
+          <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+            <button style={{ ...S.btnHeroPrimary, fontSize: 15 }} onClick={onApply}>
+              Apply for access →
+            </button>
+            <button style={{ ...S.btnHeroGhost, fontSize: 15 }} onClick={onLearnMore}>
+              Have questions?
             </button>
           </div>
         </div>
@@ -448,18 +632,21 @@ function Footer() {
 
 export default function Landing() {
   const navigate = useNavigate();
+  const [modal, setModal] = useState<"learn" | "apply" | null>(null);
   const goLogin = () => navigate("/login");
 
   return (
     <div style={S.page}>
       <Nav onLogin={goLogin} />
-      <Hero onLogin={goLogin} />
+      <Hero onApply={() => setModal("apply")} onLearnMore={() => setModal("learn")} />
       <Stats />
       <Features />
       <PrvnSpotlight />
       <HowItWorks />
-      <CtaBanner onLogin={goLogin} />
+      <CtaBanner onApply={() => setModal("apply")} onLearnMore={() => setModal("learn")} />
       <Footer />
+      {modal === "learn" && <LearnMoreModal onClose={() => setModal(null)} />}
+      {modal === "apply" && <ApplyModal onClose={() => setModal(null)} />}
     </div>
   );
 }
