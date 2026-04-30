@@ -140,7 +140,8 @@ echo "Building for: $GYM_NAME ($GYM_SLUG) — bundle: $BUNDLE_ID"
 
 # ── 2. Download gym assets ────────────────────────────────────────────────────
 
-ASSETS_DIR="$(cd "$(dirname "$0")/.." && pwd)/assets"
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+ASSETS_DIR="$ROOT_DIR/assets"
 
 # Back up originals once so we can always restore
 if [[ ! -f "$ASSETS_DIR/icon.orig.png" ]]; then
@@ -165,12 +166,42 @@ else
   echo "No splash set — using default"
 fi
 
-# ── 3. Bake gym values into a temporary app.config.js ────────────────────────
+# ── 3. Patch iOS native files ─────────────────────────────────────────────────
+# The ios/ directory is committed so EAS uses it directly (ignoring app.config.js
+# for bundle ID). We patch Info.plist and the app icon in-place so gym branding
+# is applied, then restore after the build.
+
+INFO_PLIST="$ROOT_DIR/ios/NorthernGlow/Info.plist"
+XCASSETS_ICON="$ROOT_DIR/ios/NorthernGlow/Images.xcassets/AppIcon.appiconset/App-Icon-1024x1024@1x.png"
+
+if [[ "$PLATFORM" == "ios" ]] || [[ "$PLATFORM" == "all" ]]; then
+  cp "$INFO_PLIST" "$INFO_PLIST.bak"
+  cp "$XCASSETS_ICON" "$XCASSETS_ICON.bak"
+
+  GYM_NAME="$GYM_NAME" INFO_PLIST="$INFO_PLIST" python3 -c "
+import plistlib, os
+path = os.environ['INFO_PLIST']
+name = os.environ['GYM_NAME']
+with open(path, 'rb') as f:
+    plist = plistlib.load(f)
+plist['CFBundleDisplayName'] = name
+plist['NSFaceIDUsageDescription'] = f'Allow {name} to access Face ID for secure login.'
+with open(path, 'wb') as f:
+    plistlib.dump(plist, f)
+"
+
+  if [[ -n "$ICON_URL" ]]; then
+    curl -sf "$ICON_URL" -o "$XCASSETS_ICON"
+  fi
+
+  echo "Patched iOS native files for $GYM_NAME"
+fi
+
+# ── 4. Bake gym values into a temporary app.config.js ────────────────────────
 # EAS evaluates app.config.js on its build servers where local env vars are
 # not available. We swap in a static config with all values hardcoded, then
 # restore the original after the build completes.
 
-ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 APP_CONFIG="$ROOT_DIR/app.config.js"
 APP_CONFIG_BAK="$ROOT_DIR/app.config.js.bak"
 
@@ -251,7 +282,7 @@ else
   eas build --platform all --profile "$EAS_PROFILE" --non-interactive
 fi
 
-# ── 5. Restore default assets and app.config.js ──────────────────────────────
+# ── 6. Restore default assets, app.config.js, and iOS native files ───────────
 
 echo "Restoring default assets..."
 cp "$ASSETS_DIR/icon.orig.png"          "$ASSETS_DIR/icon.png"
@@ -260,6 +291,12 @@ cp "$ASSETS_DIR/splash.orig.png"        "$ASSETS_DIR/splash.png"
 
 mv "$APP_CONFIG_BAK" "$APP_CONFIG"
 echo "Restored app.config.js"
+
+if [[ -f "$INFO_PLIST.bak" ]]; then
+  mv "$INFO_PLIST.bak" "$INFO_PLIST"
+  mv "$XCASSETS_ICON.bak" "$XCASSETS_ICON"
+  echo "Restored iOS native files"
+fi
 
 echo ""
 echo "Done. Build submitted for $GYM_NAME."
