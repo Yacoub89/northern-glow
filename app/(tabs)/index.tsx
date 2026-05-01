@@ -9,8 +9,9 @@ import {
   Text,
   View,
   Pressable,
+  useWindowDimensions,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { api } from "../../convex/_generated/api";
@@ -166,6 +167,10 @@ export default function HomeScreen() {
   const { primary } = useGymColors();
   const today = getTodayDate();
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  // Responsive horizontal padding — tighter on small screens
+  const hPad = width < 380 ? 14 : 20;
 
   const me = useQuery(api.users.getMe);
   const hasGym = !!me?.gymId;
@@ -209,11 +214,14 @@ export default function HomeScreen() {
   const todayClassList = todayClasses ?? [];
 
   return (
-    <SafeAreaView style={sc.container} edges={[]}>
-      <ScrollView contentContainerStyle={sc.scroll} showsVerticalScrollIndicator={false}>
+    <SafeAreaView style={sc.container} edges={["bottom"]}>
+      <ScrollView
+        contentContainerStyle={[sc.scroll, { paddingBottom: 60 + insets.bottom + 24 }]}
+        showsVerticalScrollIndicator={false}
+      >
 
         {/* ── Greeting ── */}
-        <FadeIn style={sc.greetingWrap} delay={0}>
+        <FadeIn style={[sc.greetingWrap, { paddingHorizontal: hPad }]} delay={0}>
           <Text style={sc.greetingText}>
             {getGreeting()}, <Text style={[sc.greetingName, { color: primary }]}>{firstName}</Text>
           </Text>
@@ -224,7 +232,7 @@ export default function HomeScreen() {
         <FadeIn delay={80}>
           <ScalePress
             onPress={() => router.push("/(tabs)/wod-placeholder")}
-            style={sc.wodHero}
+            style={[sc.wodHero, { marginHorizontal: hPad }]}
           >
             <View style={[sc.wodAccentBar, { backgroundColor: primary }]} />
             <View style={sc.wodContent}>
@@ -233,12 +241,12 @@ export default function HomeScreen() {
                   {wod ? (
                     <>
                       <Text style={[sc.wodSubtitle, { color: primary }]}>{getWodSubtitle(wod)}</Text>
-                      <Text style={sc.wodTitle}>{wod.title.toUpperCase()}</Text>
+                      <Text style={sc.wodTitle} adjustsFontSizeToFit numberOfLines={2} minimumFontScale={0.7}>{wod.title.toUpperCase()}</Text>
                     </>
                   ) : (
                     <>
                       <Text style={[sc.wodSubtitle, { color: primary }]}>TODAY</Text>
-                      <Text style={sc.wodTitle}>NO WOD POSTED</Text>
+                      <Text style={sc.wodTitle} adjustsFontSizeToFit numberOfLines={2} minimumFontScale={0.7}>NO WOD POSTED</Text>
                     </>
                   )}
                 </View>
@@ -291,7 +299,7 @@ export default function HomeScreen() {
 
         {/* ── Stat cards ── */}
         {!isCoach && (
-          <FadeIn style={sc.statsRow} delay={160}>
+          <FadeIn style={[sc.statsRow, { paddingHorizontal: hPad }]} delay={160}>
             {/* Recent PR */}
             <ScalePress style={sc.statCard}>
               <LinearGradient
@@ -352,7 +360,7 @@ export default function HomeScreen() {
         {/* ── My Upcoming Bookings ── */}
         {!isCoach && upcomingBookings && upcomingBookings.length > 0 && (
           <FadeIn style={sc.section} delay={200}>
-            <View style={sc.sectionRow}>
+            <View style={[sc.sectionRow, { paddingHorizontal: hPad }]}>
               <Text style={sc.sectionTitle}>MY BOOKINGS</Text>
               <Pressable onPress={() => router.push("/(tabs)/schedule")}>
                 <Text style={[sc.sectionAction, { color: primary }]}>VIEW ALL</Text>
@@ -366,7 +374,7 @@ export default function HomeScreen() {
 
               return (
                 <FadeIn key={item.booking._id} delay={240 + idx * 50}>
-                  <ScalePress style={sc.bookingCard}>
+                  <ScalePress style={[sc.bookingCard, { marginHorizontal: hPad }]}>
                     <View style={[sc.bookingDateCol, { backgroundColor: primary }]}>
                       <Text style={sc.bookingDateText}>{dateLabel.toUpperCase()}</Text>
                     </View>
@@ -422,7 +430,7 @@ export default function HomeScreen() {
 
         {/* ── Today's Classes ── */}
         <FadeIn style={sc.section} delay={240}>
-          <View style={sc.sectionRow}>
+          <View style={[sc.sectionRow, { paddingHorizontal: hPad }]}>
             <Text style={sc.sectionTitle}>CLASSES</Text>
             {isCoach ? (
               <Pressable
@@ -439,7 +447,7 @@ export default function HomeScreen() {
           </View>
 
           {todayClassList.length === 0 ? (
-            <View style={sc.emptyClasses}>
+            <View style={[sc.emptyClasses, { marginHorizontal: hPad }]}>
               <Ionicons name="moon-outline" size={28} color={Colors.textMuted} style={{ marginBottom: 8 }} />
               <Text style={sc.emptyTitle}>No classes today</Text>
               <Text style={sc.emptyText}>Rest day? Recovery is gains too.</Text>
@@ -455,7 +463,7 @@ export default function HomeScreen() {
 
               return (
                 <FadeIn key={cls._id} delay={280 + idx * 60}>
-                  <ScalePress style={sc.classCard}>
+                  <ScalePress style={[sc.classCard, { marginHorizontal: hPad }]}>
                     <View style={[sc.classLeftBorder, { backgroundColor: primary }]} />
                     <View style={sc.classTimeCol}>
                       <Text style={[sc.classHour, { color: primary }]}>{hour}</Text>
@@ -575,11 +583,10 @@ const sc = StyleSheet.create({
     alignItems: "center",
     backgroundColor: Colors.background,
   },
-  scroll: { paddingBottom: 100 },
+  scroll: { paddingTop: 4 },
 
   // Greeting
   greetingWrap: {
-    paddingHorizontal: 20,
     paddingTop: 16,
     paddingBottom: 6,
   },
@@ -601,7 +608,6 @@ const sc = StyleSheet.create({
 
   // WOD Hero
   wodHero: {
-    marginHorizontal: 20,
     marginTop: 16,
     marginBottom: 24,
     backgroundColor: Colors.surfaceContainerLow,
@@ -673,7 +679,6 @@ const sc = StyleSheet.create({
   statsRow: {
     flexDirection: "row",
     gap: 12,
-    paddingHorizontal: 20,
     marginBottom: 28,
   },
   statCard: {
@@ -711,9 +716,9 @@ const sc = StyleSheet.create({
   },
   streakNum: {
     fontFamily: Fonts.display,
-    fontSize: FontSizes.displayLg,
+    fontSize: 40,
     color: Colors.text,
-    lineHeight: 60,
+    lineHeight: 48,
   },
   streakUnit: {
     fontFamily: Fonts.bodyBold,
@@ -741,7 +746,6 @@ const sc = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20,
     marginBottom: 12,
   },
   sectionTitle: {
@@ -772,7 +776,6 @@ const sc = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: Colors.surfaceContainerLow,
-    marginHorizontal: 20,
     borderRadius: 14,
     paddingRight: 16,
     paddingVertical: 14,
@@ -851,7 +854,6 @@ const sc = StyleSheet.create({
     borderRadius: 1.5,
   },
   emptyClasses: {
-    marginHorizontal: 20,
     paddingVertical: 32,
     paddingHorizontal: 20,
     backgroundColor: Colors.surfaceContainerLow,
@@ -875,7 +877,6 @@ const sc = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: Colors.surfaceContainerLow,
-    marginHorizontal: 20,
     borderRadius: 14,
     paddingRight: 12,
     paddingVertical: 12,
