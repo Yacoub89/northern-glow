@@ -6,11 +6,14 @@ const TEXT = "#ffffff";
 const MUTED = "#7A99BB";
 const DIM = "#3A5270";
 
-export function SiteNav({ rightSlot }: { rightSlot?: React.ReactNode }) {
+export function SiteNav({ rightSlot, onLogoClick }: { rightSlot?: React.ReactNode; onLogoClick?: () => void }) {
   return (
     <nav className="l-nav" style={{ background: "#0B1525cc", backdropFilter: "blur(12px)", borderBottom: `1px solid ${BORDER}` }}>
       <div className="l-nav-inner">
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div
+          style={{ display: "flex", alignItems: "center", gap: 10, cursor: onLogoClick ? "pointer" : "default" }}
+          onClick={onLogoClick}
+        >
           <div style={{ width: 32, height: 32, borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
             <img src="/icon.png" alt="NorthernGlow" style={{ width: "100%", height: "100%", display: "block" }} />
           </div>

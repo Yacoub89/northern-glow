@@ -262,7 +262,7 @@ export default function Login() {
 
   return (
     <div style={S.page}>
-      <SiteNav rightSlot={<button style={navBtnGhost} onClick={() => navigate("/")}>Home</button>} />
+      <SiteNav onLogoClick={() => navigate("/")} rightSlot={<button style={navBtnGhost} onClick={() => navigate("/")}>Home</button>} />
       <div style={S.body}>
         <div style={S.card}>
           {formContent()}
