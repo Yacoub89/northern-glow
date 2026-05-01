@@ -2,13 +2,13 @@ import { useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth } from "convex/react";
 import { Navigate, useNavigate } from "react-router-dom";
+import { SiteNav, SiteFooter, navBtnGhost } from "../components/SiteChrome";
 
 type Step = "signin" | "signup" | "verify";
 
 const TEAL = "#1CD6F0";
 const BG = "#0B1525";
 const CARD = "#0F1E36";
-const BORDER = "#1C2D45";
 const BORDER_BRIGHT = "#243650";
 const TEXT = "#ffffff";
 const MUTED = "#7A99BB";
@@ -23,37 +23,7 @@ const S = {
     display: "flex",
     flexDirection: "column" as const,
   },
-
-  // Nav
-  nav: {
-    position: "sticky" as const,
-    top: 0,
-    zIndex: 100,
-    background: "#0B1525cc",
-    backdropFilter: "blur(12px)",
-    borderBottom: `1px solid ${BORDER}`,
-    padding: "0 32px",
-  },
-  navInner: {
-    maxWidth: 1120,
-    margin: "0 auto",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    height: 60,
-  } as const,
-  logo: { display: "flex", alignItems: "center", gap: 10, cursor: "pointer" } as const,
-  logoMark: { width: 32, height: 32, borderRadius: 8, overflow: "hidden", flexShrink: 0 } as const,
-  logoText: { fontSize: 17, fontWeight: 700, color: TEXT } as const,
-  navRight: { display: "flex", alignItems: "center", gap: 12 } as const,
-  btnGhost: {
-    padding: "8px 18px", borderRadius: 8, border: `1px solid ${BORDER_BRIGHT}`,
-    background: "transparent", color: MUTED, fontSize: 14, fontWeight: 500, cursor: "pointer",
-  } as const,
-  // Body
-  body: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 32px" } as const,
-
-  // Card — matches Apply modal exactly
+  body: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 20px" } as const,
   card: {
     background: CARD,
     border: `1px solid ${BORDER_BRIGHT}`,
@@ -63,18 +33,7 @@ const S = {
     maxWidth: 420,
   },
 
-  // Footer
-  footer: { borderTop: `1px solid ${BORDER}`, padding: "40px 32px" } as const,
-  footerInner: {
-    maxWidth: 1120, margin: "0 auto", display: "flex",
-    alignItems: "center", justifyContent: "space-between",
-  } as const,
-  footerLeft: { display: "flex", alignItems: "center", gap: 10 } as const,
-  footerLogoMark: { width: 24, height: 24, borderRadius: 6, overflow: "hidden", flexShrink: 0 } as const,
-  footerBrand: { fontSize: 14, fontWeight: 600, color: DIM } as const,
-  footerRight: { fontSize: 13, color: DIM } as const,
-
-  // Form — matches M.* from Landing modal
+  // Form
   title: { fontSize: 22, fontWeight: 800, marginBottom: 8, color: TEXT } as const,
   sub: { fontSize: 14, color: MUTED, marginBottom: 28, lineHeight: 1.6 } as const,
   group: { marginBottom: 18 } as const,
@@ -303,42 +262,13 @@ export default function Login() {
 
   return (
     <div style={S.page}>
-      {/* Nav */}
-      <nav style={S.nav}>
-        <div style={S.navInner}>
-          <div style={S.logo} onClick={() => navigate("/")}>
-            <div style={S.logoMark}>
-              <img src="/icon.png" alt="NorthernGlow" style={{ width: "100%", height: "100%", display: "block" }} />
-            </div>
-            <span style={S.logoText}>NorthernGlow</span>
-          </div>
-          <div style={S.navRight}>
-            <button style={S.btnGhost} onClick={() => navigate("/")}>Home</button>
-          </div>
-        </div>
-      </nav>
-
-      {/* Form card */}
+      <SiteNav rightSlot={<button style={navBtnGhost} onClick={() => navigate("/")}>Home</button>} />
       <div style={S.body}>
         <div style={S.card}>
           {formContent()}
         </div>
       </div>
-
-      {/* Footer */}
-      <footer style={S.footer}>
-        <div style={S.footerInner}>
-          <div style={S.footerLeft}>
-            <div style={S.footerLogoMark}>
-              <img src="/icon.png" alt="NorthernGlow" style={{ width: "100%", height: "100%", display: "block" }} />
-            </div>
-            <span style={S.footerBrand}>NorthernGlow</span>
-          </div>
-          <div style={S.footerRight}>
-            © {new Date().getFullYear()} NorthernGlow. Built for CrossFit gyms.
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

@@ -10,24 +10,6 @@
   padding: 64px 0;
 }
 
-/* ── Nav ──────────────────────────────────────────────────────────────────── */
-
-.l-nav {
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  padding: 0 20px;
-}
-
-.l-nav-inner {
-  max-width: 1120px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 60px;
-}
-
 /* ── Hero ─────────────────────────────────────────────────────────────────── */
 
 .l-hero {
@@ -111,22 +93,6 @@
   text-align: center;
 }
 
-/* ── Footer ───────────────────────────────────────────────────────────────── */
-
-.l-footer {
-  padding: 40px 20px;
-}
-
-.l-footer-inner {
-  max-width: 1120px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
 /* ── Tablet ───────────────────────────────────────────────────────────────── */
 
 @media (min-width: 600px) {
@@ -143,10 +109,6 @@
   }
 
   .l-inner {
-    padding: 0 32px;
-  }
-
-  .l-nav {
     padding: 0 32px;
   }
 
@@ -195,9 +157,5 @@
 
   .l-cta-banner {
     padding: 64px 48px;
-  }
-
-  .l-footer {
-    padding: 40px 32px;
   }
 }

@@ -1,0 +1,43 @@
+/* ── Nav ──────────────────────────────────────────────────────────────────── */
+
+.l-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  padding: 0 20px;
+}
+
+.l-nav-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 60px;
+}
+
+/* ── Footer ───────────────────────────────────────────────────────────────── */
+
+.l-footer {
+  padding: 40px 20px;
+}
+
+.l-footer-inner {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (min-width: 900px) {
+  .l-nav {
+    padding: 0 32px;
+  }
+
+  .l-footer {
+    padding: 40px 32px;
+  }
+}

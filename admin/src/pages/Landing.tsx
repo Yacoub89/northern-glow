@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
+import { SiteNav, SiteFooter, navBtnGhost } from "../components/SiteChrome";
 import "./Landing.css";
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
@@ -236,22 +237,6 @@ function ApplyModal({ onClose }: { onClose: () => void }) {
 
 // ── Sections ──────────────────────────────────────────────────────────────────
 
-function Nav({ onLogin }: { onLogin: () => void }) {
-  return (
-    <nav className="l-nav" style={{ background: "#0B1525cc", backdropFilter: "blur(12px)", borderBottom: `1px solid ${BORDER}` }}>
-      <div className="l-nav-inner">
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 32, height: 32, borderRadius: 8, overflow: "hidden", flexShrink: 0 }}>
-            <img src="/icon.png" alt="NorthernGlow" style={{ width: "100%", height: "100%", display: "block" }} />
-          </div>
-          <span style={{ fontSize: 17, fontWeight: 700, color: TEXT }}>NorthernGlow</span>
-        </div>
-        <button style={T.btnGhost} onClick={onLogin}>Sign in</button>
-      </div>
-    </nav>
-  );
-}
-
 function Hero({ onApply, onLearnMore }: { onApply: () => void; onLearnMore: () => void }) {
   return (
     <div className="l-hero">
@@ -449,22 +434,6 @@ function CtaBanner({ onApply, onLearnMore }: { onApply: () => void; onLearnMore:
   );
 }
 
-function Footer() {
-  return (
-    <footer className="l-footer" style={{ borderTop: `1px solid ${BORDER}` }}>
-      <div className="l-footer-inner">
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{ width: 24, height: 24, borderRadius: 6, overflow: "hidden", flexShrink: 0 }}>
-            <img src="/icon.png" alt="NorthernGlow" style={{ width: "100%", height: "100%", display: "block" }} />
-          </div>
-          <span style={{ fontSize: 14, fontWeight: 600, color: "#666" }}>NorthernGlow</span>
-        </div>
-        <div style={{ fontSize: 13, color: DIM }}>© {new Date().getFullYear()} NorthernGlow. Built for CrossFit gyms.</div>
-      </div>
-    </footer>
-  );
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function Landing() {
@@ -473,14 +442,14 @@ export default function Landing() {
 
   return (
     <div style={{ background: BG, color: TEXT, minHeight: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-      <Nav onLogin={() => navigate("/login")} />
+      <SiteNav rightSlot={<button style={navBtnGhost} onClick={() => navigate("/login")}>Sign in</button>} />
       <Hero onApply={() => setModal("apply")} onLearnMore={() => setModal("learn")} />
       <Stats />
       <Features />
       <PrvnSpotlight />
       <HowItWorks />
       <CtaBanner onApply={() => setModal("apply")} onLearnMore={() => setModal("learn")} />
-      <Footer />
+      <SiteFooter />
       {modal === "learn" && <LearnMoreModal onClose={() => setModal(null)} />}
       {modal === "apply" && <ApplyModal onClose={() => setModal(null)} />}
     </div>
