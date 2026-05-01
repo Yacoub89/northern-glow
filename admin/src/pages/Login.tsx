@@ -50,11 +50,6 @@ const S = {
     padding: "8px 18px", borderRadius: 8, border: `1px solid ${BORDER_BRIGHT}`,
     background: "transparent", color: MUTED, fontSize: 14, fontWeight: 500, cursor: "pointer",
   } as const,
-  btnPrimary: {
-    padding: "9px 20px", borderRadius: 8, border: "none",
-    background: TEAL, color: "#000", fontSize: 14, fontWeight: 700, cursor: "pointer",
-  } as const,
-
   // Body
   body: { flex: 1, display: "flex", alignItems: "center", justifyContent: "center", padding: "48px 32px" } as const,
 
@@ -319,7 +314,6 @@ export default function Login() {
           </div>
           <div style={S.navRight}>
             <button style={S.btnGhost} onClick={() => navigate("/")}>Home</button>
-            <button style={S.btnPrimary} onClick={() => goToStep("signup")}>Get started</button>
           </div>
         </div>
       </nav>
