@@ -58,8 +58,7 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      {/* Branded top bar — mirrors SharedHeader style */}
-      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
+      <View style={[styles.header, { paddingTop: insets.top + 6 }]}>
         <View style={styles.headerSpacer} />
         {gym.logoUrl ? (
           <Image source={{ uri: gym.logoUrl }} style={styles.logoImage} resizeMode="contain" />
@@ -123,7 +122,7 @@ export default function LoginScreen() {
       </ScrollView>
 
       {Platform.OS === "web" && (
-        <View style={[styles.downloadBar, { paddingBottom: Math.max(insets.bottom, 16) + 8 }]}>
+        <View style={[styles.downloadBar, { paddingBottom: Math.max(insets.bottom, 10) + 8 }]}>
           <Text style={styles.downloadLabel}>Download our app</Text>
           <View style={styles.downloadButtons}>
             <Pressable
@@ -156,15 +155,13 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
 
-  // Top bar — same visual language as SharedHeader
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    paddingBottom: 10,
+    backgroundColor: Colors.background,
   },
   headerSpacer: { width: 34 },
   logoImage: { height: 28, width: 120 },
@@ -174,7 +171,6 @@ const styles = StyleSheet.create({
     letterSpacing: 2,
   },
 
-  // Scrollable form area
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 32,
@@ -219,7 +215,14 @@ const styles = StyleSheet.create({
   footerText: { color: Colors.textSecondary, fontFamily: Fonts.body, fontSize: 15 },
   link: { fontSize: 15, fontFamily: Fonts.bodySemi },
 
-  downloadSection: { marginTop: 40, alignItems: "center", gap: 12 },
+  downloadBar: {
+    alignItems: "center",
+    gap: 12,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    backgroundColor: Colors.surfaceContainerLow,
+  },
   downloadLabel: {
     color: Colors.textMuted,
     fontFamily: Fonts.body,
