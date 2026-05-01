@@ -128,8 +128,8 @@ export default function RootLayout() {
           presentation: "modal",
           headerShown: true,
           title: "Add Class",
-          headerStyle: { backgroundColor: "#131328" },
-          headerTintColor: "#FFFFFF",
+          headerStyle: { backgroundColor: Colors.surfaceContainerLow },
+          headerTintColor: Colors.text,
           headerTitleStyle: { fontWeight: "700" },
         }}
       />

@@ -3,7 +3,6 @@ import { Link, router } from "expo-router";
 import { useRef, useState } from "react";
 import {
   Alert,
-  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -14,10 +13,10 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
 import { Fonts } from "../../constants/Typography";
 import { useGymColors, useGymConfig } from "../../constants/GymConfig";
+import { AuthHeader } from "../../components/auth/AuthHeader";
 
 export default function RegisterScreen() {
   const { signIn } = useAuthActions();
@@ -81,7 +80,6 @@ export default function RegisterScreen() {
         code,
         flow: "email-verification",
       });
-      router.replace("/(tabs)");
     } catch (e: any) {
       Alert.alert("Verification Failed", e.message ?? "Invalid or expired code");
     } finally {
@@ -106,24 +104,6 @@ export default function RegisterScreen() {
     }
   };
 
-  // Shared branded top bar
-  const HeaderBar = ({ onBack }: { onBack?: () => void }) => (
-    <View style={[styles.header, { paddingTop: insets.top + 6 }]}>
-      {onBack ? (
-        <Pressable onPress={onBack} hitSlop={10} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={20} color={primary} />
-        </Pressable>
-      ) : (
-        <View style={styles.headerSpacer} />
-      )}
-      {gym.logoUrl ? (
-        <Image source={{ uri: gym.logoUrl }} style={styles.logoImage} resizeMode="contain" />
-      ) : (
-        <Text style={[styles.brandName, { color: primary }]}>{gym.name.toUpperCase()}</Text>
-      )}
-      <View style={styles.headerSpacer} />
-    </View>
-  );
 
   // ─── Verify screen ──────────────────────────────────────────────────────────
   if (step === "verify") {
@@ -132,7 +112,7 @@ export default function RegisterScreen() {
         style={styles.container}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        <HeaderBar onBack={() => setStep("register")} />
+        <AuthHeader gym={gym} primary={primary} insets={insets} onBack={() => setStep("register")} />
 
         <ScrollView
           contentContainerStyle={[
@@ -188,7 +168,7 @@ export default function RegisterScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <HeaderBar onBack={() => router.back()} />
+      <AuthHeader gym={gym} primary={primary} insets={insets} onBack={() => router.back()} />
 
       <ScrollView
         contentContainerStyle={[
@@ -254,30 +234,6 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
 
-  // Top bar — same visual language as SharedHeader
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingBottom: 10,
-    backgroundColor: Colors.background,
-  },
-  headerSpacer: { width: 34 },
-  backButton: {
-    width: 34,
-    height: 34,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  logoImage: { height: 28, width: 120 },
-  brandName: {
-    fontFamily: Fonts.display,
-    fontSize: 18,
-    letterSpacing: 2,
-  },
-
-  // Scrollable form area
   scrollContent: {
     flexGrow: 1,
     paddingHorizontal: 32,
@@ -327,7 +283,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: "#fff", fontFamily: Fonts.bodyBold, fontSize: 16 },
+  buttonText: { color: Colors.text, fontFamily: Fonts.bodyBold, fontSize: 16 },
   footer: { flexDirection: "row", justifyContent: "center", marginTop: 32 },
   footerText: { color: Colors.textSecondary, fontFamily: Fonts.body, fontSize: 15 },
   link: { fontSize: 15, fontFamily: Fonts.bodySemi },

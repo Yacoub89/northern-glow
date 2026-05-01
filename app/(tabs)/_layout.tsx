@@ -146,7 +146,7 @@ export default function TabsLayout() {
 
       {/* ── WOD — visible to all ── */}
       <Tabs.Screen
-        name="wod-placeholder"
+        name="wod"
         options={{
           tabBarLabel: "WOD",
           tabBarIcon: ({ color, size, focused }) => (

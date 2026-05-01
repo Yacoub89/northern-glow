@@ -23,14 +23,7 @@ import { api } from "../../convex/_generated/api";
 import { Id } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
 import { useGymColors } from "../../constants/GymConfig";
-
-function formatDate(ts: number) {
-  return new Date(ts).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
+import { formatTimestamp } from "../../utils/date";
 
 // ─── Signature Pad ────────────────────────────────────────────────────────────
 
@@ -359,9 +352,9 @@ export default function DocumentsScreen() {
                     <Text style={s.cardTitle}>{item.title}</Text>
                     {item.description ? <Text style={s.cardDesc} numberOfLines={1}>{item.description}</Text> : null}
                     {isCoach ? (
-                      <Text style={s.cardMeta}>{isPdf ? "PDF · " : ""}{sigCount} signed · {formatDate(item.createdAt)}</Text>
+                      <Text style={s.cardMeta}>{isPdf ? "PDF · " : ""}{sigCount} signed · {formatTimestamp(item.createdAt)}</Text>
                     ) : signed ? (
-                      <Text style={[s.cardMeta, { color: Colors.success }]}>Signed {formatDate((item as any).signedAt)}</Text>
+                      <Text style={[s.cardMeta, { color: Colors.success }]}>Signed {formatTimestamp((item as any).signedAt)}</Text>
                     ) : (
                       <Text style={[s.cardMeta, { color: Colors.warning }]}>Tap to read & sign</Text>
                     )}
@@ -459,7 +452,7 @@ export default function DocumentsScreen() {
                   <View style={{ flex: 1 }}>
                     <Text style={s.sigName}>{sig.signatureName}</Text>
                     <Text style={s.sigUser}>{sig.userName}</Text>
-                    <Text style={s.sigDate}>{formatDate(sig.signedAt)}</Text>
+                    <Text style={s.sigDate}>{formatTimestamp(sig.signedAt)}</Text>
                   </View>
                   {sig.signatureData ? <SigPreview pathsJson={sig.signatureData} /> : null}
                 </View>

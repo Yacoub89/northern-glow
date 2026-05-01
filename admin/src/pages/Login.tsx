@@ -7,6 +7,7 @@ type Step = "signin" | "signup" | "verify";
 
 const TEAL = "#1CD6F0";
 const BG = "#0B1525";
+const CARD = "#0F1E36";
 const BORDER = "#1C2D45";
 const BORDER_BRIGHT = "#243650";
 const TEXT = "#ffffff";
@@ -59,7 +60,7 @@ const S = {
 
   // Card — matches Apply modal exactly
   card: {
-    background: "#0F1E36",
+    background: CARD,
     border: `1px solid ${BORDER_BRIGHT}`,
     borderRadius: 16,
     padding: "40px 36px",
@@ -74,6 +75,8 @@ const S = {
     alignItems: "center", justifyContent: "space-between",
   } as const,
   footerLeft: { display: "flex", alignItems: "center", gap: 10 } as const,
+  footerLogoMark: { width: 24, height: 24, borderRadius: 6, overflow: "hidden", flexShrink: 0 } as const,
+  footerBrand: { fontSize: 14, fontWeight: 600, color: DIM } as const,
   footerRight: { fontSize: 13, color: DIM } as const,
 
   // Form — matches M.* from Landing modal
@@ -82,7 +85,7 @@ const S = {
   group: { marginBottom: 18 } as const,
   label: { display: "block", fontSize: 13, color: MUTED, marginBottom: 6, fontWeight: 500 } as const,
   input: {
-    width: "100%", background: "#0B1525", border: `1px solid ${BORDER_BRIGHT}`,
+    width: "100%", background: BG, border: `1px solid ${BORDER_BRIGHT}`,
     borderRadius: 8, padding: "11px 14px", color: TEXT, fontSize: 14,
     outline: "none", boxSizing: "border-box" as const,
   },
@@ -144,6 +147,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const goToStep = (s: Step) => { setStep(s); setError(""); setShowPassword(false); };
+
   if (isAuthenticated) return <Navigate to="/dashboard" replace />;
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -165,7 +170,7 @@ export default function Login() {
     setError("");
     try {
       await signIn("password", { name, email, password, flow: "signUp" });
-      setStep("verify");
+      goToStep("verify");
     } catch (err: any) {
       setError(err.message ?? "Could not create account");
     } finally {
@@ -211,7 +216,7 @@ export default function Login() {
             <button style={S.btnSubmit} type="submit" disabled={loading}>
               {loading ? "Verifying…" : "Verify & continue"}
             </button>
-            <button style={S.btnSecondary} type="button" onClick={() => setStep("signup")}>
+            <button style={S.btnSecondary} type="button" onClick={() => goToStep("signup")}>
               Back
             </button>
           </form>
@@ -257,7 +262,7 @@ export default function Login() {
           </form>
           <div style={S.toggle}>
             Already have an account?
-            <span style={S.toggleLink} onClick={() => setStep("signin")}>Sign in</span>
+            <span style={S.toggleLink} onClick={() => goToStep("signin")}>Sign in</span>
           </div>
         </>
       );
@@ -295,7 +300,7 @@ export default function Login() {
         </form>
         <div style={S.toggle}>
           Don't have an account?
-          <span style={S.toggleLink} onClick={() => setStep("signup")}>Create one</span>
+          <span style={S.toggleLink} onClick={() => goToStep("signup")}>Create one</span>
         </div>
       </>
     );
@@ -314,7 +319,7 @@ export default function Login() {
           </div>
           <div style={S.navRight}>
             <button style={S.btnGhost} onClick={() => navigate("/")}>Home</button>
-            <button style={S.btnPrimary} onClick={() => setStep("signup")}>Get started</button>
+            <button style={S.btnPrimary} onClick={() => goToStep("signup")}>Get started</button>
           </div>
         </div>
       </nav>
@@ -330,10 +335,10 @@ export default function Login() {
       <footer style={S.footer}>
         <div style={S.footerInner}>
           <div style={S.footerLeft}>
-            <div style={{ width: 24, height: 24, borderRadius: 6, overflow: "hidden", flexShrink: 0 }}>
+            <div style={S.footerLogoMark}>
               <img src="/icon.png" alt="NorthernGlow" style={{ width: "100%", height: "100%", display: "block" }} />
             </div>
-            <span style={{ fontSize: 14, fontWeight: 600, color: "#666" }}>NorthernGlow</span>
+            <span style={S.footerBrand}>NorthernGlow</span>
           </div>
           <div style={S.footerRight}>
             © {new Date().getFullYear()} NorthernGlow. Built for CrossFit gyms.

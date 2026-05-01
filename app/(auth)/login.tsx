@@ -1,12 +1,9 @@
 import { useAuthActions } from "@convex-dev/auth/react";
-import { Ionicons } from "@expo/vector-icons";
 import { Link } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
-  Image,
   KeyboardAvoidingView,
-  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -19,11 +16,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../../constants/Colors";
 import { Fonts } from "../../constants/Typography";
 import { useGymColors, useGymConfig } from "../../constants/GymConfig";
-
-const IOS_BUILD_URL =
-  "https://expo.dev/accounts/yacoub89/projects/northernglow/builds/6d13dca8-0cd2-42fd-bd2b-1c75b2ccaa08";
-const ANDROID_BUILD_URL =
-  "https://expo.dev/accounts/yacoub89/projects/northernglow/builds/227add0c-6f9f-463f-a533-667fa59a9011";
+import { AuthHeader } from "../../components/auth/AuthHeader";
 
 export default function LoginScreen() {
   const gym = useGymConfig();
@@ -58,15 +51,7 @@ export default function LoginScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <View style={[styles.header, { paddingTop: insets.top + 6 }]}>
-        <View style={styles.headerSpacer} />
-        {gym.logoUrl ? (
-          <Image source={{ uri: gym.logoUrl }} style={styles.logoImage} resizeMode="contain" />
-        ) : (
-          <Text style={[styles.brandName, { color: primary }]}>{gym.name.toUpperCase()}</Text>
-        )}
-        <View style={styles.headerSpacer} />
-      </View>
+      <AuthHeader gym={gym} primary={primary} insets={insets} />
 
       <ScrollView
         contentContainerStyle={[
@@ -121,55 +106,12 @@ export default function LoginScreen() {
         </View>
       </ScrollView>
 
-      {Platform.OS === "web" && (
-        <View style={[styles.downloadBar, { paddingBottom: Math.max(insets.bottom, 10) + 8 }]}>
-          <Text style={styles.downloadLabel}>Download our app</Text>
-          <View style={styles.downloadButtons}>
-            <Pressable
-              style={[styles.downloadBtn, { borderColor: Colors.border }]}
-              onPress={() => Linking.openURL(IOS_BUILD_URL)}
-            >
-              <Ionicons name="logo-apple" size={20} color={Colors.text} />
-              <View>
-                <Text style={styles.downloadBtnSub}>Download for</Text>
-                <Text style={styles.downloadBtnPlatform}>iOS</Text>
-              </View>
-            </Pressable>
-            <Pressable
-              style={[styles.downloadBtn, { borderColor: Colors.border }]}
-              onPress={() => Linking.openURL(ANDROID_BUILD_URL)}
-            >
-              <Ionicons name="logo-google-playstore" size={20} color={Colors.text} />
-              <View>
-                <Text style={styles.downloadBtnSub}>Download for</Text>
-                <Text style={styles.downloadBtnPlatform}>Android</Text>
-              </View>
-            </Pressable>
-          </View>
-        </View>
-      )}
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingBottom: 10,
-    backgroundColor: Colors.background,
-  },
-  headerSpacer: { width: 34 },
-  logoImage: { height: 28, width: 120 },
-  brandName: {
-    fontFamily: Fonts.display,
-    fontSize: 18,
-    letterSpacing: 2,
-  },
 
   scrollContent: {
     flexGrow: 1,
@@ -210,45 +152,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   buttonDisabled: { opacity: 0.6 },
-  buttonText: { color: "#fff", fontFamily: Fonts.bodyBold, fontSize: 16 },
+  buttonText: { color: Colors.text, fontFamily: Fonts.bodyBold, fontSize: 16 },
   footer: { flexDirection: "row", justifyContent: "center", marginTop: 32 },
   footerText: { color: Colors.textSecondary, fontFamily: Fonts.body, fontSize: 15 },
   link: { fontSize: 15, fontFamily: Fonts.bodySemi },
-
-  downloadBar: {
-    alignItems: "center",
-    gap: 12,
-    paddingTop: 14,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    backgroundColor: Colors.surfaceContainerLow,
-  },
-  downloadLabel: {
-    color: Colors.textMuted,
-    fontFamily: Fonts.body,
-    fontSize: 12,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-  },
-  downloadButtons: { flexDirection: "row", gap: 10 },
-  downloadBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    borderWidth: 1,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    backgroundColor: Colors.surface,
-  },
-  downloadBtnSub: {
-    color: Colors.textMuted,
-    fontFamily: Fonts.body,
-    fontSize: 10,
-  },
-  downloadBtnPlatform: {
-    color: Colors.text,
-    fontFamily: Fonts.bodyBold,
-    fontSize: 14,
-  },
 });

@@ -16,7 +16,7 @@ import { Doc, Id } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
 import { useGymColors } from "../../constants/GymConfig";
 import { formatTime, getTodayDate } from "../../utils/date";
-
+import { getDayNum, parseMovement } from "../../components/wod/types";
 
 function generateDates(count = 7): string[] {
   const dates: string[] = [];
@@ -36,10 +36,6 @@ function getDayName(dateStr: string): string {
   return new Date(y, mo - 1, d).toLocaleDateString("en-US", { weekday: "short" }).toUpperCase();
 }
 
-function getDayNum(dateStr: string): string {
-  return String(parseInt(dateStr.split("-")[2]));
-}
-
 type EnrichedClass = Doc<"classes"> & {
   coachName: string;
   wodTitle: string | null;
@@ -48,12 +44,6 @@ type EnrichedClass = Doc<"classes"> & {
   wodMovements: string[] | null;
   wodScalingNotes: string | null;
 };
-
-function parseMovement(text: string): { num: string | null; label: string } {
-  const match = text.match(/^(\d+(?:\+\d+)?)\s+(.+)/);
-  if (match) return { num: match[1], label: match[2] };
-  return { num: null, label: text };
-}
 
 // ── Classes tab ───────────────────────────────────────────────────────────────
 

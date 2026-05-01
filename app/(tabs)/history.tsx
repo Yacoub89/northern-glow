@@ -10,14 +10,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { api } from "../../convex/_generated/api";
 import { Colors } from "../../constants/Colors";
 import { useGymColors } from "../../constants/GymConfig";
-
-function formatDate(ts: number) {
-  return new Date(ts).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
+import { formatTimestamp } from "../../utils/date";
 
 export default function HistoryScreen() {
   const { primary } = useGymColors();
@@ -53,7 +46,7 @@ export default function HistoryScreen() {
                 <Text style={styles.wodName} numberOfLines={1}>
                   {item.wod?.title ?? "Unknown WOD"}
                 </Text>
-                <Text style={styles.cardDate}>{formatDate(item.loggedAt)}</Text>
+                <Text style={styles.cardDate}>{formatTimestamp(item.loggedAt)}</Text>
               </View>
               <View style={styles.cardBody}>
                 <Text style={styles.score}>{item.score}</Text>
