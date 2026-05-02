@@ -147,7 +147,7 @@ export default function GymSettings() {
     maxBytes: number,
     label: string,
     setLoading: (v: boolean) => void,
-    onSuccess: (id: Id<"_storage">) => void,
+    onSuccess: (id: Id<"_storage">) => Promise<void>,
     inputEl: HTMLInputElement,
   ) => {
     if (file.size > maxBytes) {
@@ -158,30 +158,41 @@ export default function GymSettings() {
     try {
       const uploadUrl = await generateLogoUploadUrl();
       const res = await fetch(uploadUrl, { method: "POST", body: file, headers: { "Content-Type": file.type } });
+      if (!res.ok) throw new Error(`${label} upload failed`);
       const { storageId } = await res.json() as { storageId: Id<"_storage"> };
-      onSuccess(storageId);
+      await onSuccess(storageId);
     } finally {
       setLoading(false);
       inputEl.value = "";
     }
   };
 
+  const persistUploadedImage = async (
+    field: "logoStorageId" | "appIconStorageId" | "splashStorageId",
+    id: Id<"_storage">,
+  ) => {
+    setForm((f) => ({ ...f, [field]: id }));
+    await updateSettings({ [field]: id });
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2500);
+  };
+
   const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    await uploadImage(file, 1024 * 1024, "Logo", setUploading, (id) => setForm((f) => ({ ...f, logoStorageId: id })), e.target);
+    await uploadImage(file, 1024 * 1024, "Logo", setUploading, (id) => persistUploadedImage("logoStorageId", id), e.target);
   };
 
   const handleAppIconChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    await uploadImage(file, 2 * 1024 * 1024, "App icon", setUploadingIcon, (id) => setForm((f) => ({ ...f, appIconStorageId: id })), e.target);
+    await uploadImage(file, 2 * 1024 * 1024, "App icon", setUploadingIcon, (id) => persistUploadedImage("appIconStorageId", id), e.target);
   };
 
   const handleSplashChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    await uploadImage(file, 5 * 1024 * 1024, "Splash image", setUploadingSplash, (id) => setForm((f) => ({ ...f, splashStorageId: id })), e.target);
+    await uploadImage(file, 5 * 1024 * 1024, "Splash image", setUploadingSplash, (id) => persistUploadedImage("splashStorageId", id), e.target);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
