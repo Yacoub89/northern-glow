@@ -1,5 +1,24 @@
 import type { EmailConfig } from "@convex-dev/auth/server";
 
+function buildResendErrorMessage(body: string): string {
+  try {
+    const parsed = JSON.parse(body) as { statusCode?: number; message?: string };
+    if (
+      parsed.statusCode === 403 &&
+      parsed.message?.includes("You can only send testing emails")
+    ) {
+      return [
+        "Resend is still in testing mode for this sender.",
+        "Verify a sending domain in Resend and set AUTH_EMAIL_FROM to an address on that domain,",
+        "or use the Resend account owner's email while testing.",
+      ].join(" ");
+    }
+    return parsed.message ?? body;
+  } catch {
+    return body;
+  }
+}
+
 /**
  * OTP email provider using the Resend API.
  * Sends a 6-digit numeric code to the user's email address.
@@ -53,7 +72,7 @@ export const ResendOTP: EmailConfig = {
 
     if (!res.ok) {
       const body = await res.text();
-      throw new Error(`Failed to send verification email: ${body}`);
+      throw new Error(`Failed to send verification email: ${buildResendErrorMessage(body)}`);
     }
   },
   options: {},
