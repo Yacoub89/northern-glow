@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvexAuth } from "convex/react";
+import { useConvex, useConvexAuth } from "convex/react";
 import { Navigate, useNavigate } from "react-router-dom";
+import { api } from "@convex/_generated/api";
 import { SiteNav, SiteFooter, navBtnGhost } from "../components/SiteChrome";
 
 type Step = "signin" | "signup" | "verify";
@@ -71,6 +72,7 @@ const S = {
   toggle: { textAlign: "center" as const, marginTop: 20, fontSize: 13, color: DIM },
   toggleLink: { color: TEAL, cursor: "pointer", marginLeft: 4 },
   error: { color: "#ff453a", fontSize: 13, marginTop: 10 },
+  success: { color: TEAL, fontSize: 13, marginTop: 10, lineHeight: 1.5 },
 };
 
 function EyeIcon({ open }: { open: boolean }) {
@@ -90,7 +92,8 @@ function EyeIcon({ open }: { open: boolean }) {
 
 export default function Login() {
   const { isAuthenticated } = useConvexAuth();
-  const { signIn } = useAuthActions();
+  const convex = useConvex();
+  const { signIn, signOut } = useAuthActions();
   const navigate = useNavigate();
   const [step, setStep] = useState<Step>("signin");
   const [name, setName] = useState("");
@@ -100,8 +103,14 @@ export default function Login() {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
 
-  const goToStep = (s: Step) => { setStep(s); setError(""); setShowPassword(false); };
+  const goToStep = (s: Step) => {
+    setStep(s);
+    setError("");
+    setSuccess("");
+    setShowPassword(false);
+  };
 
   if (isAuthenticated) return <Navigate to="/dashboard" replace />;
 
@@ -123,6 +132,13 @@ export default function Login() {
     setLoading(true);
     setError("");
     try {
+      const canCreate = await convex.query(api.users.canCreateAccount, {
+        email: email.trim(),
+      });
+      if (!canCreate) {
+        setError("This email is not invited yet. Ask your gym admin or NorthernGlow to send an invite.");
+        return;
+      }
       await signIn("password", { name, email, password, flow: "signUp" });
       goToStep("verify");
     } catch (err: any) {
@@ -138,6 +154,11 @@ export default function Login() {
     setError("");
     try {
       await signIn("password", { email, code, flow: "email-verification" });
+      await signOut();
+      setPassword("");
+      setCode("");
+      setStep("signin");
+      setSuccess("Account verified. Sign in to continue.");
     } catch (err: any) {
       setError(err.message ?? "Invalid or expired code");
     } finally {
@@ -248,6 +269,7 @@ export default function Login() {
             </div>
           </div>
           {error && <div style={S.error}>{error}</div>}
+          {success && <div style={S.success}>{success}</div>}
           <button style={S.btnSubmit} type="submit" disabled={loading}>
             {loading ? "Signing in…" : "Sign in"}
           </button>

@@ -1,9 +1,11 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { resolve } from "path";
+import { dirname, resolve } from "path";
 import { readFileSync } from "fs";
+import { fileURLToPath } from "url";
 
-const tsconfigRaw = readFileSync(new URL("./tsconfig.json", import.meta.url), "utf-8");
+const configDir = dirname(fileURLToPath(import.meta.url));
+const tsconfigRaw = readFileSync(resolve(configDir, "tsconfig.json"), "utf-8");
 
 export default defineConfig({
   plugins: [react()],
@@ -13,9 +15,9 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@convex": resolve(__dirname, "../convex"),
+      "@convex": resolve(configDir, "../convex"),
       // Force convex bare imports in ../convex/ files to resolve from admin's node_modules
-      convex: resolve(__dirname, "node_modules/convex"),
+      convex: resolve(configDir, "node_modules/convex"),
     },
   },
 });

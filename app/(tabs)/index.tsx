@@ -231,7 +231,7 @@ export default function HomeScreen() {
         {/* ── WOD Hero ── */}
         <FadeIn delay={80}>
           <ScalePress
-            onPress={() => router.push("/(tabs)/wod-placeholder")}
+            onPress={() => router.push("/(tabs)/wod")}
             style={[sc.wodHero, { marginHorizontal: hPad }]}
           >
             <View style={[sc.wodAccentBar, { backgroundColor: primary }]} />

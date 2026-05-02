@@ -20,7 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
+import { Doc, Id } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
 import { useGymColors } from "../../constants/GymConfig";
 import { formatTimestamp } from "../../utils/date";
@@ -174,6 +174,13 @@ const previewStyles = StyleSheet.create({
 
 // ─── Main Screen ──────────────────────────────────────────────────────────────
 
+type DocumentListItem = Doc<"documents"> & {
+  signatureCount?: number;
+  signed?: boolean;
+  signedAt?: number | null;
+  signatureName?: string | null;
+};
+
 export default function DocumentsScreen() {
   const { primary } = useGymColors();
   const me = useQuery(api.users.getMe);
@@ -219,7 +226,7 @@ export default function DocumentsScreen() {
   const signMutation = useMutation(api.documents.sign);
   const removeDoc = useMutation(api.documents.remove);
 
-  const docs = isCoach ? coachDocs : memberDocs;
+  const docs = ((isCoach ? coachDocs : memberDocs) ?? []) as DocumentListItem[];
   const pendingCount = !isCoach ? (memberDocs ?? []).filter((d) => !d.signed).length : 0;
 
   const resetCreate = () => {

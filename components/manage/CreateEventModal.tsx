@@ -123,7 +123,7 @@ export function CreateEventModal({
           <Text style={md.label}>Date</Text>
           <Pressable style={md.input} onPress={() => setShowDatePicker((v) => !v)}>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <Text style={{ color: Colors.text, fontFamily: Fonts.body, fontSize: FontSizes.md }}>
+              <Text style={{ color: Colors.text, fontFamily: Fonts.body, fontSize: FontSizes.labelLg }}>
                 {formatDate(date, { weekday: "long" })}
               </Text>
               <Ionicons name="calendar-outline" size={18} color={Colors.textMuted} />
@@ -150,7 +150,7 @@ export function CreateEventModal({
           <Text style={md.label}>Start Time</Text>
           <Pressable style={md.input} onPress={() => setShowStartTimePicker((v) => !v)}>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <Text style={{ color: Colors.text, fontFamily: Fonts.body, fontSize: FontSizes.md }}>
+              <Text style={{ color: Colors.text, fontFamily: Fonts.body, fontSize: FontSizes.labelLg }}>
                 {formatTime(startTime)}
               </Text>
               <Ionicons name="time-outline" size={18} color={Colors.textMuted} />
@@ -174,7 +174,7 @@ export function CreateEventModal({
             onPress={() => setShowEndTimePicker((v) => !v)}
           >
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <Text style={{ color: endTime ? Colors.text : Colors.textMuted, fontFamily: Fonts.body, fontSize: FontSizes.md }}>
+              <Text style={{ color: endTime ? Colors.text : Colors.textMuted, fontFamily: Fonts.body, fontSize: FontSizes.labelLg }}>
                 {endTime ? formatTime(endTime) : "None (optional)"}
               </Text>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>

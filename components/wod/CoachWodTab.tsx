@@ -157,7 +157,7 @@ export function CoachWodTab() {
       if (wod) {
         await updateWod({ id: wod._id, ...wodPayload });
       } else {
-        await createWod({ date, ...wodPayload });
+        await createWod(wodPayload);
       }
       setEditMode(false);
       Alert.alert(wod ? "Updated!" : "Published!", wod ? "WOD updated." : "WOD is live.");

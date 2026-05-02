@@ -3,6 +3,13 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { requireAuth, requireCoachOrAdmin } from "./helpers";
 
+function superAdminEmails(): string[] {
+  return (process.env.NORTHERNGLOW_SUPERADMIN_EMAILS ?? "")
+    .split(",")
+    .map((e) => e.trim().toLowerCase())
+    .filter(Boolean);
+}
+
 export const getMe = query({
   args: {},
   handler: async (ctx) => {
@@ -19,11 +26,26 @@ export const isSuperAdmin = query({
     if (!userId) return false;
     const user = await ctx.db.get(userId);
     if (!user?.email) return false;
-    const allowlist = (process.env.NORTHERNGLOW_SUPERADMIN_EMAILS ?? "")
-      .split(",")
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean);
-    return allowlist.includes(user.email.toLowerCase());
+    return superAdminEmails().includes(user.email.toLowerCase());
+  },
+});
+
+export const canCreateAccount = query({
+  args: { email: v.string() },
+  handler: async (ctx, { email }) => {
+    const normalizedEmail = email.toLowerCase().trim();
+    if (!normalizedEmail) return false;
+
+    if (superAdminEmails().includes(normalizedEmail)) return true;
+
+    const pendingInvite = await ctx.db
+      .query("gymInvites")
+      .withIndex("by_email", (q) => q.eq("email", normalizedEmail))
+      .filter((q) => q.eq(q.field("status"), "pending"))
+      .order("desc")
+      .first();
+
+    return pendingInvite !== null && pendingInvite.expiresAt >= Date.now();
   },
 });
 

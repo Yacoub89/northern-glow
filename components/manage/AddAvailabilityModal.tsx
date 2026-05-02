@@ -61,7 +61,7 @@ export function AddAvailabilityModal({
           <Text style={md.label}>Start Time</Text>
           <Pressable style={md.input} onPress={() => setShowStartTimePicker((v) => !v)}>
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <Text style={{ color: Colors.text, fontFamily: Fonts.body, fontSize: FontSizes.md }}>
+              <Text style={{ color: Colors.text, fontFamily: Fonts.body, fontSize: FontSizes.labelLg }}>
                 {formatTime(startTime)}
               </Text>
               <Ionicons name="time-outline" size={18} color={Colors.textMuted} />

@@ -26,6 +26,70 @@ describe("users.getMe", () => {
   });
 });
 
+// ── users.canCreateAccount ───────────────────────────────────────────────────
+
+describe("users.canCreateAccount", () => {
+  test("allows pending invited emails", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId } = await seedGymAndUser(t, { role: "admin" });
+
+    await t.run((ctx) =>
+      ctx.db.insert("gymInvites", {
+        gymId,
+        email: "owner@test.com",
+        inviteCode: "ABCDEFGH",
+        role: "admin",
+        status: "pending",
+        invitedBy: userId,
+        expiresAt: Date.now() + 60_000,
+      })
+    );
+
+    await expect(
+      t.query(api.users.canCreateAccount, { email: " OWNER@test.com " })
+    ).resolves.toBe(true);
+  });
+
+  test("rejects uninvited and expired invite emails", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId } = await seedGymAndUser(t, { role: "admin" });
+
+    await t.run((ctx) =>
+      ctx.db.insert("gymInvites", {
+        gymId,
+        email: "expired@test.com",
+        inviteCode: "ABCDEFGH",
+        role: "admin",
+        status: "pending",
+        invitedBy: userId,
+        expiresAt: Date.now() - 1,
+      })
+    );
+
+    await expect(
+      t.query(api.users.canCreateAccount, { email: "expired@test.com" })
+    ).resolves.toBe(false);
+    await expect(
+      t.query(api.users.canCreateAccount, { email: "stranger@test.com" })
+    ).resolves.toBe(false);
+  });
+
+  test("allows super-admin allowlist emails", async () => {
+    const t = convexTest(schema, modules);
+    const previous = process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
+    process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = "founder@test.com";
+
+    await expect(
+      t.query(api.users.canCreateAccount, { email: "Founder@Test.com" })
+    ).resolves.toBe(true);
+    if (previous === undefined) {
+      delete process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
+    } else {
+      process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = previous;
+    }
+  });
+});
+
 // ── users.getMyStats ──────────────────────────────────────────────────────────
 
 describe("users.getMyStats", () => {
