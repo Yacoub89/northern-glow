@@ -70,6 +70,52 @@ describe("invites.createGymWithAdmin", () => {
   });
 });
 
+// ── invites.superAdminCreateGym ──────────────────────────────────────────────
+
+describe("invites.superAdminCreateGym", () => {
+  test("creates a client gym and invite without linking the super-admin", async () => {
+    const previous = process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
+    process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = "founder@test.com";
+
+    try {
+      const t = convexTest(schema, modules);
+      const userId = await t.run((ctx) =>
+        ctx.db.insert("users", { name: "Founder", email: "founder@test.com" })
+      );
+      const identity = { subject: `${userId}|session` };
+
+      const gymId = await t.withIdentity(identity).mutation(api.invites.superAdminCreateGym, {
+        gymName: "Client Gym",
+        tagline: "Powered by NorthernGlow",
+        primaryColor: "#1BBFBF",
+        timezone: "America/Toronto",
+        adminEmail: "owner@test.com",
+      });
+
+      const superAdmin = await t.run((ctx) => ctx.db.get(userId));
+      expect(superAdmin?.gymId).toBeUndefined();
+      expect(superAdmin?.role).toBeUndefined();
+
+      const invite = await t.run((ctx) =>
+        ctx.db
+          .query("gymInvites")
+          .withIndex("by_gym_email", (q) =>
+            q.eq("gymId", gymId).eq("email", "owner@test.com")
+          )
+          .first()
+      );
+      expect(invite?.status).toBe("pending");
+      expect(invite?.role).toBe("admin");
+    } finally {
+      if (previous === undefined) {
+        delete process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
+      } else {
+        process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = previous;
+      }
+    }
+  });
+});
+
 // ── invites.send ──────────────────────────────────────────────────────────────
 
 describe("invites.send", () => {

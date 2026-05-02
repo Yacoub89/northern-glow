@@ -82,10 +82,15 @@ export const listMembers = query({
   args: {},
   handler: async (ctx) => {
     const { gymId } = await requireCoachOrAdmin(ctx);
-    return await ctx.db
+    const members = await ctx.db
       .query("users")
       .withIndex("by_gym", (q) => q.eq("gymId", gymId))
       .take(200);
+    const platformAdminEmails = new Set(superAdminEmails());
+    return members.filter((member) => {
+      if (!member.email) return true;
+      return !platformAdminEmails.has(member.email.toLowerCase());
+    });
   },
 });
 

@@ -166,6 +166,30 @@ describe("users.listMembers", () => {
     const emails = members.map((m) => m.email);
     expect(emails).not.toContain("other@test.com");
   });
+
+  test("super-admin allowlist accounts are hidden from gym members", async () => {
+    const previous = process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
+    process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = "founder@test.com";
+
+    try {
+      const t = convexTest(schema, modules);
+      const { gymId, identity } = await seedGymAndUser(t, { role: "admin", email: "owner@test.com" });
+      await insertUser(t, gymId, { role: "admin", email: "founder@test.com", name: "Founder" });
+      await insertUser(t, gymId, { role: "athlete", email: "athlete@test.com" });
+
+      const members = await t.withIdentity(identity).query(api.users.listMembers);
+      const emails = members.map((m) => m.email);
+      expect(emails).toContain("owner@test.com");
+      expect(emails).toContain("athlete@test.com");
+      expect(emails).not.toContain("founder@test.com");
+    } finally {
+      if (previous === undefined) {
+        delete process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
+      } else {
+        process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = previous;
+      }
+    }
+  });
 });
 
 // ── users.setRole ─────────────────────────────────────────────────────────────

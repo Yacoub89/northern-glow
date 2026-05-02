@@ -23,9 +23,11 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 function GymGuard({ children }: { children: React.ReactNode }) {
   const me = useQuery(api.users.getMe);
   const adminInvite = useQuery(api.invites.getMyAdminInvite);
-  if (me === undefined || adminInvite === undefined) return <Spinner />;
+  const isSuperAdmin = useQuery(api.users.isSuperAdmin);
+  if (me === undefined || adminInvite === undefined || isSuperAdmin === undefined) return <Spinner />;
   if (!me?.gymId) {
     if (adminInvite) return <Navigate to="/accept-invite" replace />;
+    if (isSuperAdmin) return <Navigate to="/super" replace />;
     return <Navigate to="/gym/create" replace />;
   }
   return <>{children}</>;
@@ -36,6 +38,13 @@ function SuperAdminGuard({ children }: { children: React.ReactNode }) {
   if (isAdmin === undefined) return <Spinner />;
   if (!isAdmin) return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
+}
+
+function GymCreateGuard() {
+  const isSuperAdmin = useQuery(api.users.isSuperAdmin);
+  if (isSuperAdmin === undefined) return <Spinner />;
+  if (isSuperAdmin) return <Navigate to="/super" replace />;
+  return <GymCreate />;
 }
 
 export function Spinner() {
@@ -66,7 +75,7 @@ export default function App() {
         <Route path="/gym/settings" element={<GymGuard><GymSettings /></GymGuard>} />
         <Route path="/gym/invites" element={<GymGuard><Invites /></GymGuard>} />
         <Route path="/gym/members" element={<GymGuard><Members /></GymGuard>} />
-        <Route path="/gym/create" element={<GymCreate />} />
+        <Route path="/gym/create" element={<GymCreateGuard />} />
         <Route path="/accept-invite" element={<AcceptInvite />} />
         <Route path="/super" element={<SuperAdminGuard><SuperAdmin /></SuperAdminGuard>} />
       </Route>
