@@ -43,6 +43,14 @@ Opens the Expo Dev Tools. From here you can:
 - Press `a` to open Android Emulator
 - Scan the QR code with the **Expo Go** app on your phone
 
+### Optional — Admin portal web app
+```bash
+cd admin
+npm install
+npm run dev
+```
+Starts the browser admin portal. Use this when you want to test `/login`, `/dashboard`, `/super`, gym settings, invites, and member management.
+
 ### Run directly on a simulator (native builds)
 ```bash
 npm run ios        # expo run:ios
@@ -52,7 +60,143 @@ Use these when you need a development build with native modules (e.g. push notif
 
 ---
 
-## 3. Database / Seed Commands
+## 3. Routes and Access
+
+NorthernGlow has two frontends:
+
+- **Mobile app / Expo app**: the member, coach, and gym-facing native app in `app/`.
+- **Admin portal / web app**: the browser admin app in `admin/`.
+
+Both apps use Convex Auth. Convex is the source of truth for the current user, their `gymId`, and their `role`.
+
+### Admin portal routes
+
+Admin portal routes are defined in `admin/src/App.tsx`.
+
+| Route | Who can open it | What it is for |
+|---|---|---|
+| `/` | Public | Marketing / landing page. |
+| `/login` | Public | Sign in to the admin portal. |
+| `/dashboard` | Signed-in users with a gym | Main gym overview: gym name, member count, pending invites, brand colour, timezone. |
+| `/gym/settings` | Signed-in users with a gym | Gym branding/settings such as name, tagline, primary colour, timezone, custom domain, and email domain settings. |
+| `/gym/invites` | Signed-in users with a gym; backend requires coach or admin | Send, view, and revoke invites for athletes, coaches, and admins in the current gym. |
+| `/gym/members` | Signed-in users with a gym; backend requires coach or admin to list, admin to change roles | View members and change member roles. |
+| `/gym/create` | Signed-in super admin with no gym | Create a gym and link the current super admin account to it as that gym's admin. |
+| `/accept-invite` | Signed-in user with a pending admin invite | Accept a gym admin invite, agree to terms, and join that gym as admin. |
+| `/super` | Signed-in super admin only | NorthernGlow staff panel for creating client gyms, sending admin invites, resending admin invites, and managing setup details. |
+| `*` | Anyone | Unknown routes redirect back to `/`. |
+
+### Admin portal guards
+
+The web app uses three route guards:
+
+- `AuthGuard`: checks Convex auth. If the user is not signed in, they go to `/login`.
+- `GymGuard`: checks `api.users.getMe` and `api.invites.getMyAdminInvite`.
+  - If the user has a `gymId`, they can enter normal gym routes.
+  - If they have no `gymId` but do have a pending admin invite, they go to `/accept-invite`.
+  - If they have no `gymId` and no admin invite, they go to `/gym/create`.
+- `SuperAdminGuard`: checks `api.users.isSuperAdmin`. If false, the user is redirected to `/dashboard`.
+
+Important: the UI guard is not the only protection. Convex mutations and queries also enforce access on the backend.
+
+### Super admin access
+
+Super admins are NorthernGlow staff accounts. They are controlled by the Convex environment variable:
+
+```bash
+NORTHERNGLOW_SUPERADMIN_EMAILS=you@example.com,another@example.com
+```
+
+A signed-in user is a super admin when their account email appears in that comma-separated allowlist. The checks live in `convex/users.ts` and `convex/helpers.ts`.
+
+Super admin can:
+
+- Open `/super`.
+- Create a new client gym through `api.invites.superAdminCreateGym`.
+- Send the first admin invite for that gym.
+- View pending admin invites across gyms.
+- Resend an admin invite.
+- Register and verify email-domain setup for a gym.
+
+The `/super` flow is meant for onboarding client gyms. It creates the gym and sends an invite to the gym owner's/admin's email. It does **not** add the super admin to that client gym.
+
+There is also `/gym/create`, which calls `api.invites.createGymWithAdmin`. That path creates a gym and links the current super admin to it as admin. It only works if the super admin is not already part of a gym.
+
+### Gym admin access
+
+A gym admin is a user document with:
+
+- `gymId`: the gym they belong to.
+- `role: "admin"`.
+
+Gym admins usually get access like this:
+
+1. A super admin creates the gym from `/super`.
+2. The system sends an admin invite to the gym owner's email.
+3. The gym owner signs in at `/login` using the same invited email.
+4. Because they have no `gymId` and do have a pending admin invite, `GymGuard` sends them to `/accept-invite`.
+5. They accept terms and the invite.
+6. Convex links their user to the gym and assigns the invited role, usually `admin`.
+7. They land on `/dashboard`.
+
+Gym admins can manage their own gym only. Backend checks compare the caller's `gymId` against the documents they are reading or editing.
+
+Gym admins can:
+
+- View the dashboard.
+- Edit gym settings.
+- Send invites for athletes, coaches, and admins.
+- Revoke pending invites.
+- View members.
+- Change roles for members in the same gym.
+
+Admins cannot change users from another gym. They also cannot demote themselves away from admin; another admin must do that.
+
+### Coach and athlete access
+
+Roles used by the app:
+
+| Role | Meaning |
+|---|---|
+| `admin` | Gym owner/operator. Full gym management access for that gym. |
+| `coach` | Staff user. Can manage coaching workflows and send/list invites where backend allows coach-or-admin access. |
+| `athlete` | Regular member. Can use athlete-facing app screens and book/log activity. |
+
+Backend helpers:
+
+- `requireAuth`: user must be signed in and linked to a gym.
+- `requireCoachOrAdmin`: user must be signed in, linked to a gym, and have role `coach` or `admin`.
+- `requireSuperAdmin`: user email must be in `NORTHERNGLOW_SUPERADMIN_EMAILS`.
+
+### Mobile app routes
+
+Mobile routes are file-based Expo Router routes in `app/`.
+
+| Route / file | Who sees it | What it is for |
+|---|---|---|
+| `/(auth)/login` | Signed-out users | Login screen. |
+| `/(auth)/register` | Signed-out users | Registration screen. Account creation is invite-aware through Convex. |
+| `/(tabs)` | Signed-in users | Main tab shell. Redirects signed-out users to login. |
+| `/(tabs)/index` | Signed-in users | Home screen. |
+| `/(tabs)/schedule` | Athletes in the tab bar | Athlete schedule and class booking. Hidden from coaches/admins. |
+| `/(tabs)/manage` | Coaches/admins in the tab bar | Coach/admin schedule management, class creation, availability, and events. Hidden from athletes. |
+| `/(tabs)/wod` | Signed-in users | WOD screen. |
+| `/(tabs)/profile` | Signed-in users | Profile screen. |
+| `/(tabs)/history` | Hidden tab route | Activity/history screen opened by navigation. |
+| `/(tabs)/documents` | Hidden tab route | Documents screen opened by navigation. |
+| `/(tabs)/members` | Hidden tab route | Members screen opened by navigation. |
+| `/class-form` | Coaches/admins by workflow | Modal for adding a class. |
+| `/membership` | Signed-in users by workflow | Membership details. |
+| `/event-detail` | Signed-in users by workflow | Event details and registration. |
+| `/roster` | Coaches/admins by workflow | Class roster. |
+| `/kiosk` | Coaches/admins by workflow | Kiosk/check-in style screen. |
+| `/gym-settings` | Coaches/admins by workflow | Native gym settings screen. |
+
+After mobile login, `GymLinker` in `app/_layout.tsx` runs `api.invites.checkAndAccept`. If the signed-in user's email has a pending invite, Convex links them to that gym and assigns the invite role.
+
+---
+
+## 4. Database / Seed Commands
 
 ```bash
 # Seed the database with test data
@@ -66,7 +210,7 @@ npm run seed:clear
 
 ---
 
-## 4. Convex Backend Commands
+## 5. Convex Backend Commands
 
 ```bash
 # Deploy backend changes to production
@@ -81,7 +225,7 @@ npx convex run <functionPath> '{"arg": "value"}'
 
 ---
 
-## 5. EAS Builds (App Store / TestFlight / Internal)
+## 6. EAS Builds (App Store / TestFlight / Internal)
 
 ### Build profiles (defined in eas.json)
 
@@ -122,7 +266,7 @@ eas submit --platform android
 
 ---
 
-## 6. White-Label Gym Builds
+## 7. White-Label Gym Builds
 
 Use the build script to generate a fully branded app for a specific gym.
 The script fetches branding from Convex, swaps assets, runs the EAS build, then restores defaults.
@@ -148,7 +292,7 @@ The `gymId` is the Convex document ID for the gym in your database.
 
 ---
 
-## 7. OTA Updates (no build required)
+## 8. OTA Updates (no build required)
 
 Push a JS-only update instantly to existing installs:
 
@@ -158,7 +302,7 @@ eas update --branch production --message "Fix login bug"
 
 ---
 
-## 8. Testing
+## 9. Testing
 
 Convex backend functions are tested with [vitest](https://vitest.dev) + [convex-test](https://github.com/get-convex/convex-test). Test files live inside `convex/` alongside the source they cover.
 
@@ -177,7 +321,7 @@ npx vitest run convex/events.test.ts
 
 ---
 
-## 9. TypeScript
+## 10. TypeScript
 
 ```bash
 # Type check (no emit)
