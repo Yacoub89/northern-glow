@@ -3,6 +3,8 @@ import { v } from "convex/values";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
+const DEFAULT_WEB_URL = "https://www.northernglow.fit";
+
 function formatTime12h(time: string): string {
   const [h, m] = time.split(":").map(Number);
   const ampm = h >= 12 ? "PM" : "AM";
@@ -159,6 +161,7 @@ export const sendInviteEmail = internalAction({
 
     const roleLabel =
       role === "admin" ? "Admin" : role === "coach" ? "Coach" : "Athlete";
+    const webUrl = process.env.NORTHERNGLOW_WEB_URL ?? DEFAULT_WEB_URL;
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -176,11 +179,12 @@ export const sendInviteEmail = internalAction({
             <h2 style="color:#111">You're invited to ${gymName}!</h2>
             <p>You've been invited as a <strong>${roleLabel}</strong>.</p>
             <p>Download the app, tap <strong>Sign Up</strong>, and create an account using <strong>this email address</strong>. Your gym membership will be activated automatically.</p>
+            <a href="${webUrl}" style="display:inline-block;background:#1BBFBF;color:#000;font-weight:700;padding:12px 24px;border-radius:8px;text-decoration:none;font-size:14px;margin:16px 0">${webUrl}</a>
             <p style="color:#555;font-size:13px">
               This invite expires in 7 days.
             </p>
           </div>`,
-        text: `You've been invited to join ${gymName} as a ${roleLabel}. Download the app, tap Sign Up, and create an account using this email address. Your gym membership will be activated automatically.`,
+        text: `You've been invited to join ${gymName} as a ${roleLabel}. Visit ${webUrl}, download the app, tap Sign Up, and create an account using this email address. Your gym membership will be activated automatically.`,
       }),
     });
 
@@ -518,7 +522,7 @@ export const sendAdminPortalInviteEmail = internalAction({
     const from =
       fromAddress ?? process.env.AUTH_EMAIL_FROM ?? `NorthernGlow <noreply@example.com>`;
     const portalUrl =
-      portalUrlArg ?? process.env.ADMIN_PORTAL_URL ?? "https://admin.northernglow.app";
+      portalUrlArg ?? process.env.ADMIN_PORTAL_URL ?? DEFAULT_WEB_URL;
     if (!apiKey) {
       console.warn("AUTH_RESEND_KEY not set — skipping admin portal invite email");
       return;
