@@ -90,6 +90,24 @@ function EyeIcon({ open }: { open: boolean }) {
   );
 }
 
+function authErrorMessage(err: unknown, fallback: string) {
+  const raw = err instanceof Error ? err.message : String(err ?? "");
+
+  if (raw.includes("InvalidSecret") || raw.includes("InvalidAccountId")) {
+    return "That email or password doesn't look right. Please try again.";
+  }
+
+  if (raw.includes("InvalidVerificationCode") || raw.includes("InvalidCode")) {
+    return "That verification code is invalid or expired. Please check the code and try again.";
+  }
+
+  if (raw.includes("AccountAlreadyExists")) {
+    return "An account already exists for this email. Sign in instead.";
+  }
+
+  return raw || fallback;
+}
+
 export default function Login() {
   const { isAuthenticated } = useConvexAuth();
   const convex = useConvex();
@@ -121,7 +139,7 @@ export default function Login() {
     try {
       await signIn("password", { email, password, flow: "signIn" });
     } catch (err: any) {
-      setError(err.message ?? "Invalid email or password");
+      setError(authErrorMessage(err, "Invalid email or password"));
     } finally {
       setLoading(false);
     }
@@ -142,7 +160,7 @@ export default function Login() {
       await signIn("password", { name, email, password, flow: "signUp" });
       goToStep("verify");
     } catch (err: any) {
-      setError(err.message ?? "Could not create account");
+      setError(authErrorMessage(err, "Could not create account"));
     } finally {
       setLoading(false);
     }
@@ -160,7 +178,7 @@ export default function Login() {
       setStep("signin");
       setSuccess("Account verified. Sign in to continue.");
     } catch (err: any) {
-      setError(err.message ?? "Invalid or expired code");
+      setError(authErrorMessage(err, "Invalid or expired code"));
     } finally {
       setLoading(false);
     }

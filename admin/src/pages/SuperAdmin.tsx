@@ -33,6 +33,7 @@ const S = {
   table: { width: "100%", borderCollapse: "collapse" as const },
   th: { textAlign: "left" as const, padding: "8px 12px", fontSize: 12, color: "#666", borderBottom: "1px solid #252525" },
   td: { padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #1a1a1a", verticalAlign: "middle" as const },
+  idText: { color: "#666", fontFamily: "monospace", fontSize: 11, marginLeft: 8 },
   dot: (color: string) => ({
     display: "inline-block", width: 8, height: 8, borderRadius: "50%",
     background: color, marginRight: 6,
@@ -205,7 +206,10 @@ function PendingInvites() {
           const expired = inv.expiresAt < now;
           return (
             <tr key={inv._id}>
-              <td style={S.td}>{inv.gymName}</td>
+              <td style={S.td}>
+                {inv.gymName}
+                <span style={S.idText}>{inv.gymId}</span>
+              </td>
               <td style={S.td}>{inv.email}</td>
               <td style={S.td}>
                 {new Date(inv.expiresAt).toLocaleDateString()}
@@ -536,7 +540,10 @@ export default function SuperAdmin() {
                 {gyms.map((gym) => (
                   <>
                     <tr key={gym._id}>
-                      <td style={S.td}>{gym.name}</td>
+                      <td style={S.td}>
+                        {gym.name}
+                        <span style={S.idText}>{gym._id}</span>
+                      </td>
                       <td style={S.td}>{gym.timezone}</td>
                       <td style={S.td}>
                         <span style={S.dot(gym.primaryColor)} />
