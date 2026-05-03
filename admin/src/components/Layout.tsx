@@ -59,6 +59,8 @@ export default function Layout() {
   const isAdmin = useQuery(api.users.isSuperAdmin);
   const isMobile = useMediaQuery("(max-width: 760px)");
   const navLink = (active: boolean) => S.link(active);
+  const showGymNav = !!gym;
+  const showSuperAdminNav = isAdmin === true;
 
   return (
     <div style={{ ...S.shell, flexDirection: isMobile ? "column" : "row" }}>
@@ -90,27 +92,28 @@ export default function Layout() {
             padding: isMobile ? "0 12px 4px" : S.nav.padding,
           }}
         >
-          {GYM_NAV.map(({ to, label }) => (
-            <NavLink
-              key={to}
-              to={to}
-              style={({ isActive }) => ({
-                ...navLink(isActive),
-                whiteSpace: "nowrap",
-                marginBottom: isMobile ? 0 : navLink(isActive).marginBottom,
-              })}
-            >
-              {label}
-            </NavLink>
-          ))}
-          {isAdmin && (
+          {showGymNav &&
+            GYM_NAV.map(({ to, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                style={({ isActive }) => ({
+                  ...navLink(isActive),
+                  whiteSpace: "nowrap",
+                  marginBottom: isMobile ? 0 : navLink(isActive).marginBottom,
+                })}
+              >
+                {label}
+              </NavLink>
+            ))}
+          {showSuperAdminNav && (
             <NavLink to="/super" style={({ isActive }) => ({
               ...navLink(isActive),
               whiteSpace: "nowrap",
-              marginTop: isMobile ? 0 : 16,
+              marginTop: !showGymNav || isMobile ? 0 : 16,
               marginBottom: isMobile ? 0 : navLink(isActive).marginBottom,
-              borderTop: isMobile ? "none" : "1px solid #252525",
-              paddingTop: isMobile ? 9 : 16,
+              borderTop: !showGymNav || isMobile ? "none" : "1px solid #252525",
+              paddingTop: !showGymNav || isMobile ? 9 : 16,
             })}>
               Super Admin
             </NavLink>
