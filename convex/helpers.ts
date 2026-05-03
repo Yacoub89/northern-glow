@@ -38,6 +38,25 @@ export async function requireCoachOrAdmin(
   return { userId, gymId };
 }
 
+export async function requireActiveMembershipForAthlete(
+  ctx: QueryCtx | MutationCtx,
+  user: Doc<"users">,
+  feature: string
+) {
+  if (user.role === "coach" || user.role === "admin") return null;
+
+  const membership = await ctx.db
+    .query("memberships")
+    .withIndex("by_user", (q) => q.eq("userId", user._id))
+    .first();
+
+  if (!membership || (membership.status !== "active" && membership.status !== "trialing")) {
+    throw new Error(`An active membership is required to ${feature}`);
+  }
+
+  return membership;
+}
+
 /**
  * Asserts the caller is a NorthernGlow super-admin. The allowlist is configured
  * via the NORTHERNGLOW_SUPERADMIN_EMAILS env var (comma-separated).

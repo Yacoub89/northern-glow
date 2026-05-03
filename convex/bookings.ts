@@ -3,7 +3,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { DatabaseReader } from "./_generated/server";
-import { requireAuth, requireCoachOrAdmin } from "./helpers";
+import { requireActiveMembershipForAthlete, requireAuth, requireCoachOrAdmin } from "./helpers";
 import { internal } from "./_generated/api";
 
 async function getWaitlisted(db: DatabaseReader, classId: Id<"classes">) {
@@ -219,7 +219,7 @@ export const uncheckIn = mutation({
 export const book = mutation({
   args: { classId: v.id("classes") },
   handler: async (ctx, { classId }) => {
-    const { userId, gymId } = await requireAuth(ctx);
+    const { userId, gymId, user } = await requireAuth(ctx);
 
     const cls = await ctx.db.get(classId);
     if (!cls) throw new Error("Class not found");
@@ -227,19 +227,11 @@ export const book = mutation({
     if (cls.gymId !== gymId) throw new Error("Class not found");
 
     // Membership gate — coaches and admins always bypass
-    const user = await ctx.db.get(userId);
-    if (user?.role !== "coach" && user?.role !== "admin") {
-      const membership = await ctx.db
-        .query("memberships")
-        .withIndex("by_user", (q) => q.eq("userId", userId))
-        .first();
+    const membership = await requireActiveMembershipForAthlete(ctx, user, "book classes");
 
-      if (!membership || (membership.status !== "active" && membership.status !== "trialing")) {
-        throw new Error("An active membership is required to book classes");
-      }
-
+    if (user.role !== "coach" && user.role !== "admin") {
       // 2x/week cap
-      if (membership.plan === "twice_weekly") {
+      if (membership!.plan === "twice_weekly") {
         const classDate = new Date(cls.date + "T00:00:00Z");
         const dow = classDate.getUTCDay();
         const daysToMon = dow === 0 ? 6 : dow - 1;

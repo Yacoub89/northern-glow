@@ -19,6 +19,7 @@ import { Id } from "../convex/_generated/dataModel";
 import { Colors } from "../constants/Colors";
 import { useGymColors } from "../constants/GymConfig";
 import { formatTime } from "../utils/date";
+import { isMembershipRequiredError, showMembershipRequiredAlert } from "../utils/membershipErrors";
 
 function formatDate(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
@@ -89,6 +90,10 @@ export default function EventDetailScreen() {
     try {
       await registerFree({ eventId });
     } catch (e: any) {
+      if (isMembershipRequiredError(e)) {
+        showMembershipRequiredAlert(router);
+        return;
+      }
       Alert.alert("Error", e.message);
     } finally {
       setLoading(false);
@@ -103,6 +108,10 @@ export default function EventDetailScreen() {
       const url = await createEventCheckoutSession({ eventId, returnUrl });
       await Linking.openURL(url);
     } catch (e: any) {
+      if (isMembershipRequiredError(e)) {
+        showMembershipRequiredAlert(router);
+        return;
+      }
       Alert.alert("Error", e.message);
     } finally {
       setLoading(false);

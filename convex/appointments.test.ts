@@ -3,7 +3,7 @@ import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
-import { seedGymAndUser } from "./testHelpers";
+import { insertMembership, seedGymAndUser } from "./testHelpers";
 
 const modules = import.meta.glob("./**/*.ts");
 
@@ -42,7 +42,7 @@ describe("appointments.addAvailability", () => {
         startTime: "10:00",
         durationMinutes: 45,
       })
-    ).rejects.toThrow("Slot already exists");
+    ).rejects.toThrow("Availability slot already exists for this day and time");
   });
 
   test("athlete cannot add availability", async () => {
@@ -172,6 +172,7 @@ describe("appointments.book", () => {
     const { gymId, userId: coachId } = await seedGymAndUser(t, { role: "coach" });
     const { userId: athleteId, identity } = await seedGymAndUser(t, { role: "athlete" });
     await t.run((ctx) => ctx.db.patch(athleteId, { gymId }));
+    await insertMembership(t, athleteId, gymId);
 
     await t.withIdentity(identity).mutation(api.appointments.book, {
       coachId,
@@ -190,6 +191,22 @@ describe("appointments.book", () => {
     expect(appt?.status).toBe("confirmed");
   });
 
+  test("athlete without membership cannot book a 1-on-1", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId: coachId } = await seedGymAndUser(t, { role: "coach" });
+    const { userId: athleteId, identity } = await seedGymAndUser(t, { role: "athlete" });
+    await t.run((ctx) => ctx.db.patch(athleteId, { gymId }));
+
+    await expect(
+      t.withIdentity(identity).mutation(api.appointments.book, {
+        coachId,
+        date: "2099-07-01",
+        startTime: "10:00",
+        durationMinutes: 60,
+      })
+    ).rejects.toThrow("An active membership is required to book 1-on-1 sessions");
+  });
+
   test("double-booking the same slot throws", async () => {
     const t = convexTest(schema, modules);
     const { gymId, userId: coachId } = await seedGymAndUser(t, { role: "coach" });
@@ -197,6 +214,8 @@ describe("appointments.book", () => {
     const { userId: athlete2, identity: i2 } = await seedGymAndUser(t, { role: "athlete" });
     await t.run((ctx) => ctx.db.patch(athlete1, { gymId }));
     await t.run((ctx) => ctx.db.patch(athlete2, { gymId }));
+    await insertMembership(t, athlete1, gymId);
+    await insertMembership(t, athlete2, gymId);
 
     await t.withIdentity(i1).mutation(api.appointments.book, {
       coachId,
@@ -220,6 +239,7 @@ describe("appointments.book", () => {
     const { gymId, userId: coachId } = await seedGymAndUser(t, { role: "coach" });
     const { userId: athleteId, identity } = await seedGymAndUser(t, { role: "athlete" });
     await t.run((ctx) => ctx.db.patch(athleteId, { gymId }));
+    await insertMembership(t, athleteId, gymId);
 
     await t.withIdentity(identity).mutation(api.appointments.book, {
       coachId, date: "2099-07-03", startTime: "09:00", durationMinutes: 60,

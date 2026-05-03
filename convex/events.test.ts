@@ -3,7 +3,7 @@ import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
-import { seedGymAndUser, insertEvent } from "./testHelpers";
+import { insertEvent, insertMembership, seedGymAndUser } from "./testHelpers";
 import { Id } from "./_generated/dataModel";
 
 const modules = import.meta.glob("./**/*.ts");
@@ -161,6 +161,7 @@ describe("events.registerFree", () => {
     const t = convexTest(schema, modules);
     const { gymId, userId, identity } = await seedGymAndUser(t);
     const eventId = await insertEvent(t, gymId, userId);
+    await insertMembership(t, userId, gymId);
 
     await t.withIdentity(identity).mutation(api.events.registerFree, { eventId });
 
@@ -170,6 +171,16 @@ describe("events.registerFree", () => {
 
     const event = await t.run((ctx) => ctx.db.get(eventId));
     expect(event?.registeredCount).toBe(1);
+  });
+
+  test("athlete without membership cannot register for a free event", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId, identity } = await seedGymAndUser(t);
+    const eventId = await insertEvent(t, gymId, userId);
+
+    await expect(
+      t.withIdentity(identity).mutation(api.events.registerFree, { eventId })
+    ).rejects.toThrow("An active membership is required to register for events");
   });
 
   test("throws when registering for a paid event", async () => {
@@ -206,6 +217,7 @@ describe("events.registerFree", () => {
     const t = convexTest(schema, modules);
     const { gymId, userId, identity } = await seedGymAndUser(t);
     const eventId = await insertEvent(t, gymId, userId);
+    await insertMembership(t, userId, gymId);
 
     await t.withIdentity(identity).mutation(api.events.registerFree, { eventId });
     await expect(
@@ -217,6 +229,7 @@ describe("events.registerFree", () => {
     const t = convexTest(schema, modules);
     const { gymId, userId, identity } = await seedGymAndUser(t);
     const eventId = await insertEvent(t, gymId, userId);
+    await insertMembership(t, userId, gymId);
 
     await t.withIdentity(identity).mutation(api.events.registerFree, { eventId });
 

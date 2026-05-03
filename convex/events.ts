@@ -8,6 +8,7 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
+import { requireActiveMembershipForAthlete } from "./helpers";
 
 const EVENT_CANCEL_BATCH_SIZE = 100;
 
@@ -83,6 +84,8 @@ export const registerFree = mutation({
     if (event.capacity !== undefined && event.registeredCount >= event.capacity) {
       throw new Error("Event is full");
     }
+
+    await requireActiveMembershipForAthlete(ctx, user, "register for events");
 
     // Check for existing registration
     const existing = await ctx.db

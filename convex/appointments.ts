@@ -1,7 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { requireAuth, requireCoachOrAdmin } from "./helpers";
+import { requireActiveMembershipForAthlete, requireAuth, requireCoachOrAdmin } from "./helpers";
 import { internal } from "./_generated/api";
 
 // ── Queries ──────────────────────────────────────────────────────────────────
@@ -172,7 +172,8 @@ export const book = mutation({
     notes: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const { userId, gymId } = await requireAuth(ctx);
+    const { userId, gymId, user } = await requireAuth(ctx);
+    await requireActiveMembershipForAthlete(ctx, user, "book 1-on-1 sessions");
 
     // Verify coach belongs to the same gym
     const coach = await ctx.db.get(args.coachId);
@@ -279,7 +280,7 @@ export const addAvailability = mutation({
       .collect();
 
     if (existing.some((s) => s.startTime === args.startTime)) {
-      throw new Error("Slot already exists");
+      throw new Error("Availability slot already exists for this day and time");
     }
 
     await ctx.db.insert("coachAvailability", { gymId, coachId, ...args });

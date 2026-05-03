@@ -1,6 +1,6 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useMutation } from "convex/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../convex/_generated/api";
@@ -16,6 +16,10 @@ import {
   dateToTimeStr,
 } from "./styles";
 
+const DEFAULT_DAY_OF_WEEK = 1;
+const DEFAULT_START_TIME = "09:00";
+const DEFAULT_DURATION = 60;
+
 export function AddAvailabilityModal({
   visible,
   onClose,
@@ -24,18 +28,34 @@ export function AddAvailabilityModal({
   onClose: () => void;
 }) {
   const { primary } = useGymColors();
-  const [dayOfWeek, setDayOfWeek] = useState(1);
-  const [startTime, setStartTime] = useState("09:00");
+  const [dayOfWeek, setDayOfWeek] = useState(DEFAULT_DAY_OF_WEEK);
+  const [startTime, setStartTime] = useState(DEFAULT_START_TIME);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
-  const [duration, setDuration] = useState(60);
+  const [duration, setDuration] = useState(DEFAULT_DURATION);
   const addAvailability = useMutation(api.appointments.addAvailability);
+
+  const resetForm = () => {
+    setDayOfWeek(DEFAULT_DAY_OF_WEEK);
+    setStartTime(DEFAULT_START_TIME);
+    setDuration(DEFAULT_DURATION);
+    setShowStartTimePicker(false);
+  };
+
+  useEffect(() => {
+    resetForm();
+  }, [visible]);
 
   const handleSave = async () => {
     try {
       await addAvailability({ dayOfWeek, startTime, durationMinutes: duration });
+      resetForm();
       onClose();
     } catch (e: any) {
-      Alert.alert("Error", e.message);
+      const message =
+        e?.message?.includes("Availability slot already exists")
+          ? "You already have an availability slot at this day and time. Pick a different time or remove the existing slot first."
+          : e.message;
+      Alert.alert("Could not add slot", message);
     }
   };
 
@@ -93,7 +113,13 @@ export function AddAvailabilityModal({
           </View>
 
           <View style={md.actions}>
-            <Pressable style={md.cancelBtn} onPress={onClose}>
+            <Pressable
+              style={md.cancelBtn}
+              onPress={() => {
+                resetForm();
+                onClose();
+              }}
+            >
               <Text style={md.cancelText}>Cancel</Text>
             </Pressable>
             <Pressable style={[md.saveBtn, { backgroundColor: primary }]} onPress={handleSave}>

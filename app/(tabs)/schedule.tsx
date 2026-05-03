@@ -16,6 +16,7 @@ import { Doc, Id } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
 import { useGymColors } from "../../constants/GymConfig";
 import { formatTime, getTodayDate } from "../../utils/date";
+import { isMembershipRequiredError, showMembershipRequiredAlert } from "../../utils/membershipErrors";
 import { getDayNum, parseMovement } from "../../components/wod/types";
 
 function generateDates(count = 7): string[] {
@@ -55,6 +56,7 @@ function ClassCard({
   myBookings: Doc<"bookings">[];
 }) {
   const { primary } = useGymColors();
+  const router = useRouter();
   const book = useMutation(api.bookings.book);
   const cancel = useMutation(api.bookings.cancel);
   const myBooking = myBookings.find(
@@ -73,6 +75,10 @@ function ClassCard({
         );
       }
     } catch (e: any) {
+      if (isMembershipRequiredError(e)) {
+        showMembershipRequiredAlert(router);
+        return;
+      }
       Alert.alert("Error", e.message);
     }
   };
@@ -173,6 +179,7 @@ function AppointmentSlotCard({
   myAppointmentId: Id<"appointments"> | null;
   onBooked: () => void;
 }) {
+  const router = useRouter();
   const bookAppt = useMutation(api.appointments.book);
   const cancelAppt = useMutation(api.appointments.cancel);
 
@@ -188,6 +195,10 @@ function AppointmentSlotCard({
       });
       onBooked();
     } catch (e: any) {
+      if (isMembershipRequiredError(e)) {
+        showMembershipRequiredAlert(router);
+        return;
+      }
       Alert.alert("Error", e.message);
     }
   };

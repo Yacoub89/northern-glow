@@ -1,6 +1,6 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useMutation } from "convex/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -48,19 +48,27 @@ export function CreateEventModal({
   const [priceInput, setPriceInput] = useState("0");
   const [saving, setSaving] = useState(false);
 
+  const closePickers = () => {
+    setShowDatePicker(false);
+    setShowStartTimePicker(false);
+    setShowEndTimePicker(false);
+  };
+
   const resetForm = () => {
     setTitle("");
     setDescription("");
     setDate(today);
-    setShowDatePicker(false);
+    closePickers();
     setStartTime("09:00");
-    setShowStartTimePicker(false);
     setEndTime("");
-    setShowEndTimePicker(false);
     setLocation("");
     setCapacity(undefined);
     setPriceInput("0");
   };
+
+  useEffect(() => {
+    resetForm();
+  }, [visible]);
 
   const handleSave = async () => {
     if (!title.trim()) {
@@ -105,6 +113,7 @@ export function CreateEventModal({
             style={md.input}
             value={title}
             onChangeText={setTitle}
+            onFocus={closePickers}
             placeholder="e.g. Summer Throwdown"
             placeholderTextColor={Colors.textMuted}
           />
@@ -114,6 +123,7 @@ export function CreateEventModal({
             style={[md.input, md.inputMultiline]}
             value={description}
             onChangeText={setDescription}
+            onFocus={closePickers}
             placeholder="Optional details about the event"
             placeholderTextColor={Colors.textMuted}
             multiline
@@ -121,7 +131,14 @@ export function CreateEventModal({
           />
 
           <Text style={md.label}>Date</Text>
-          <Pressable style={md.input} onPress={() => setShowDatePicker((v) => !v)}>
+          <Pressable
+            style={md.input}
+            onPress={() => {
+              setShowStartTimePicker(false);
+              setShowEndTimePicker(false);
+              setShowDatePicker((v) => !v);
+            }}
+          >
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
               <Text style={{ color: Colors.text, fontFamily: Fonts.body, fontSize: FontSizes.labelLg }}>
                 {formatDate(date, { weekday: "long" })}
@@ -148,7 +165,14 @@ export function CreateEventModal({
           )}
 
           <Text style={md.label}>Start Time</Text>
-          <Pressable style={md.input} onPress={() => setShowStartTimePicker((v) => !v)}>
+          <Pressable
+            style={md.input}
+            onPress={() => {
+              setShowDatePicker(false);
+              setShowEndTimePicker(false);
+              setShowStartTimePicker((v) => !v);
+            }}
+          >
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
               <Text style={{ color: Colors.text, fontFamily: Fonts.body, fontSize: FontSizes.labelLg }}>
                 {formatTime(startTime)}
@@ -171,7 +195,11 @@ export function CreateEventModal({
           <Text style={md.label}>End Time</Text>
           <Pressable
             style={md.input}
-            onPress={() => setShowEndTimePicker((v) => !v)}
+            onPress={() => {
+              setShowDatePicker(false);
+              setShowStartTimePicker(false);
+              setShowEndTimePicker((v) => !v);
+            }}
           >
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
               <Text style={{ color: endTime ? Colors.text : Colors.textMuted, fontFamily: Fonts.body, fontSize: FontSizes.labelLg }}>
@@ -207,6 +235,7 @@ export function CreateEventModal({
             style={md.input}
             value={location}
             onChangeText={setLocation}
+            onFocus={closePickers}
             placeholder="e.g. Main gym floor"
             placeholderTextColor={Colors.textMuted}
           />
@@ -217,7 +246,10 @@ export function CreateEventModal({
               <Pressable
                 key={c ?? "unlimited"}
                 style={[md.chip, capacity === c && [md.chipActive, { backgroundColor: primary, borderColor: primary }]]}
-                onPress={() => setCapacity(c)}
+                onPress={() => {
+                  closePickers();
+                  setCapacity(c);
+                }}
               >
                 <Text style={[md.chipText, capacity === c && md.chipTextActive]}>
                   {c === undefined ? "Unlimited" : String(c)}
@@ -231,6 +263,7 @@ export function CreateEventModal({
             style={md.input}
             value={priceInput}
             onChangeText={setPriceInput}
+            onFocus={closePickers}
             placeholder="0"
             placeholderTextColor={Colors.textMuted}
             keyboardType="decimal-pad"
