@@ -14,7 +14,7 @@ function gymFromAddress(gym: {
 }
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
-import { requireCoachOrAdmin, requireSuperAdmin } from "./helpers";
+import { requireCoachOrAdmin, requireGymAdmin, requireSuperAdmin } from "./helpers";
 import { internal } from "./_generated/api";
 
 function generateInviteCode(): string {
@@ -39,7 +39,8 @@ export const send = mutation({
     role: v.union(v.literal("athlete"), v.literal("coach"), v.literal("admin")),
   },
   handler: async (ctx, { email, role }) => {
-    const { userId, gymId } = await requireCoachOrAdmin(ctx);
+    const { userId, gymId } =
+      role === "athlete" ? await requireCoachOrAdmin(ctx) : await requireGymAdmin(ctx);
 
     const normalizedEmail = email.toLowerCase().trim();
 

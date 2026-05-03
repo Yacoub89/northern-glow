@@ -140,6 +140,18 @@ describe("invites.send", () => {
     expect(invite?.role).toBe("athlete");
   });
 
+  test("coach cannot send staff invites", async () => {
+    const t = convexTest(schema, modules);
+    const { identity } = await seedGymAndUser(t, { role: "coach" });
+
+    await expect(
+      t.withIdentity(identity).mutation(api.invites.send, {
+        email: "newcoach@test.com",
+        role: "coach",
+      })
+    ).rejects.toThrow("Only admins can manage staff");
+  });
+
   test("normalises email to lower case", async () => {
     const t = convexTest(schema, modules);
     const { gymId, identity } = await seedGymAndUser(t, { role: "admin" });

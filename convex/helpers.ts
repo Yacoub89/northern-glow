@@ -38,6 +38,19 @@ export async function requireCoachOrAdmin(
   return { userId, gymId };
 }
 
+/**
+ * Asserts the caller is authenticated, has a gym, and has an admin role.
+ */
+export async function requireGymAdmin(
+  ctx: QueryCtx | MutationCtx
+): Promise<{ userId: Id<"users">; gymId: Id<"gyms">; user: Doc<"users"> }> {
+  const { userId, gymId, user } = await requireAuth(ctx);
+  if (user.role !== "admin") {
+    throw new Error("Only admins can manage staff");
+  }
+  return { userId, gymId, user };
+}
+
 export async function requireActiveMembershipForAthlete(
   ctx: QueryCtx | MutationCtx,
   user: Doc<"users">,

@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import GymSettings from "./pages/GymSettings";
 import Invites from "./pages/Invites";
 import Members from "./pages/Members";
+import Staff from "./pages/Staff";
 import GymCreate from "./pages/GymCreate";
 import SuperAdmin from "./pages/SuperAdmin";
 import AcceptInvite from "./pages/AcceptInvite";
@@ -33,6 +34,13 @@ function GymGuard({ children }: { children: React.ReactNode }) {
     return <Navigate to="/gym/create" replace />;
   }
   if (me.role === "athlete") return <Navigate to="/mobile-app" replace />;
+  return <>{children}</>;
+}
+
+function GymAdminGuard({ children }: { children: React.ReactNode }) {
+  const me = useQuery(api.users.getMe);
+  if (me === undefined) return <Spinner />;
+  if (me?.role !== "admin") return <Navigate to="/dashboard" replace />;
   return <>{children}</>;
 }
 
@@ -81,6 +89,7 @@ export default function App() {
         <Route path="/dashboard" element={<GymGuard><Dashboard /></GymGuard>} />
         <Route path="/gym/settings" element={<GymGuard><GymSettings /></GymGuard>} />
         <Route path="/gym/invites" element={<GymGuard><Invites /></GymGuard>} />
+        <Route path="/gym/staff" element={<GymGuard><GymAdminGuard><Staff /></GymAdminGuard></GymGuard>} />
         <Route path="/gym/members" element={<GymGuard><Members /></GymGuard>} />
         <Route path="/gym/create" element={<GymCreateGuard />} />
         <Route path="/accept-invite" element={<AcceptInvite />} />

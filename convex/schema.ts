@@ -73,6 +73,10 @@ export default defineSchema({
     role: v.optional(
       v.union(v.literal("athlete"), v.literal("coach"), v.literal("admin")),
     ),
+    staffStatus: v.optional(v.union(v.literal("active"), v.literal("inactive"))),
+    staffTitle: v.optional(v.string()),
+    staffPhone: v.optional(v.string()),
+    staffNotes: v.optional(v.string()),
     pushToken: v.optional(v.string()),
     // Optional until the user accepts their gym invite
     gymId: v.optional(v.id("gyms")),

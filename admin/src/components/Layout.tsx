@@ -8,6 +8,7 @@ const GYM_NAV = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/gym/settings", label: "Gym Settings" },
   { to: "/gym/invites", label: "Invites" },
+  { to: "/gym/staff", label: "Staff", adminOnly: true },
   { to: "/gym/members", label: "Members" },
 ];
 
@@ -56,6 +57,7 @@ export default function Layout() {
   const { signOut } = useAuthActions();
   const navigate = useNavigate();
   const gym = useQuery(api.gyms.getMyGym);
+  const me = useQuery(api.users.getMe);
   const isAdmin = useQuery(api.users.isSuperAdmin);
   const isMobile = useMediaQuery("(max-width: 760px)");
   const navLink = (active: boolean) => S.link(active);
@@ -93,7 +95,7 @@ export default function Layout() {
           }}
         >
           {showGymNav &&
-            GYM_NAV.map(({ to, label }) => (
+            GYM_NAV.filter(({ adminOnly }) => !adminOnly || me?.role === "admin").map(({ to, label }) => (
               <NavLink
                 key={to}
                 to={to}
