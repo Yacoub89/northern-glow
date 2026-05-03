@@ -63,6 +63,10 @@ export default function Layout() {
   const navLink = (active: boolean) => S.link(active);
   const showGymNav = !!gym;
   const showSuperAdminNav = isAdmin === true;
+  const handleSignOut = async () => {
+    await signOut();
+    navigate("/login");
+  };
 
   return (
     <div style={{ ...S.shell, flexDirection: isMobile ? "column" : "row" }}>
@@ -120,16 +124,27 @@ export default function Layout() {
               Super Admin
             </NavLink>
           )}
+          {isMobile && (
+            <button
+              style={{
+                ...S.signOut,
+                flexShrink: 0,
+                margin: 0,
+                whiteSpace: "nowrap",
+                width: "auto",
+              }}
+              onClick={handleSignOut}
+            >
+              Sign out
+            </button>
+          )}
         </nav>
         <button
           style={{
             ...S.signOut,
             display: isMobile ? "none" : "block",
           }}
-          onClick={async () => {
-            await signOut();
-            navigate("/login");
-          }}
+          onClick={handleSignOut}
         >
           Sign out
         </button>
