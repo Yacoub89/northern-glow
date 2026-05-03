@@ -132,11 +132,24 @@ GYM_NAME=$(echo "$RESPONSE"      | jq -r '.name')
 GYM_SLUG=$(echo "$RESPONSE"      | jq -r '.slug')
 PRIMARY_COLOR=$(echo "$RESPONSE" | jq -r '.primaryColor')
 BUNDLE_ID=$(echo "$RESPONSE"     | jq -r '.bundleId')
+ANDROID_PACKAGE=$(echo "$RESPONSE" | jq -r '.androidPackage // empty')
 SPLASH_BG=$(echo "$RESPONSE"     | jq -r '.primaryColor')
 ICON_URL=$(echo "$RESPONSE"      | jq -r '.appIconUrl // empty')
 SPLASH_URL=$(echo "$RESPONSE"    | jq -r '.splashUrl // empty')
 
-echo "Building for: $GYM_NAME ($GYM_SLUG) — bundle: $BUNDLE_ID"
+if [[ -z "$ANDROID_PACKAGE" ]]; then
+  ANDROID_PACKAGE=$(echo "$BUNDLE_ID" \
+    | sed 's/[^A-Za-z0-9._]/_/g' \
+    | sed -E 's/(^|\.)([0-9_])/\1g_\2/g' \
+    | sed -E 's/\.+/./g')
+fi
+
+if [[ ! "$ANDROID_PACKAGE" =~ ^[A-Za-z][A-Za-z0-9_]*(\.[A-Za-z][A-Za-z0-9_]*)+$ ]]; then
+  echo "Error: generated Android package is invalid: $ANDROID_PACKAGE"
+  exit 1
+fi
+
+echo "Building for: $GYM_NAME ($GYM_SLUG) — bundle: $BUNDLE_ID — android: $ANDROID_PACKAGE"
 
 # ── 2. Download gym assets ────────────────────────────────────────────────────
 
@@ -235,7 +248,7 @@ export default {
         foregroundImage: "./assets/adaptive-icon.png",
         backgroundColor: "$SPLASH_BG",
       },
-      package: "$BUNDLE_ID",
+      package: "$ANDROID_PACKAGE",
     },
     plugins: [
       "expo-router",

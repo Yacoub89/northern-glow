@@ -5,6 +5,16 @@ import { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { requireSuperAdmin } from "./helpers";
 
+const gymSlug = (name: string) =>
+  name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") ||
+  "gym";
+
+const androidPackageSegment = (slug: string) => {
+  const segment =
+    slug.replace(/[^a-z0-9]+/g, "_").replace(/(^_+|_+$)/g, "") || "gym";
+  return /^[a-z]/.test(segment) ? segment : `g_${segment}`;
+};
+
 // ── Public queries ────────────────────────────────────────────────────────────
 
 /** Returns the gym config for the currently authenticated user. */
@@ -193,7 +203,8 @@ export const getGymForBuild = internalQuery({
       gym.splashStorageId ? ctx.storage.getUrl(gym.splashStorageId) : null,
     ]);
 
-    const slug = gym.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+    const slug = gymSlug(gym.name);
+    const androidSegment = androidPackageSegment(slug);
 
     return {
       name: gym.name,
@@ -202,6 +213,7 @@ export const getGymForBuild = internalQuery({
       timezone: gym.timezone,
       slug,
       bundleId: `com.northernglow.${slug}`,
+      androidPackage: `com.northernglow.${androidSegment}`,
       logoUrl,
       appIconUrl,
       splashUrl,
