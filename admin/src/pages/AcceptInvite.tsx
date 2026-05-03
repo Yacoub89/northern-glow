@@ -108,7 +108,7 @@ export default function AcceptInvite() {
     <div style={S.page}>
       <div style={S.card}>
         <h1 style={S.h1}>You've been invited!</h1>
-        <p style={S.sub}>You've been set up as the admin for this gym.</p>
+        <p style={S.sub}>You've been given web portal access for this gym.</p>
 
         <div style={S.gymBox}>
           <div style={S.gymName}>{invite.gymName}</div>

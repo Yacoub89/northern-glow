@@ -11,6 +11,7 @@ import Members from "./pages/Members";
 import GymCreate from "./pages/GymCreate";
 import SuperAdmin from "./pages/SuperAdmin";
 import AcceptInvite from "./pages/AcceptInvite";
+import AthleteMobileOnly from "./pages/AthleteMobileOnly";
 import Layout from "./components/Layout";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
@@ -22,14 +23,16 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
 function GymGuard({ children }: { children: React.ReactNode }) {
   const me = useQuery(api.users.getMe);
-  const adminInvite = useQuery(api.invites.getMyAdminInvite);
+  const pendingInvite = useQuery(api.invites.getMyPendingInvite);
   const isSuperAdmin = useQuery(api.users.isSuperAdmin);
-  if (me === undefined || adminInvite === undefined || isSuperAdmin === undefined) return <Spinner />;
+  if (me === undefined || pendingInvite === undefined || isSuperAdmin === undefined) return <Spinner />;
   if (!me?.gymId) {
-    if (adminInvite) return <Navigate to="/accept-invite" replace />;
+    if (pendingInvite?.role === "athlete") return <Navigate to="/mobile-app" replace />;
+    if (pendingInvite) return <Navigate to="/accept-invite" replace />;
     if (isSuperAdmin) return <Navigate to="/super" replace />;
     return <Navigate to="/gym/create" replace />;
   }
+  if (me.role === "athlete") return <Navigate to="/mobile-app" replace />;
   return <>{children}</>;
 }
 
@@ -62,6 +65,10 @@ export default function App() {
       {/* Public routes */}
       <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/createaccount" element={<Login initialStep="signup" />} />
+      <Route path="/create-account" element={<Login initialStep="signup" />} />
+
+      <Route path="/mobile-app" element={<AuthGuard><AthleteMobileOnly /></AuthGuard>} />
 
       {/* Protected app routes — shared Layout shell */}
       <Route

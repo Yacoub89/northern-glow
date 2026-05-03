@@ -316,10 +316,36 @@ export const superAdminResendInvite = mutation({
 });
 
 /**
- * Returns the pending admin invite for the current user, if any.
- * Used by the admin portal to route gym owners to the accept-invite page.
+ * Returns the pending web portal invite for the current user, if any.
+ * Athlete invites are accepted in the mobile app.
  */
 export const getMyAdminInvite = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const user = await ctx.db.get(userId);
+    if (!user?.email || user.gymId) return null;
+
+    const invite = await ctx.db
+      .query("gymInvites")
+      .withIndex("by_email_status", (q) =>
+        q.eq("email", user.email!.toLowerCase()).eq("status", "pending")
+      )
+      .order("desc")
+      .first();
+    if (!invite || invite.role === "athlete") return null;
+
+    const gym = await ctx.db.get(invite.gymId);
+    return { ...invite, gymName: gym?.name ?? "your gym" };
+  },
+});
+
+/**
+ * Returns the caller's pending invite, if any. Used by the web portal to decide
+ * whether a newly created non-admin account should be sent to the mobile app.
+ */
+export const getMyPendingInvite = query({
   args: {},
   handler: async (ctx) => {
     const userId = await getAuthUserId(ctx);
@@ -337,13 +363,17 @@ export const getMyAdminInvite = query({
     if (!invite) return null;
 
     const gym = await ctx.db.get(invite.gymId);
-    return { ...invite, gymName: gym?.name ?? "your gym" };
+    return {
+      role: invite.role,
+      gymName: gym?.name ?? "your gym",
+      expiresAt: invite.expiresAt,
+    };
   },
 });
 
 /**
- * Accepts a pending admin invite for the current user, linking them to the gym.
- * Called from the admin portal accept-invite page.
+ * Accepts a pending web portal invite for the current user, linking them to the gym.
+ * Athlete invites are accepted in the mobile app.
  */
 export const acceptAdminInvite = mutation({
   args: {},
@@ -364,6 +394,9 @@ export const acceptAdminInvite = mutation({
       .first();
 
     if (!invite) throw new Error("No pending invite found for this email");
+    if (invite.role === "athlete") {
+      throw new Error("This invite must be accepted in the mobile app");
+    }
     if (invite.expiresAt < Date.now()) {
       await ctx.db.patch(invite._id, { status: "expired" });
       throw new Error("Invite has expired — ask NorthernGlow to resend it");

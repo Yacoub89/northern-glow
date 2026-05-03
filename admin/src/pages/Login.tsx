@@ -108,12 +108,12 @@ function authErrorMessage(err: unknown, fallback: string) {
   return raw || fallback;
 }
 
-export default function Login() {
+export default function Login({ initialStep = "signin" }: { initialStep?: Step }) {
   const { isAuthenticated } = useConvexAuth();
   const convex = useConvex();
   const { signIn, signOut } = useAuthActions();
   const navigate = useNavigate();
-  const [step, setStep] = useState<Step>("signin");
+  const [step, setStep] = useState<Step>(initialStep);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -221,7 +221,7 @@ export default function Login() {
       return (
         <>
           <div style={S.title}>Create account</div>
-          <div style={S.sub}>Get started managing your gym.</div>
+          <div style={S.sub}>Use the same email address your gym invited.</div>
           <form onSubmit={handleSignUp}>
             <div style={S.group}>
               <label style={S.label}>Full name</label>

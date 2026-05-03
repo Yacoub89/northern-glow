@@ -191,6 +191,62 @@ describe("invites.send", () => {
   });
 });
 
+// ── invites.getMyAdminInvite / acceptAdminInvite ─────────────────────────────
+
+describe("admin invite acceptance", () => {
+  test("does not expose athlete invites as admin invites", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId: invitedBy } = await seedGymAndUser(t, { role: "admin" });
+    const athleteId = await t.run((ctx) =>
+      ctx.db.insert("users", { name: "New Athlete", email: "athlete@test.com", role: "athlete" })
+    );
+    const identity = { subject: `${athleteId}|session` };
+
+    await t.run((ctx) =>
+      ctx.db.insert("gymInvites", {
+        gymId,
+        email: "athlete@test.com",
+        inviteCode: "ATHLETE1",
+        role: "athlete",
+        status: "pending",
+        invitedBy,
+        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+      })
+    );
+
+    const adminInvite = await t.withIdentity(identity).query(api.invites.getMyAdminInvite);
+    const pendingInvite = await t.withIdentity(identity).query(api.invites.getMyPendingInvite);
+
+    expect(adminInvite).toBeNull();
+    expect(pendingInvite?.role).toBe("athlete");
+  });
+
+  test("rejects accepting a non-admin invite in the web portal", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId: invitedBy } = await seedGymAndUser(t, { role: "admin" });
+    const athleteId = await t.run((ctx) =>
+      ctx.db.insert("users", { name: "New Athlete", email: "athlete@test.com", role: "athlete" })
+    );
+    const identity = { subject: `${athleteId}|session` };
+
+    await t.run((ctx) =>
+      ctx.db.insert("gymInvites", {
+        gymId,
+        email: "athlete@test.com",
+        inviteCode: "ATHLETE2",
+        role: "athlete",
+        status: "pending",
+        invitedBy,
+        expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+      })
+    );
+
+    await expect(
+      t.withIdentity(identity).mutation(api.invites.acceptAdminInvite)
+    ).rejects.toThrow("mobile app");
+  });
+});
+
 // ── invites.revoke ────────────────────────────────────────────────────────────
 
 describe("invites.revoke", () => {
