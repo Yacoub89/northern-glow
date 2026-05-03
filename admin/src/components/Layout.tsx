@@ -2,6 +2,7 @@ import { Outlet, NavLink, useNavigate } from "react-router-dom";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
+import { useMediaQuery } from "./useMediaQuery";
 
 const GYM_NAV = [
   { to: "/dashboard", label: "Dashboard" },
@@ -48,7 +49,7 @@ const S = {
     textAlign: "left" as const,
     width: "calc(100% - 16px)",
   },
-  main: { flex: 1, padding: 32, overflowY: "auto" as const },
+  main: { flex: 1, padding: 32, overflowY: "auto" as const, minWidth: 0 },
 };
 
 export default function Layout() {
@@ -56,33 +57,69 @@ export default function Layout() {
   const navigate = useNavigate();
   const gym = useQuery(api.gyms.getMyGym);
   const isAdmin = useQuery(api.users.isSuperAdmin);
+  const isMobile = useMediaQuery("(max-width: 760px)");
 
   return (
-    <div style={S.shell}>
-      <aside style={S.sidebar}>
-        <div style={S.brand}>
+    <div style={{ ...S.shell, flexDirection: isMobile ? "column" : "row" }}>
+      <aside
+        style={{
+          ...S.sidebar,
+          width: isMobile ? "100%" : S.sidebar.width,
+          padding: isMobile ? "14px 0 10px" : S.sidebar.padding,
+          borderRight: isMobile ? "none" : S.sidebar.borderRight,
+          borderBottom: isMobile ? "1px solid #252525" : "none",
+        }}
+      >
+        <div
+          style={{
+            ...S.brand,
+            padding: isMobile ? "0 16px 12px" : S.brand.padding,
+            marginBottom: isMobile ? 10 : S.brand.marginBottom,
+          }}
+        >
           <div style={S.brandTitle}>{gym?.name ?? "NorthernGlow"}</div>
           <div style={S.brandSub}>Admin Portal</div>
         </div>
-        <nav style={S.nav}>
+        <nav
+          style={{
+            ...S.nav,
+            display: isMobile ? "flex" : "block",
+            gap: isMobile ? 6 : undefined,
+            overflowX: isMobile ? "auto" : undefined,
+            padding: isMobile ? "0 12px 4px" : S.nav.padding,
+          }}
+        >
           {GYM_NAV.map(({ to, label }) => (
-            <NavLink key={to} to={to} style={({ isActive }) => S.link(isActive)}>
+            <NavLink
+              key={to}
+              to={to}
+              style={({ isActive }) => ({
+                ...S.link(isActive),
+                whiteSpace: "nowrap",
+                marginBottom: isMobile ? 0 : S.link(isActive).marginBottom,
+              })}
+            >
               {label}
             </NavLink>
           ))}
           {isAdmin && (
             <NavLink to="/super" style={({ isActive }) => ({
               ...S.link(isActive),
-              marginTop: 16,
-              borderTop: "1px solid #252525",
-              paddingTop: 16,
+              whiteSpace: "nowrap",
+              marginTop: isMobile ? 0 : 16,
+              marginBottom: isMobile ? 0 : S.link(isActive).marginBottom,
+              borderTop: isMobile ? "none" : "1px solid #252525",
+              paddingTop: isMobile ? S.link(isActive).padding : 16,
             })}>
               Super Admin
             </NavLink>
           )}
         </nav>
         <button
-          style={S.signOut}
+          style={{
+            ...S.signOut,
+            display: isMobile ? "none" : "block",
+          }}
           onClick={async () => {
             await signOut();
             navigate("/login");
@@ -91,7 +128,7 @@ export default function Layout() {
           Sign out
         </button>
       </aside>
-      <main style={S.main}>
+      <main style={{ ...S.main, padding: isMobile ? 18 : S.main.padding }}>
         <Outlet />
       </main>
     </div>

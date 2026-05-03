@@ -337,6 +337,34 @@ describe("events.cancel", () => {
       t.withIdentity(otherCoach).mutation(api.events.cancel, { eventId })
     ).rejects.toThrow("Event not found");
   });
+
+  test("cancels paid registrations when event is cancelled", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId, identity } = await seedGymAndUser(t, { role: "admin" });
+    const eventId = await insertEvent(t, gymId, userId, {
+      priceCents: 1000,
+      registeredCount: 1,
+    });
+    const stripeSessionId = "cs_paid_cancel_event";
+    const registrationId = await t.run((ctx) =>
+      ctx.db.insert("eventRegistrations", {
+        eventId,
+        userId,
+        gymId,
+        status: "registered",
+        paymentStatus: "paid",
+        stripeSessionId,
+        registeredAt: Date.now(),
+      })
+    );
+
+    await t.withIdentity(identity).mutation(api.events.cancel, { eventId });
+
+    const event = await t.run((ctx) => ctx.db.get(eventId));
+    const registration = await t.run((ctx) => ctx.db.get(registrationId));
+    expect(event).toMatchObject({ status: "cancelled", registeredCount: 0 });
+    expect(registration).toMatchObject({ status: "cancelled", paymentStatus: "paid" });
+  });
 });
 
 // ── internal: getEventForCheckout ─────────────────────────────────────────────

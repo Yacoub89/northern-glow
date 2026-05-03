@@ -208,7 +208,7 @@ export function EventsSection() {
   const handleCancel = async (event: Doc<"events">) => {
     const confirmed = await dialog.confirm({
       title: "Cancel Event",
-      message: `Cancel "${event.title}"? Registrations will not be automatically refunded.`,
+      message: `Cancel "${event.title}"? Registered athletes will be removed, and paid registrations will be refunded automatically.`,
       cancelText: "Keep",
       confirmText: "Cancel Event",
       destructive: true,
