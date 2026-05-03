@@ -118,6 +118,33 @@ export const wodStyles = StyleSheet.create({
     fontSize: FontSizes.labelLg,
     color: Colors.text,
   },
+  readPartSubtle: {
+    fontFamily: Fonts.bodyMed,
+    fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary,
+    lineHeight: 18,
+  },
+  expandWodBtn: {
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 12,
+    borderWidth: 1.5,
+    paddingVertical: 12,
+    marginTop: 18,
+  },
+  expandWodBtnText: {
+    fontFamily: Fonts.bodyExtra,
+    fontSize: FontSizes.labelSm,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  scalingNotesBlock: {
+    marginTop: 18,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: Colors.outlineVariant,
+    gap: 6,
+  },
 
   movementRow: { flexDirection: "row", alignItems: "baseline", gap: 14 },
   movementNum: {

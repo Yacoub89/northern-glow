@@ -157,11 +157,12 @@ export const createEventCheckoutSession = action({
       throw new Error("Event is full");
     }
     if (!user) throw new Error("User not found");
-    if (user.role !== "coach" && user.role !== "admin") {
-      const membership = await ctx.runQuery(internal.memberships.getByUserId, { userId });
-      if (!membership || (membership.status !== "active" && membership.status !== "trialing")) {
-        throw new Error("An active membership is required to register for events");
-      }
+    if (user.role !== "athlete") {
+      throw new Error("Only athletes can register for events");
+    }
+    const membership = await ctx.runQuery(internal.memberships.getByUserId, { userId });
+    if (!membership || (membership.status !== "active" && membership.status !== "trialing")) {
+      throw new Error("An active membership is required to register for events");
     }
 
     // Prevent double-registration: block if a paid registration already exists

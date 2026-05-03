@@ -183,6 +183,26 @@ describe("events.registerFree", () => {
     ).rejects.toThrow("An active membership is required to register for events");
   });
 
+  test("coach cannot register for a free event", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId, identity } = await seedGymAndUser(t, { role: "coach" });
+    const eventId = await insertEvent(t, gymId, userId);
+
+    await expect(
+      t.withIdentity(identity).mutation(api.events.registerFree, { eventId })
+    ).rejects.toThrow("Only athletes can register for events");
+  });
+
+  test("admin cannot register for a free event", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId, identity } = await seedGymAndUser(t, { role: "admin" });
+    const eventId = await insertEvent(t, gymId, userId);
+
+    await expect(
+      t.withIdentity(identity).mutation(api.events.registerFree, { eventId })
+    ).rejects.toThrow("Only athletes can register for events");
+  });
+
   test("throws when registering for a paid event", async () => {
     const t = convexTest(schema, modules);
     const { gymId, userId, identity } = await seedGymAndUser(t);

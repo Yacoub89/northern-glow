@@ -63,6 +63,36 @@ export const get = query({
   },
 });
 
+/** Returns public gym branding for the current admin portal host. */
+export const getByCustomDomain = query({
+  args: { customDomain: v.string() },
+  handler: async (ctx, { customDomain }) => {
+    const normalizedDomain = customDomain.trim().toLowerCase();
+    if (!normalizedDomain) return null;
+
+    let gym = await ctx.db
+      .query("gyms")
+      .withIndex("by_customDomain", (q) => q.eq("customDomain", normalizedDomain))
+      .first();
+    if (!gym) {
+      const gyms = await ctx.db.query("gyms").take(200);
+      gym =
+        gyms.find((g) => g.customDomain?.trim().toLowerCase() === normalizedDomain) ??
+        null;
+    }
+
+    if (!gym) return null;
+    return {
+      _id: gym._id,
+      _creationTime: gym._creationTime,
+      name: gym.name,
+      tagline: gym.tagline,
+      primaryColor: gym.primaryColor,
+      timezone: gym.timezone,
+    };
+  },
+});
+
 /** Lists all gyms — for the NorthernGlow super-admin portal. */
 export const list = query({
   args: {},
@@ -400,7 +430,9 @@ export const superAdminUpdateGymDomains = mutation({
     if (!gym) throw new Error("Gym not found");
 
     const updates: Record<string, unknown> = {};
-    if (customDomain !== undefined) updates.customDomain = customDomain || undefined;
+    if (customDomain !== undefined) {
+      updates.customDomain = customDomain.trim().toLowerCase() || undefined;
+    }
 
     const isNewDomain = emailDomain && emailDomain !== gym.emailDomain;
     if (emailDomain !== undefined) {

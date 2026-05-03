@@ -25,6 +25,8 @@ const DEFAULT_CONFIG: GymConfig = {
   logoUrl: null,
 };
 
+let lastKnownGymConfig: GymConfig | null = null;
+
 /**
  * Returns the gym configuration.
  *
@@ -46,14 +48,17 @@ export function useGymConfig(): GymConfig {
   const gym = gymFull ?? gymById;
 
   if (gym) {
-    return {
+    lastKnownGymConfig = {
       name: gym.name,
       tagline: gym.tagline,
       primaryColor: gym.primaryColor,
       timezone: gym.timezone,
       logoUrl: gymFull?.logoUrl ?? null,
     };
+    return lastKnownGymConfig;
   }
+
+  if (lastKnownGymConfig) return lastKnownGymConfig;
 
   return DEFAULT_CONFIG;
 }

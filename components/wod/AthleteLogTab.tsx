@@ -36,6 +36,7 @@ export function AthleteLogTab() {
   const [score, setScore] = useState("");
   const [scale, setScale] = useState<Scale>("Rx");
   const [notes, setNotes] = useState("");
+  const [fullWodExpanded, setFullWodExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const isLoading =
@@ -99,7 +100,57 @@ export function AthleteLogTab() {
                   {wod.type.toUpperCase()}
                   {wod.description ? ` · ${wod.description.toUpperCase()}` : ""}
                 </Text>
-                {wod.movements.length > 0 && (
+                {wod.parts && wod.parts.length > 0 ? (
+                  <>
+                    {(fullWodExpanded ? wod.parts : wod.parts.slice(0, 1)).map((part, i) => (
+                      <View key={`${part.label}-${i}`} style={s.readPartBlock}>
+                        <Text style={[s.readPartLabel, { color: primary }]}>
+                          PART {part.label}: {part.name}
+                          {part.type ? ` · ${part.type}` : ""}
+                        </Text>
+                        {part.movement ? (
+                          <Text style={s.readPartDetail}>{part.movement}</Text>
+                        ) : null}
+                        {(part.sets || part.reps || part.percentMax || part.timeCap) ? (
+                          <Text style={s.readPartSubtle}>
+                            {[
+                              part.sets ? `${part.sets} sets` : null,
+                              part.reps ? `${part.reps} reps` : null,
+                              part.percentMax ? `${part.percentMax}%` : null,
+                              part.timeCap ? `Cap ${part.timeCap}` : null,
+                            ].filter(Boolean).join(" · ")}
+                          </Text>
+                        ) : null}
+                        {part.description
+                          ? part.description
+                              .split("\n")
+                              .filter(Boolean)
+                              .map((line, j) => {
+                                const { num, label } = parseMovement(line);
+                                return (
+                                  <View key={j} style={s.movementRow}>
+                                    <Text style={[s.movementNum, { color: primary }]}>
+                                      {num ?? "·"}
+                                    </Text>
+                                    <Text style={s.movementLabel}>{label}</Text>
+                                  </View>
+                                );
+                              })
+                          : null}
+                      </View>
+                    ))}
+                    {wod.parts.length > 1 ? (
+                      <Pressable
+                        style={[s.expandWodBtn, { borderColor: primary }]}
+                        onPress={() => setFullWodExpanded((v) => !v)}
+                      >
+                        <Text style={[s.expandWodBtnText, { color: primary }]}>
+                          {fullWodExpanded ? "Show less" : `Show full WOD (${wod.parts.length} parts)`}
+                        </Text>
+                      </Pressable>
+                    ) : null}
+                  </>
+                ) : wod.movements.length > 0 ? (
                   <View style={{ marginTop: 10, gap: 8 }}>
                     {wod.movements.map((m, i) => {
                       const { num, label } = parseMovement(m);
@@ -111,7 +162,13 @@ export function AthleteLogTab() {
                       );
                     })}
                   </View>
-                )}
+                ) : null}
+                {wod.scalingNotes ? (
+                  <View style={s.scalingNotesBlock}>
+                    <Text style={[s.readPartLabel, { color: primary }]}>SCALING</Text>
+                    <Text style={s.readPartDetail}>{wod.scalingNotes}</Text>
+                  </View>
+                ) : null}
               </View>
             </>
           ) : (

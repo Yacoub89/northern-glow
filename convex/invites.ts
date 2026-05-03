@@ -193,7 +193,7 @@ export const superAdminCreateGym = mutation({
       tagline,
       primaryColor,
       timezone,
-      ...(customDomain ? { customDomain } : {}),
+      ...(customDomain ? { customDomain: customDomain.trim().toLowerCase() } : {}),
       ...(emailDomain ? { emailDomain, emailDomainStatus: "pending" } : {}),
     });
 

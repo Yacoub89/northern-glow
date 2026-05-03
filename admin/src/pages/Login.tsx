@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
-import { useConvex, useConvexAuth } from "convex/react";
+import { useConvex, useConvexAuth, useQuery } from "convex/react";
 import { Navigate, useNavigate } from "react-router-dom";
 import { api } from "@convex/_generated/api";
 import { SiteNav, SiteFooter, navBtnGhost } from "../components/SiteChrome";
@@ -113,6 +113,14 @@ export default function Login({ initialStep = "signin" }: { initialStep?: Step }
   const convex = useConvex();
   const { signIn, signOut } = useAuthActions();
   const navigate = useNavigate();
+  const host =
+    typeof window !== "undefined" ? window.location.hostname.toLowerCase() : "";
+  const gymBranding = useQuery(
+    api.gyms.getByCustomDomain,
+    host && host !== "localhost" && host !== "127.0.0.1"
+      ? { customDomain: host }
+      : "skip"
+  );
   const [step, setStep] = useState<Step>(initialStep);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -131,6 +139,10 @@ export default function Login({ initialStep = "signin" }: { initialStep?: Step }
   };
 
   if (isAuthenticated) return <Navigate to="/dashboard" replace />;
+
+  const brandName = gymBranding?.name ?? "NorthernGlow Admin";
+  const brandTagline = gymBranding?.tagline ?? "Sign in to manage your gym.";
+  const brandPrimary = gymBranding?.primaryColor ?? TEAL;
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -206,7 +218,7 @@ export default function Login({ initialStep = "signin" }: { initialStep?: Step }
               />
             </div>
             {error && <div style={S.error}>{error}</div>}
-            <button style={S.btnSubmit} type="submit" disabled={loading}>
+            <button style={{ ...S.btnSubmit, background: brandPrimary }} type="submit" disabled={loading}>
               {loading ? "Verifying…" : "Verify & continue"}
             </button>
             <button style={S.btnSecondary} type="button" onClick={() => goToStep("signup")}>
@@ -255,7 +267,7 @@ export default function Login({ initialStep = "signin" }: { initialStep?: Step }
           </form>
           <div style={S.toggle}>
             Already have an account?
-            <span style={S.toggleLink} onClick={() => goToStep("signin")}>Sign in</span>
+            <span style={{ ...S.toggleLink, color: brandPrimary }} onClick={() => goToStep("signin")}>Sign in</span>
           </div>
         </>
       );
@@ -263,8 +275,8 @@ export default function Login({ initialStep = "signin" }: { initialStep?: Step }
 
     return (
       <>
-        <div style={S.title}>NorthernGlow Admin</div>
-        <div style={S.sub}>Sign in to manage your gym.</div>
+        <div style={S.title}>{brandName}</div>
+        <div style={S.sub}>{brandTagline}</div>
         <form onSubmit={handleSignIn}>
           <div style={S.group}>
             <label style={S.label}>Email address</label>
@@ -288,13 +300,13 @@ export default function Login({ initialStep = "signin" }: { initialStep?: Step }
           </div>
           {error && <div style={S.error}>{error}</div>}
           {success && <div style={S.success}>{success}</div>}
-          <button style={S.btnSubmit} type="submit" disabled={loading}>
+          <button style={{ ...S.btnSubmit, background: brandPrimary }} type="submit" disabled={loading}>
             {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
         <div style={S.toggle}>
           Don't have an account?
-          <span style={S.toggleLink} onClick={() => goToStep("signup")}>Create one</span>
+          <span style={{ ...S.toggleLink, color: brandPrimary }} onClick={() => goToStep("signup")}>Create one</span>
         </div>
       </>
     );

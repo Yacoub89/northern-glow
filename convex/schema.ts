@@ -41,7 +41,7 @@ export default defineSchema({
         })
       )
     ),
-  }),
+  }).index("by_customDomain", ["customDomain"]),
 
   gymInvites: defineTable({
     gymId: v.id("gyms"),

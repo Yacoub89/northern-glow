@@ -52,6 +52,7 @@ export default function EventDetailScreen() {
     api.events.get,
     eventId ? { eventId } : "skip"
   );
+  const me = useQuery(api.users.getMe);
   const myRegistration = useQuery(
     api.events.getMyRegistration,
     eventId ? { eventId } : "skip"
@@ -153,7 +154,7 @@ export default function EventDetailScreen() {
     );
   }
 
-  if (event === undefined || myRegistration === undefined) {
+  if (event === undefined || myRegistration === undefined || me === undefined) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.centered}>
@@ -189,6 +190,7 @@ export default function EventDetailScreen() {
   const isFull =
     event.capacity !== undefined && event.registeredCount >= event.capacity;
   const isCancelled = event.status === "cancelled";
+  const canRegister = me?.role === "athlete";
 
   return (
     <SafeAreaView style={styles.container}>
@@ -288,7 +290,7 @@ export default function EventDetailScreen() {
         )}
 
         {/* CTA */}
-        {!isCancelled && (
+        {!isCancelled && canRegister && (
           <View style={styles.ctaRow}>
             {isRegistered ? (
               <Pressable style={styles.cancelBtn} onPress={handleCancel}>

@@ -73,6 +73,9 @@ export const registerFree = mutation({
     if (!userId) throw new Error("Unauthenticated");
     const user = await ctx.db.get(userId);
     if (!user?.gymId) throw new Error("No gym associated with user");
+    if (user.role !== "athlete") {
+      throw new Error("Only athletes can register for events");
+    }
 
     const event = await ctx.db.get(eventId);
     if (!event) throw new Error("Event not found");
