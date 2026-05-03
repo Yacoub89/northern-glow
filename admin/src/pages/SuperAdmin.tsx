@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Doc, Id } from "@convex/_generated/dataModel";
+import { useMediaQuery } from "../components/useMediaQuery";
 
 const S = {
   h1: { fontSize: 24, fontWeight: 700, marginBottom: 8 },
@@ -30,11 +31,12 @@ const S = {
   },
   success: { color: "#34C759", fontSize: 13, marginTop: 12 },
   error: { color: "#ff453a", fontSize: 13, marginTop: 12 },
+  tableWrap: { width: "100%", overflowX: "auto" as const },
   table: { width: "100%", borderCollapse: "collapse" as const },
   th: { textAlign: "left" as const, padding: "8px 12px", fontSize: 12, color: "#666", borderBottom: "1px solid #252525" },
   td: { padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #1a1a1a", verticalAlign: "middle" as const },
-  idRow: { display: "inline-flex", alignItems: "center", gap: 5, marginLeft: 8 },
-  idText: { color: "#666", fontFamily: "monospace", fontSize: 11 },
+  idRow: { display: "inline-flex", alignItems: "center", gap: 5, marginLeft: 8, maxWidth: "100%" },
+  idText: { color: "#666", fontFamily: "monospace", fontSize: 11, overflowWrap: "anywhere" as const },
   copyBtn: {
     width: 22, height: 22, display: "inline-flex", alignItems: "center", justifyContent: "center",
     border: "1px solid #2b2b2b", borderRadius: 5, background: "#1a1a1a", color: "#888",
@@ -238,44 +240,119 @@ function PendingInvites() {
   const now = Date.now();
 
   return (
-    <table style={S.table}>
-      <thead>
-        <tr>
-          <th style={S.th}>Gym</th>
-          <th style={S.th}>Email</th>
-          <th style={S.th}>Expires</th>
-          <th style={S.th}></th>
-        </tr>
-      </thead>
-      <tbody>
-        {invites.map((inv) => {
-          const expired = inv.expiresAt < now;
-          return (
-            <tr key={inv._id}>
-              <td style={S.td}>
-                {inv.gymName}
-                <GymIdLabel gymId={inv.gymId} />
-              </td>
-              <td style={S.td}>{inv.email}</td>
-              <td style={S.td}>
-                {new Date(inv.expiresAt).toLocaleDateString()}
-                {expired && (
-                  <span style={S.badge("#FF9F0A22", "#FF9F0A")}>expired</span>
-                )}
-              </td>
-              <td style={S.td}>
-                {resendSuccess === inv._id ? (
-                  <span style={{ color: "#34C759", fontSize: 12 }}>Sent!</span>
-                ) : (
-                  <button
-                    style={S.btnSmall}
-                    disabled={resending === inv._id}
-                    onClick={() => handleResend(inv.gymId, inv.email, inv._id)}
-                  >
-                    {resending === inv._id ? "Sending…" : "Resend"}
-                  </button>
-                )}
-              </td>
+    <div style={S.tableWrap}>
+      <table style={{ ...S.table, minWidth: 560 }}>
+        <thead>
+          <tr>
+            <th style={S.th}>Gym</th>
+            <th style={S.th}>Email</th>
+            <th style={S.th}>Expires</th>
+            <th style={S.th}></th>
+          </tr>
+        </thead>
+        <tbody>
+          {invites.map((inv) => {
+            const expired = inv.expiresAt < now;
+            return (
+              <tr key={inv._id}>
+                <td style={S.td}>
+                  {inv.gymName}
+                  <GymIdLabel gymId={inv.gymId} />
+                </td>
+                <td style={S.td}>{inv.email}</td>
+                <td style={S.td}>
+                  {new Date(inv.expiresAt).toLocaleDateString()}
+                  {expired && (
+                    <span style={S.badge("#FF9F0A22", "#FF9F0A")}>expired</span>
+                  )}
+                </td>
+                <td style={S.td}>
+                  {resendSuccess === inv._id ? (
+                    <span style={{ color: "#34C759", fontSize: 12 }}>Sent!</span>
+                  ) : (
+                    <button
+                      style={S.btnSmall}
+                      disabled={resending === inv._id}
+                      onClick={() => handleResend(inv.gymId, inv.email, inv._id)}
+                    >
+                      {resending === inv._id ? "Sending…" : "Resend"}
+                    </button>
+                  )}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+// ── Domain editor (inline in gyms list) ──────────────────────────────────────
+
+function DomainEditor({ gym, onClose }: { gym: Gym; onClose: () => void }) {
+  const updateDomains = useMutation(api.gyms.superAdminUpdateGymDomains);
+  const [customDomain, setCustomDomain] = useState(gym.customDomain ?? "");
+  const [emailDomain, setEmailDomain] = useState(gym.emailDomain ?? "");
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+  const isMobile = useMediaQuery("(max-width: 760px)");
+
+  const handleSave = async () => {
+    setSaving(true);
+    setMsg("");
+    try {
+      await updateDomains({
+        gymId: gym._id,
+        customDomain: customDomain.trim() || undefined,
+        emailDomain: emailDomain.trim() || undefined,
+      });
+      setMsg("Saved.");
+      setTimeout(onClose, 800);
+    } catch (e: any) {
+      setMsg(e.message ?? "Failed");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{ padding: "14px 16px", background: "#0f0f0f", borderRadius: 8, border: "1px solid #333", marginTop: 8 }}>
+      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Domain settings — {gym.name}</div>
+      <div style={S.group}>
+        <label style={S.label}>Custom portal domain</label>
+        <input
+          style={S.input}
+          value={customDomain}
+          onChange={(e) => setCustomDomain(e.target.value)}
+          placeholder="admin.theirgym.com"
+        />
+        <div style={S.labelHint}>Gym adds a CNAME record pointing to your deployment. Leave blank to use the default portal URL.</div>
+      </div>
+      <div style={S.group}>
+        <label style={S.label}>Email sending domain</label>
+        <input
+          style={S.input}
+          value={emailDomain}
+          onChange={(e) => setEmailDomain(e.target.value)}
+          placeholder="theirgym.com"
+        />
+        <div style={S.labelHint}>Emails send as noreply@domain. Changing this re-registers with Resend and resets DNS verification.</div>
+      </div>
+      <div style={{ display: "flex", gap: 8, alignItems: "center", flexDirection: isMobile ? "column" : "row" }}>
+        <button style={{ ...S.btnSmall, padding: "7px 16px", width: isMobile ? "100%" : "auto" }} onClick={handleSave} disabled={saving}>
+          {saving ? "Saving…" : "Save"}
+        </button>
+        <button style={{ ...S.btnSmall, background: "#1e1e1e", color: "#666", width: isMobile ? "100%" : "auto" }} onClick={onClose}>
+          Cancel
+        </button>
+        {msg && <span style={{ fontSize: 12, color: "#aaa" }}>{msg}</span>}
+      </div>
+    </div>
+  );
+}
+
+// ── Leads panel ──────────────────────────────────────────────────────────────
             </tr>
           );
         })}

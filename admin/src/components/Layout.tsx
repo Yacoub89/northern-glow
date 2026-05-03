@@ -58,6 +58,7 @@ export default function Layout() {
   const gym = useQuery(api.gyms.getMyGym);
   const isAdmin = useQuery(api.users.isSuperAdmin);
   const isMobile = useMediaQuery("(max-width: 760px)");
+  const navLink = (active: boolean) => S.link(active);
 
   return (
     <div style={{ ...S.shell, flexDirection: isMobile ? "column" : "row" }}>
@@ -94,9 +95,9 @@ export default function Layout() {
               key={to}
               to={to}
               style={({ isActive }) => ({
-                ...S.link(isActive),
+                ...navLink(isActive),
                 whiteSpace: "nowrap",
-                marginBottom: isMobile ? 0 : S.link(isActive).marginBottom,
+                marginBottom: isMobile ? 0 : navLink(isActive).marginBottom,
               })}
             >
               {label}
@@ -104,12 +105,12 @@ export default function Layout() {
           ))}
           {isAdmin && (
             <NavLink to="/super" style={({ isActive }) => ({
-              ...S.link(isActive),
+              ...navLink(isActive),
               whiteSpace: "nowrap",
               marginTop: isMobile ? 0 : 16,
-              marginBottom: isMobile ? 0 : S.link(isActive).marginBottom,
+              marginBottom: isMobile ? 0 : navLink(isActive).marginBottom,
               borderTop: isMobile ? "none" : "1px solid #252525",
-              paddingTop: isMobile ? S.link(isActive).padding : 16,
+              paddingTop: isMobile ? 9 : 16,
             })}>
               Super Admin
             </NavLink>

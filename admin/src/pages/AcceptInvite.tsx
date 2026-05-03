@@ -24,8 +24,8 @@ By accepting this invitation you agree to the following:
 This is a placeholder agreement. Full legal terms will be provided before launch.`;
 
 const S = {
-  page: { display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" } as const,
-  card: { background: "#141414", border: "1px solid #252525", borderRadius: 12, padding: 40, width: 480 },
+  page: { display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: 18, boxSizing: "border-box" as const } as const,
+  card: { background: "#141414", border: "1px solid #252525", borderRadius: 12, padding: 40, width: "100%", maxWidth: 480, boxSizing: "border-box" as const },
   h1: { fontSize: 22, fontWeight: 700, marginBottom: 8 },
   sub: { color: "#888", fontSize: 14, marginBottom: 28 },
   gymBox: {
@@ -33,7 +33,7 @@ const S = {
     padding: "16px 20px", marginBottom: 24,
   },
   gymName: { fontSize: 20, fontWeight: 700, color: "#fff" },
-  gymLabel: { fontSize: 13, color: "#666", marginTop: 4 },
+  gymLabel: { fontSize: 13, color: "#666", marginTop: 4, lineHeight: 1.5 },
   termsBox: {
     background: "#0e0e0e", border: "1px solid #252525", borderRadius: 8,
     padding: 16, height: 200, overflowY: "auto" as const,

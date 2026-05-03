@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import type { Id } from "@convex/_generated/dataModel";
+import { useMediaQuery } from "../components/useMediaQuery";
 
 const ALL_TIMEZONES: string[] = (Intl as any).supportedValuesOf
   ? (Intl as any).supportedValuesOf("timeZone")
@@ -12,16 +13,16 @@ const ALL_TIMEZONES: string[] = (Intl as any).supportedValuesOf
 
 const S = {
   h1: { fontSize: 24, fontWeight: 700, marginBottom: 28 },
-  form: { maxWidth: 560 },
+  form: { maxWidth: 560, width: "100%" },
   group: { marginBottom: 20 },
   label: { display: "block", fontSize: 13, color: "#aaa", marginBottom: 6 },
   input: {
     width: "100%", background: "#1e1e1e", border: "1px solid #333", borderRadius: 8,
-    padding: "10px 12px", color: "#fff", fontSize: 14, outline: "none",
+    padding: "10px 12px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" as const,
   },
   select: {
     width: "100%", background: "#1e1e1e", border: "1px solid #333", borderRadius: 8,
-    padding: "10px 12px", color: "#fff", fontSize: 14, outline: "none",
+    padding: "10px 12px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" as const,
   },
   colorRow: { display: "flex", alignItems: "center", gap: 12 },
   colorSwatch: (color: string) => ({
@@ -72,6 +73,7 @@ export default function GymSettings() {
   const gym = useQuery(api.gyms.getMyGym);
   const updateSettings = useMutation(api.gyms.updateSettings);
   const generateLogoUploadUrl = useMutation(api.gyms.generateLogoUploadUrl);
+  const isMobile = useMediaQuery("(max-width: 760px)");
 
   const [form, setForm] = useState({
     name: "",
@@ -231,7 +233,7 @@ export default function GymSettings() {
         {/* Branding */}
         <div style={S.group}>
           <label style={S.label}>Logo</label>
-          <div style={S.logoArea}>
+          <div style={{ ...S.logoArea, alignItems: isMobile ? "flex-start" : "center" }}>
             {logoUrl
               ? <img src={logoUrl} alt="Gym logo" style={S.logoPreview} />
               : <div style={S.logoPlaceholder}>No logo</div>
@@ -312,11 +314,11 @@ export default function GymSettings() {
           <div style={S.sectionSub}>
             Used to brand the iOS and Android apps. Icon should be 1024×1024 PNG. Splash should be 2048×2048 PNG.
           </div>
-          <div style={{ display: "flex", gap: 32, flexWrap: "wrap" as const }}>
+          <div style={{ display: "flex", gap: isMobile ? 22 : 32, flexDirection: isMobile ? "column" : "row", flexWrap: "wrap" as const }}>
             {/* App Icon */}
             <div>
               <div style={{ ...S.label, marginBottom: 10 }}>App icon</div>
-              <div style={S.logoArea}>
+              <div style={{ ...S.logoArea, alignItems: isMobile ? "flex-start" : "center" }}>
                 {appIconUrl
                   ? <img src={appIconUrl} alt="App icon" style={{ ...S.logoPreview, borderRadius: 16 }} />
                   : <div style={S.logoPlaceholder}>No icon</div>
@@ -333,7 +335,7 @@ export default function GymSettings() {
             {/* Splash */}
             <div>
               <div style={{ ...S.label, marginBottom: 10 }}>Splash screen</div>
-              <div style={S.logoArea}>
+              <div style={{ ...S.logoArea, alignItems: isMobile ? "flex-start" : "center" }}>
                 {splashUrl
                   ? <img src={splashUrl} alt="Splash screen" style={{ ...S.logoPreview, width: 120, height: 72, borderRadius: 6 }} />
                   : <div style={{ ...S.logoPlaceholder, width: 120, height: 72, borderRadius: 6 }}>No splash</div>

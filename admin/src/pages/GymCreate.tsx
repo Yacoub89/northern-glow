@@ -12,15 +12,15 @@ import { useNavigate } from "react-router-dom";
  */
 
 const S = {
-  page: { display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" },
-  card: { background: "#141414", border: "1px solid #252525", borderRadius: 12, padding: 40, width: 420 },
+  page: { display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: 18, boxSizing: "border-box" as const },
+  card: { background: "#141414", border: "1px solid #252525", borderRadius: 12, padding: 40, width: "100%", maxWidth: 420, boxSizing: "border-box" as const },
   h1: { fontSize: 22, fontWeight: 700, marginBottom: 8 },
   sub: { color: "#888", fontSize: 14, marginBottom: 28 },
   group: { marginBottom: 18 },
   label: { display: "block", fontSize: 13, color: "#aaa", marginBottom: 6 },
   input: {
     width: "100%", background: "#1e1e1e", border: "1px solid #333", borderRadius: 8,
-    padding: "10px 12px", color: "#fff", fontSize: 14, outline: "none",
+    padding: "10px 12px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" as const,
   },
   btn: {
     width: "100%", padding: "11px 0", borderRadius: 8, fontWeight: 600, fontSize: 14,

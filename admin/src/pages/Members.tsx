@@ -4,6 +4,7 @@ import { Id } from "@convex/_generated/dataModel";
 
 const S = {
   h1: { fontSize: 24, fontWeight: 700, marginBottom: 28 },
+  tableWrap: { width: "100%", overflowX: "auto" as const },
   table: { width: "100%", borderCollapse: "collapse" as const },
   th: { textAlign: "left" as const, padding: "8px 12px", fontSize: 12, color: "#666", borderBottom: "1px solid #252525" },
   td: { padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #1a1a1a" },
@@ -30,43 +31,45 @@ export default function Members() {
       {members?.length === 0 ? (
         <p style={S.empty}>No members yet. Send invites to get started.</p>
       ) : (
-        <table style={S.table}>
-          <thead>
-            <tr>
-              <th style={S.th}>Name</th>
-              <th style={S.th}>Email</th>
-              <th style={S.th}>Role</th>
-              <th style={S.th}>Change role</th>
-            </tr>
-          </thead>
-          <tbody>
-            {members?.map((member) => (
-              <tr key={member._id}>
-                <td style={S.td}>{member.name ?? "—"}</td>
-                <td style={S.td}>{member.email ?? "—"}</td>
-                <td style={S.td}>
-                  <span style={S.badge(member.role ?? "athlete")}>{member.role ?? "athlete"}</span>
-                </td>
-                <td style={S.td}>
-                  <select
-                    style={S.select}
-                    value={member.role ?? "athlete"}
-                    onChange={async (e) => {
-                      await setRole({
-                        userId: member._id as Id<"users">,
-                        role: e.target.value as "athlete" | "coach" | "admin",
-                      });
-                    }}
-                  >
-                    <option value="athlete">Athlete</option>
-                    <option value="coach">Coach</option>
-                    <option value="admin">Admin</option>
-                  </select>
-                </td>
+        <div style={S.tableWrap}>
+          <table style={{ ...S.table, minWidth: 560 }}>
+            <thead>
+              <tr>
+                <th style={S.th}>Name</th>
+                <th style={S.th}>Email</th>
+                <th style={S.th}>Role</th>
+                <th style={S.th}>Change role</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {members?.map((member) => (
+                <tr key={member._id}>
+                  <td style={S.td}>{member.name ?? "—"}</td>
+                  <td style={S.td}>{member.email ?? "—"}</td>
+                  <td style={S.td}>
+                    <span style={S.badge(member.role ?? "athlete")}>{member.role ?? "athlete"}</span>
+                  </td>
+                  <td style={S.td}>
+                    <select
+                      style={S.select}
+                      value={member.role ?? "athlete"}
+                      onChange={async (e) => {
+                        await setRole({
+                          userId: member._id as Id<"users">,
+                          role: e.target.value as "athlete" | "coach" | "admin",
+                        });
+                      }}
+                    >
+                      <option value="athlete">Athlete</option>
+                      <option value="coach">Coach</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
