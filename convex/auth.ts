@@ -48,8 +48,9 @@ export const { auth, signIn, signOut, store } = convexAuth({
 
       const pendingInvite = await db
         .query("gymInvites")
-        .withIndex("by_email", (q) => q.eq("email", email))
-        .filter((q) => q.eq(q.field("status"), "pending"))
+        .withIndex("by_email_status", (q) =>
+          q.eq("email", email).eq("status", "pending")
+        )
         .order("desc")
         .first();
 

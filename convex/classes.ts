@@ -42,14 +42,15 @@ export const getUpcoming = query({
       flat.map(async (cls) => {
         const coach = await ctx.db.get(cls.coachId);
         const wod = cls.wodId ? await ctx.db.get(cls.wodId) : null;
+        const visibleWod = wod?.gymId === cls.gymId ? wod : null;
         return {
           ...cls,
           coachName: coach?.name ?? "TBD",
-          wodTitle: wod?.title ?? null,
-          wodType: wod?.type ?? null,
-          wodDescription: wod?.description ?? null,
-          wodMovements: wod?.movements ?? null,
-          wodScalingNotes: wod?.scalingNotes ?? null,
+          wodTitle: visibleWod?.title ?? null,
+          wodType: visibleWod?.type ?? null,
+          wodDescription: visibleWod?.description ?? null,
+          wodMovements: visibleWod?.movements ?? null,
+          wodScalingNotes: visibleWod?.scalingNotes ?? null,
         };
       })
     );
@@ -65,6 +66,10 @@ export const create = mutation({
   },
   handler: async (ctx, args) => {
     const { userId: coachId, gymId } = await requireCoachOrAdmin(ctx);
+    if (args.wodId) {
+      const wod = await ctx.db.get(args.wodId);
+      if (!wod || wod.gymId !== gymId) throw new Error("WOD not found");
+    }
     return await ctx.db.insert("classes", {
       ...args,
       gymId,

@@ -252,8 +252,9 @@ export const cancel = mutation({
 
     const user = await ctx.db.get(userId);
     const isCoach = user?.role === "coach" || user?.role === "admin";
+    const isSameGymCoach = isCoach && user?.gymId === appointment.gymId;
 
-    if (appointment.athleteId !== userId && !isCoach) {
+    if (appointment.athleteId !== userId && !isSameGymCoach) {
       throw new Error("Unauthorized");
     }
 

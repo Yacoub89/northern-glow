@@ -3,7 +3,7 @@ import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
-import { seedGymAndUser, insertWod, insertUser } from "./testHelpers";
+import { seedGymAndUser, insertWod, insertUser, insertClass } from "./testHelpers";
 
 const modules = import.meta.glob("./**/*.ts");
 
@@ -63,6 +63,26 @@ describe("results.log", () => {
     await expect(
       t.withIdentity(outsider).mutation(api.results.log, { wodId, score: "10:00", rx: true })
     ).rejects.toThrow("WOD not found");
+  });
+
+  test("user cannot log a result with a class from another gym", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId, identity } = await seedGymAndUser(t);
+    const wodId = await insertWod(t, gymId, userId);
+    const { gymId: otherGymId, userId: otherCoachId } = await seedGymAndUser(t, {
+      role: "coach",
+      email: "other-coach@test.com",
+    });
+    const foreignClassId = await insertClass(t, otherGymId, otherCoachId);
+
+    await expect(
+      t.withIdentity(identity).mutation(api.results.log, {
+        wodId,
+        classId: foreignClassId,
+        score: "10:00",
+        rx: true,
+      })
+    ).rejects.toThrow("Class not found");
   });
 
   test("unauthenticated user is rejected", async () => {

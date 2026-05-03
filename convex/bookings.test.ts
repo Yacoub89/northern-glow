@@ -261,6 +261,73 @@ describe("bookings.checkIn", () => {
       t.withIdentity(identity).mutation(api.bookings.checkIn, { bookingId })
     ).rejects.toThrow("Unauthorized");
   });
+
+  test("coach cannot check in a booking from another gym", async () => {
+    const t = convexTest(schema, modules);
+    const { identity: coachIdentity } = await seedGymAndUser(t, {
+      role: "coach",
+      email: "coach-a@test.com",
+    });
+    const { gymId: otherGymId, userId: otherCoachId } = await seedGymAndUser(t, {
+      role: "coach",
+      email: "coach-b@test.com",
+    });
+    const { userId: athleteId } = await seedGymAndUser(t, {
+      role: "athlete",
+      email: "athlete-b@test.com",
+    });
+    await t.run((ctx) => ctx.db.patch(athleteId, { gymId: otherGymId }));
+    const classId = await insertClass(t, otherGymId, otherCoachId);
+
+    const bookingId = await t.run((ctx) =>
+      ctx.db.insert("bookings", {
+        classId,
+        userId: athleteId,
+        status: "booked",
+        bookedAt: Date.now(),
+      })
+    );
+
+    await expect(
+      t.withIdentity(coachIdentity).mutation(api.bookings.checkIn, { bookingId })
+    ).rejects.toThrow("Booking not found");
+  });
+});
+
+// ── bookings.uncheckIn ───────────────────────────────────────────────────────
+
+describe("bookings.uncheckIn", () => {
+  test("coach cannot uncheck a booking from another gym", async () => {
+    const t = convexTest(schema, modules);
+    const { identity: coachIdentity } = await seedGymAndUser(t, {
+      role: "coach",
+      email: "coach-a@test.com",
+    });
+    const { gymId: otherGymId, userId: otherCoachId } = await seedGymAndUser(t, {
+      role: "coach",
+      email: "coach-b@test.com",
+    });
+    const { userId: athleteId } = await seedGymAndUser(t, {
+      role: "athlete",
+      email: "athlete-b@test.com",
+    });
+    await t.run((ctx) => ctx.db.patch(athleteId, { gymId: otherGymId }));
+    const classId = await insertClass(t, otherGymId, otherCoachId);
+
+    const bookingId = await t.run((ctx) =>
+      ctx.db.insert("bookings", {
+        classId,
+        userId: athleteId,
+        status: "booked",
+        bookedAt: Date.now(),
+        checkedInAt: Date.now(),
+      })
+    );
+
+    await expect(
+      t.withIdentity(coachIdentity).mutation(api.bookings.uncheckIn, { bookingId })
+    ).rejects.toThrow("Booking not found");
+  });
 });
 
 // ── bookings.getClassRoster ───────────────────────────────────────────────────

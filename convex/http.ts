@@ -15,6 +15,41 @@ function escapeHtml(str: string): string {
     .replace(/>/g, "&gt;");
 }
 
+function appScheme(raw: string | null): string {
+  const scheme = raw ?? "northernglow";
+  if (!/^[a-z][a-z0-9+.-]*$/i.test(scheme)) return "northernglow";
+  if (["http", "https", "javascript", "data"].includes(scheme.toLowerCase())) {
+    return "northernglow";
+  }
+  return scheme;
+}
+
+function fallbackDeepLink(scheme: string, path: string, params: URLSearchParams) {
+  return `${scheme}://${path}?${params.toString()}`;
+}
+
+function safeDeepLink(
+  returnUrl: string | null,
+  scheme: string,
+  fallbackPath: string,
+  params: URLSearchParams
+) {
+  if (returnUrl) {
+    try {
+      const u = new URL(returnUrl);
+      if (u.protocol === `${scheme}:`) {
+        for (const [key, value] of params) {
+          u.searchParams.set(key, value);
+        }
+        return u.toString();
+      }
+    } catch {
+      // Fall through to the app-owned deep link below.
+    }
+  }
+  return fallbackDeepLink(scheme, fallbackPath, params);
+}
+
 auth.addHttpRoutes(http);
 
 // Stripe webhook — receives subscription lifecycle events
@@ -48,22 +83,12 @@ http.route({
     const url = new URL(req.url);
     const status = url.searchParams.get("status") ?? "cancelled";
     const sessionId = url.searchParams.get("session_id") ?? "";
-    const scheme = url.searchParams.get("scheme") ?? "northernglow";
+    const scheme = appScheme(url.searchParams.get("scheme"));
     const returnUrl = url.searchParams.get("return_url");
 
-    let deepLink = "";
-    if (returnUrl) {
-      try {
-        const u = new URL(returnUrl);
-        u.searchParams.set("status", status);
-        if (sessionId) u.searchParams.set("session_id", sessionId);
-        deepLink = u.toString();
-      } catch (e) {
-        deepLink = `${scheme}://membership?status=${status}${sessionId ? `&session_id=${encodeURIComponent(sessionId)}` : ""}`;
-      }
-    } else {
-      deepLink = `${scheme}://membership?status=${status}${sessionId ? `&session_id=${encodeURIComponent(sessionId)}` : ""}`;
-    }
+    const params = new URLSearchParams({ status });
+    if (sessionId) params.set("session_id", sessionId);
+    const deepLink = safeDeepLink(returnUrl, scheme, "membership", params);
 
     const html = `<!DOCTYPE html>
 <html>
@@ -92,29 +117,13 @@ http.route({
     const status = url.searchParams.get("status") ?? "cancelled";
     const sessionId = url.searchParams.get("session_id") ?? "";
     const eventId = url.searchParams.get("event_id") ?? "";
-    const scheme = url.searchParams.get("scheme") ?? "northernglow";
+    const scheme = appScheme(url.searchParams.get("scheme"));
     const returnUrl = url.searchParams.get("return_url");
 
-    let deepLink = "";
-    if (returnUrl) {
-      try {
-        const u = new URL(returnUrl);
-        u.searchParams.set("status", status);
-        if (sessionId) u.searchParams.set("session_id", sessionId);
-        if (eventId) u.searchParams.set("event_id", eventId);
-        deepLink = u.toString();
-      } catch (e) {
-        const params = new URLSearchParams({ status });
-        if (sessionId) params.set("session_id", sessionId);
-        if (eventId) params.set("event_id", eventId);
-        deepLink = `${scheme}://event-detail?${params.toString()}`;
-      }
-    } else {
-      const params = new URLSearchParams({ status });
-      if (sessionId) params.set("session_id", sessionId);
-      if (eventId) params.set("event_id", eventId);
-      deepLink = `${scheme}://event-detail?${params.toString()}`;
-    }
+    const params = new URLSearchParams({ status });
+    if (sessionId) params.set("session_id", sessionId);
+    if (eventId) params.set("event_id", eventId);
+    const deepLink = safeDeepLink(returnUrl, scheme, "event-detail", params);
 
     const html = `<!DOCTYPE html>
 <html>

@@ -1,5 +1,4 @@
 import { mutation, query } from "./_generated/server";
-import { getAuthUserId } from "@convex-dev/auth/server";
 import { v } from "convex/values";
 import { requireAuth, requireCoachOrAdmin } from "./helpers";
 
@@ -113,8 +112,9 @@ export const sign = mutation({
     signatureData: v.optional(v.string()),
   },
   handler: async (ctx, { documentId, signatureName, signatureData }) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) throw new Error("Unauthenticated");
+    const { userId, gymId } = await requireAuth(ctx);
+    const doc = await ctx.db.get(documentId);
+    if (!doc || doc.gymId !== gymId) throw new Error("Document not found");
     const existing = await ctx.db
       .query("documentSignatures")
       .withIndex("by_document_user", (q) =>

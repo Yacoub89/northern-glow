@@ -65,6 +65,13 @@ export const log = mutation({
     // Only allow logging results against WODs in the caller's gym.
     const wod = await ctx.db.get(args.wodId);
     if (!wod || wod.gymId !== gymId) throw new Error("WOD not found");
+    if (args.classId) {
+      const cls = await ctx.db.get(args.classId);
+      if (!cls || cls.gymId !== gymId) throw new Error("Class not found");
+      if (cls.wodId && cls.wodId !== args.wodId) {
+        throw new Error("Class does not match WOD");
+      }
+    }
 
     const existing = await ctx.db
       .query("results")

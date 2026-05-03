@@ -57,9 +57,11 @@ export default defineSchema({
     expiresAt: v.number(),
   })
     .index("by_email", ["email"])
+    .index("by_email_status", ["email", "status"])
     .index("by_gym", ["gymId"])
     .index("by_code", ["inviteCode"])
-    .index("by_gym_email", ["gymId", "email"]),
+    .index("by_gym_email", ["gymId", "email"])
+    .index("by_role_status", ["role", "status"]),
 
   // ── Users (extends auth) ──────────────────────────────────────────────────────
 
@@ -151,6 +153,7 @@ export default defineSchema({
   })
     .index("by_class", ["classId"])
     .index("by_user", ["userId"])
+    .index("by_user_status", ["userId", "status"])
     .index("by_class_user", ["classId", "userId"])
     .index("by_class_status", ["classId", "status"]),
 

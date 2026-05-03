@@ -26,14 +26,17 @@ export const getMyUpcoming = query({
 
     const today = new Date().toISOString().split("T")[0];
 
-    const bookings = await ctx.db
-      .query("bookings")
-      .withIndex("by_user", (q) => q.eq("userId", userId))
-      .collect();
-
-    const active = bookings.filter(
-      (b) => b.status === "booked" || b.status === "waitlist"
-    );
+    const [booked, waitlisted] = await Promise.all([
+      ctx.db
+        .query("bookings")
+        .withIndex("by_user_status", (q) => q.eq("userId", userId).eq("status", "booked"))
+        .take(100),
+      ctx.db
+        .query("bookings")
+        .withIndex("by_user_status", (q) => q.eq("userId", userId).eq("status", "waitlist"))
+        .take(100),
+    ]);
+    const active = [...booked, ...waitlisted];
 
     const enriched = await Promise.all(
       active.map(async (b) => {
@@ -121,10 +124,12 @@ export const getClassRoster = query({
 export const checkIn = mutation({
   args: { bookingId: v.id("bookings") },
   handler: async (ctx, { bookingId }) => {
-    await requireCoachOrAdmin(ctx);
+    const { gymId } = await requireCoachOrAdmin(ctx);
     const booking = await ctx.db.get(bookingId);
     if (!booking) throw new Error("Booking not found");
     if (booking.status !== "booked") throw new Error("Athlete is not booked");
+    const cls = await ctx.db.get(booking.classId);
+    if (!cls || cls.gymId !== gymId) throw new Error("Booking not found");
     await ctx.db.patch(bookingId, { checkedInAt: Date.now() });
   },
 });
@@ -202,9 +207,11 @@ export const getMyAttendanceStats = query({
 export const uncheckIn = mutation({
   args: { bookingId: v.id("bookings") },
   handler: async (ctx, { bookingId }) => {
-    await requireCoachOrAdmin(ctx);
+    const { gymId } = await requireCoachOrAdmin(ctx);
     const booking = await ctx.db.get(bookingId);
     if (!booking) throw new Error("Booking not found");
+    const cls = await ctx.db.get(booking.classId);
+    if (!cls || cls.gymId !== gymId) throw new Error("Booking not found");
     await ctx.db.patch(bookingId, { checkedInAt: undefined });
   },
 });
@@ -245,12 +252,12 @@ export const book = mutation({
 
         const userBookings = await ctx.db
           .query("bookings")
-          .withIndex("by_user", (q) => q.eq("userId", userId))
-          .take(100);
+          .withIndex("by_user_status", (q) => q.eq("userId", userId).eq("status", "booked"))
+          .collect();
 
         const bookedClasses = await Promise.all(
           userBookings
-            .filter((b) => b.status === "booked" && b.classId !== classId)
+            .filter((b) => b.classId !== classId)
             .map((b) => ctx.db.get(b.classId))
         );
 

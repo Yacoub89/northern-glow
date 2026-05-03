@@ -40,8 +40,9 @@ export const canCreateAccount = query({
 
     const pendingInvite = await ctx.db
       .query("gymInvites")
-      .withIndex("by_email", (q) => q.eq("email", normalizedEmail))
-      .filter((q) => q.eq(q.field("status"), "pending"))
+      .withIndex("by_email_status", (q) =>
+        q.eq("email", normalizedEmail).eq("status", "pending")
+      )
       .order("desc")
       .first();
 
@@ -59,15 +60,15 @@ export const getMyStats = query({
       ctx.db
         .query("bookings")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect(),
+        .take(500),
       ctx.db
         .query("results")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect(),
+        .take(500),
       ctx.db
         .query("personalRecords")
         .withIndex("by_user", (q) => q.eq("userId", userId))
-        .collect(),
+        .take(500),
     ]);
 
     return {

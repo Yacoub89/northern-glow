@@ -65,6 +65,25 @@ describe("classes.create", () => {
     const cls = await t.run((ctx) => ctx.db.get(classId));
     expect(cls?.wodId).toBe(wodId);
   });
+
+  test("class cannot be linked to a WOD from another gym", async () => {
+    const t = convexTest(schema, modules);
+    const { identity } = await seedGymAndUser(t, { role: "coach" });
+    const { gymId: otherGymId, userId: otherUserId } = await seedGymAndUser(t, {
+      role: "coach",
+      email: "other-coach@test.com",
+    });
+    const foreignWodId = await insertWod(t, otherGymId, otherUserId, "2099-09-05");
+
+    await expect(
+      t.withIdentity(identity).mutation(api.classes.create, {
+        date: "2099-09-05",
+        startTime: "06:00",
+        capacity: 12,
+        wodId: foreignWodId,
+      })
+    ).rejects.toThrow("WOD not found");
+  });
 });
 
 // ── classes.getByDate ─────────────────────────────────────────────────────────

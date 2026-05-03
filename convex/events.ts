@@ -9,6 +9,8 @@ import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 
+const EVENT_CANCEL_BATCH_SIZE = 100;
+
 // ── Public queries ────────────────────────────────────────────────────────────
 
 /** List upcoming events for the authenticated user's gym. */
@@ -68,9 +70,12 @@ export const registerFree = mutation({
   handler: async (ctx, { eventId }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) throw new Error("Unauthenticated");
+    const user = await ctx.db.get(userId);
+    if (!user?.gymId) throw new Error("No gym associated with user");
 
     const event = await ctx.db.get(eventId);
     if (!event) throw new Error("Event not found");
+    if (event.gymId !== user.gymId) throw new Error("Event not found");
     if (event.priceCents > 0) throw new Error("This event requires payment");
     if (event.status !== "upcoming") throw new Error("Event is not available for registration");
 
@@ -191,6 +196,10 @@ export const cancel = mutation({
     if (user?.role !== "admin" && user?.role !== "coach") {
       throw new Error("Not authorized");
     }
+    if (!user.gymId) throw new Error("No gym associated with user");
+
+    const event = await ctx.db.get(eventId);
+    if (!event || event.gymId !== user.gymId) throw new Error("Event not found");
 
     // Cancel every active registration; schedule Stripe refunds for paid ones
     const registrations = await ctx.db
@@ -198,7 +207,7 @@ export const cancel = mutation({
       .withIndex("by_event_status", (q) =>
         q.eq("eventId", eventId).eq("status", "registered")
       )
-      .take(200);
+      .take(EVENT_CANCEL_BATCH_SIZE);
 
     for (const reg of registrations) {
       await ctx.db.patch(reg._id, { status: "cancelled" });
@@ -209,7 +218,40 @@ export const cancel = mutation({
       }
     }
 
-    await ctx.db.patch(eventId, { status: "cancelled" });
+    await ctx.db.patch(eventId, { status: "cancelled", registeredCount: 0 });
+
+    if (registrations.length === EVENT_CANCEL_BATCH_SIZE) {
+      await ctx.scheduler.runAfter(0, internal.events.cancelEventRegistrationsBatch, {
+        eventId,
+      });
+    }
+  },
+});
+
+export const cancelEventRegistrationsBatch = internalMutation({
+  args: { eventId: v.id("events") },
+  handler: async (ctx, { eventId }) => {
+    const registrations = await ctx.db
+      .query("eventRegistrations")
+      .withIndex("by_event_status", (q) =>
+        q.eq("eventId", eventId).eq("status", "registered")
+      )
+      .take(EVENT_CANCEL_BATCH_SIZE);
+
+    for (const reg of registrations) {
+      await ctx.db.patch(reg._id, { status: "cancelled" });
+      if (reg.paymentStatus === "paid" && reg.stripeSessionId) {
+        await ctx.scheduler.runAfter(0, internal.stripe.refundEventRegistration, {
+          stripeSessionId: reg.stripeSessionId,
+        });
+      }
+    }
+
+    if (registrations.length === EVENT_CANCEL_BATCH_SIZE) {
+      await ctx.scheduler.runAfter(0, internal.events.cancelEventRegistrationsBatch, {
+        eventId,
+      });
+    }
   },
 });
 
@@ -244,12 +286,13 @@ export const insertPendingRegistration = internalMutation({
     if (event.status !== "upcoming") throw new Error("Event is not available");
 
     if (event.capacity !== undefined) {
+      if (event.capacity <= 0) throw new Error("Event is full");
       const activeRegs = await ctx.db
         .query("eventRegistrations")
         .withIndex("by_event_status", (q) =>
           q.eq("eventId", args.eventId).eq("status", "registered")
         )
-        .collect();
+        .take(event.capacity);
       const heldByOthers = activeRegs.filter((r) => r.userId !== args.userId).length;
       if (heldByOthers >= event.capacity) {
         throw new Error("Event is full");
@@ -320,6 +363,9 @@ export const getEventForCheckout = internalQuery({
   handler: async (ctx, { eventId, userId }) => {
     const event = await ctx.db.get(eventId);
     const user = await ctx.db.get(userId);
+    if (!event || !user?.gymId || event.gymId !== user.gymId) {
+      return { event: null, user };
+    }
     return { event, user };
   },
 });

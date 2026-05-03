@@ -302,4 +302,37 @@ describe("appointments.cancel", () => {
       t.withIdentity(identity2).mutation(api.appointments.cancel, { appointmentId: apptId })
     ).rejects.toThrow("Unauthorized");
   });
+
+  test("coach cannot cancel an appointment from another gym", async () => {
+    const t = convexTest(schema, modules);
+    const { identity: coachIdentity } = await seedGymAndUser(t, {
+      role: "coach",
+      email: "coach-a@test.com",
+    });
+    const { gymId: otherGymId, userId: otherCoachId } = await seedGymAndUser(t, {
+      role: "coach",
+      email: "coach-b@test.com",
+    });
+    const { userId: athleteId } = await seedGymAndUser(t, {
+      role: "athlete",
+      email: "athlete-b@test.com",
+    });
+    await t.run((ctx) => ctx.db.patch(athleteId, { gymId: otherGymId }));
+
+    const apptId = await t.run((ctx) =>
+      ctx.db.insert("appointments", {
+        gymId: otherGymId,
+        coachId: otherCoachId,
+        athleteId,
+        date: "2099-08-04",
+        startTime: "09:00",
+        durationMinutes: 60,
+        status: "confirmed",
+      })
+    );
+
+    await expect(
+      t.withIdentity(coachIdentity).mutation(api.appointments.cancel, { appointmentId: apptId })
+    ).rejects.toThrow("Unauthorized");
+  });
 });

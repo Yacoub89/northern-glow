@@ -136,8 +136,9 @@ export const checkAndAccept = mutation({
     // pending invites at multiple gyms, the newest one wins.
     const invite = await ctx.db
       .query("gymInvites")
-      .withIndex("by_email", (q) => q.eq("email", user.email!.toLowerCase()))
-      .filter((q) => q.eq(q.field("status"), "pending"))
+      .withIndex("by_email_status", (q) =>
+        q.eq("email", user.email!.toLowerCase()).eq("status", "pending")
+      )
       .order("desc")
       .first();
 
@@ -206,8 +207,9 @@ export const superAdminCreateGym = mutation({
     // Expire any existing pending invite for this email
     const existing = await ctx.db
       .query("gymInvites")
-      .withIndex("by_email", (q) => q.eq("email", normalizedEmail))
-      .filter((q) => q.eq(q.field("status"), "pending"))
+      .withIndex("by_email_status", (q) =>
+        q.eq("email", normalizedEmail).eq("status", "pending")
+      )
       .first();
     if (existing) {
       await ctx.db.patch(existing._id, { status: "expired" });
@@ -248,11 +250,8 @@ export const listPendingAdminInvites = query({
     await requireSuperAdmin(ctx);
     const invites = await ctx.db
       .query("gymInvites")
-      .filter((q) =>
-        q.and(
-          q.eq(q.field("role"), "admin"),
-          q.eq(q.field("status"), "pending"),
-        )
+      .withIndex("by_role_status", (q) =>
+        q.eq("role", "admin").eq("status", "pending")
       )
       .order("desc")
       .take(200);
@@ -283,8 +282,9 @@ export const superAdminResendInvite = mutation({
     // Expire any existing pending invite for this email
     const existing = await ctx.db
       .query("gymInvites")
-      .withIndex("by_email", (q) => q.eq("email", normalizedEmail))
-      .filter((q) => q.eq(q.field("status"), "pending"))
+      .withIndex("by_email_status", (q) =>
+        q.eq("email", normalizedEmail).eq("status", "pending")
+      )
       .first();
     if (existing) {
       await ctx.db.patch(existing._id, { status: "expired" });
@@ -329,8 +329,9 @@ export const getMyAdminInvite = query({
 
     const invite = await ctx.db
       .query("gymInvites")
-      .withIndex("by_email", (q) => q.eq("email", user.email!.toLowerCase()))
-      .filter((q) => q.eq(q.field("status"), "pending"))
+      .withIndex("by_email_status", (q) =>
+        q.eq("email", user.email!.toLowerCase()).eq("status", "pending")
+      )
       .order("desc")
       .first();
     if (!invite) return null;
@@ -356,8 +357,9 @@ export const acceptAdminInvite = mutation({
 
     const invite = await ctx.db
       .query("gymInvites")
-      .withIndex("by_email", (q) => q.eq("email", user.email!.toLowerCase()))
-      .filter((q) => q.eq(q.field("status"), "pending"))
+      .withIndex("by_email_status", (q) =>
+        q.eq("email", user.email!.toLowerCase()).eq("status", "pending")
+      )
       .order("desc")
       .first();
 

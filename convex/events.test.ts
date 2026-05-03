@@ -243,6 +243,17 @@ describe("events.registerFree", () => {
 
     await expect(t.mutation(api.events.registerFree, { eventId })).rejects.toThrow("Unauthenticated");
   });
+
+  test("user from another gym cannot register", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId } = await seedGymAndUser(t);
+    const eventId = await insertEvent(t, gymId, userId);
+    const { identity: outsider } = await seedGymAndUser(t, { email: "outsider@test.com" });
+
+    await expect(
+      t.withIdentity(outsider).mutation(api.events.registerFree, { eventId })
+    ).rejects.toThrow("Event not found");
+  });
 });
 
 // ── events.cancel (admin) ─────────────────────────────────────────────────────
@@ -278,6 +289,40 @@ describe("events.cancel", () => {
     await expect(
       t.withIdentity(identity).mutation(api.events.cancel, { eventId })
     ).rejects.toThrow("Not authorized");
+  });
+
+  test("coach from another gym cannot cancel an event", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId } = await seedGymAndUser(t, { role: "admin" });
+    const eventId = await insertEvent(t, gymId, userId);
+    const { identity: otherCoach } = await seedGymAndUser(t, {
+      role: "coach",
+      email: "other-coach@test.com",
+    });
+
+    await expect(
+      t.withIdentity(otherCoach).mutation(api.events.cancel, { eventId })
+    ).rejects.toThrow("Event not found");
+  });
+});
+
+// ── internal: getEventForCheckout ─────────────────────────────────────────────
+
+describe("internal.events.getEventForCheckout", () => {
+  test("does not expose event checkout data across gyms", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId } = await seedGymAndUser(t);
+    const eventId = await insertEvent(t, gymId, userId, { priceCents: 1000 });
+    const { userId: outsiderId } = await seedGymAndUser(t, {
+      email: "checkout-outsider@test.com",
+    });
+
+    const result = await t.query(internal.events.getEventForCheckout, {
+      eventId,
+      userId: outsiderId,
+    });
+
+    expect(result.event).toBeNull();
   });
 });
 
@@ -360,6 +405,46 @@ describe("internal.events.insertPendingRegistration", () => {
     const reg = await t.run((ctx) => ctx.db.get(firstId));
     expect(reg?.stripeSessionId).toBe("cs_new2");
     expect(reg?.paymentStatus).toBe("pending");
+  });
+});
+
+// ── internal: cancelEventRegistrationsBatch ──────────────────────────────────
+
+describe("internal.events.cancelEventRegistrationsBatch", () => {
+  test("cancels the next batch of active registrations", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId } = await seedGymAndUser(t);
+    const eventId = await insertEvent(t, gymId, userId, { registeredCount: 2 });
+    await t.run(async (ctx) => {
+      await ctx.db.insert("eventRegistrations", {
+        eventId,
+        userId,
+        gymId,
+        status: "registered",
+        paymentStatus: "free",
+        registeredAt: Date.now(),
+      });
+      await ctx.db.insert("eventRegistrations", {
+        eventId,
+        userId,
+        gymId,
+        status: "registered",
+        paymentStatus: "free",
+        registeredAt: Date.now(),
+      });
+    });
+
+    await t.mutation(internal.events.cancelEventRegistrationsBatch, { eventId });
+
+    const active = await t.run((ctx) =>
+      ctx.db
+        .query("eventRegistrations")
+        .withIndex("by_event_status", (q) =>
+          q.eq("eventId", eventId).eq("status", "registered")
+        )
+        .collect()
+    );
+    expect(active).toHaveLength(0);
   });
 });
 
