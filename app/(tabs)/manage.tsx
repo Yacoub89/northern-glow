@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   Text,
@@ -26,6 +25,7 @@ import {
   EventsSection,
   VelocityCard,
 } from "../../components/manage/Sections";
+import { useAppDialog } from "../../components/AppDialog";
 
 function shiftDate(dateStr: string, n: number): string {
   const [y, m, d] = dateStr.split("-").map(Number);
@@ -45,6 +45,7 @@ function formatNavDate(dateStr: string): { monthDay: string; dayName: string } {
 export default function ManageScreen() {
   const { primary } = useGymColors();
   const router = useRouter();
+  const dialog = useAppDialog();
   const today = getTodayDate();
   const [selectedDate, setSelectedDate] = useState(today);
   const [fabOpen, setFabOpen] = useState(false);
@@ -61,25 +62,20 @@ export default function ManageScreen() {
     [upcomingClasses, selectedDate]
   );
 
-  const handleDelete = (cls: Doc<"classes">) => {
-    Alert.alert(
-      "Cancel Class",
-      `Cancel the ${formatTime(cls.startTime)} class on ${formatDate(cls.date, { relative: true, weekday: "short" })}? All bookings will be cancelled.`,
-      [
-        { text: "Keep", style: "cancel" },
-        {
-          text: "Cancel Class",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await removeClass({ id: cls._id });
-            } catch (e: any) {
-              Alert.alert("Error", e.message);
-            }
-          },
-        },
-      ]
-    );
+  const handleDelete = async (cls: Doc<"classes">) => {
+    const confirmed = await dialog.confirm({
+      title: "Cancel Class",
+      message: `Cancel the ${formatTime(cls.startTime)} class on ${formatDate(cls.date, { relative: true, weekday: "short" })}? All bookings will be cancelled.`,
+      cancelText: "Keep",
+      confirmText: "Cancel Class",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    try {
+      await removeClass({ id: cls._id });
+    } catch (e: any) {
+      dialog.alert("Error", e.message);
+    }
   };
 
   return (

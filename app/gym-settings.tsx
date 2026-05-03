@@ -3,7 +3,6 @@ import { useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -17,6 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../convex/_generated/api";
 import { Colors } from "../constants/Colors";
+import { useAppDialog } from "../components/AppDialog";
 
 const TIMEZONE_OPTIONS = [
   "America/New_York",
@@ -44,6 +44,7 @@ const COLOR_PRESETS = [
 
 export default function GymSettingsScreen() {
   const router = useRouter();
+  const dialog = useAppDialog();
   const gym = useQuery(api.gyms.getMyGym);
   const updateSettings = useMutation(api.gyms.updateSettings);
 
@@ -74,17 +75,17 @@ export default function GymSettingsScreen() {
 
   const handleSave = async () => {
     if (!name.trim()) {
-      Alert.alert("Error", "Gym name is required");
+      dialog.alert("Error", "Gym name is required");
       return;
     }
     setSaving(true);
     try {
       await updateSettings({ name: name.trim(), tagline: tagline.trim(), primaryColor, timezone });
-      Alert.alert("Saved", "Gym settings updated successfully", [
+      dialog.alert("Saved", "Gym settings updated successfully", [
         { text: "OK", onPress: () => router.back() },
       ]);
     } catch (e: any) {
-      Alert.alert("Error", e.message ?? "Could not save settings");
+      dialog.alert("Error", e.message ?? "Could not save settings");
     } finally {
       setSaving(false);
     }

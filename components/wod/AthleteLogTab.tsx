@@ -2,7 +2,6 @@ import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -18,10 +17,12 @@ import { useGymColors, useGymConfig } from "../../constants/GymConfig";
 import { getTodayDate } from "../../utils/date";
 import { wodStyles as s } from "./styles";
 import { SCALE_OPTIONS, parseMovement, type Scale } from "./types";
+import { useAppDialog } from "../AppDialog";
 
 export function AthleteLogTab() {
   const gym = useGymConfig();
   const { primary } = useGymColors();
+  const dialog = useAppDialog();
   const today = getTodayDate();
 
   const wod = useQuery(api.wods.getByDate, { date: today });
@@ -45,7 +46,7 @@ export function AthleteLogTab() {
   const handleSave = async () => {
     if (!wod) return;
     if (!score.trim()) {
-      Alert.alert("Missing Score", "Please enter your score before saving.");
+      dialog.alert("Missing Score", "Please enter your score before saving.");
       return;
     }
     setSaving(true);
@@ -57,11 +58,11 @@ export function AthleteLogTab() {
         rx: scale === "Rx" || scale === "Rx+",
         notes: notes.trim() || undefined,
       });
-      Alert.alert("Saved!", "Your result has been logged.");
+      dialog.alert("Saved!", "Your result has been logged.");
       setScore("");
       setNotes("");
     } catch (e: any) {
-      Alert.alert("Error", e.message);
+      dialog.alert("Error", e.message);
     } finally {
       setSaving(false);
     }

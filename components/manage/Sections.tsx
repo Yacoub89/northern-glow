@@ -1,7 +1,7 @@
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { ActivityIndicator, Alert, Pressable, Text, View } from "react-native";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../convex/_generated/api";
 import { Doc } from "../../convex/_generated/dataModel";
@@ -11,6 +11,7 @@ import { formatTime } from "../../utils/date";
 import { manageStyles as sc, DAY_NAMES } from "./styles";
 import { AddAvailabilityModal } from "./AddAvailabilityModal";
 import { CreateEventModal } from "./CreateEventModal";
+import { useAppDialog } from "../AppDialog";
 
 export type EnrichedClass = Doc<"classes"> & {
   coachName: string;
@@ -27,25 +28,25 @@ function sessionLabel(startTime: string): string {
 
 export function AvailabilitySection() {
   const { primary } = useGymColors();
+  const dialog = useAppDialog();
   const [showModal, setShowModal] = useState(false);
   const availability = useQuery(api.appointments.getMyAvailability);
   const removeAvailability = useMutation(api.appointments.removeAvailability);
 
-  const handleRemove = (id: string) => {
-    Alert.alert("Remove Slot", "Remove this recurring availability slot?", [
-      { text: "Keep", style: "cancel" },
-      {
-        text: "Remove",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await removeAvailability({ availabilityId: id as any });
-          } catch (e: any) {
-            Alert.alert("Error", e.message);
-          }
-        },
-      },
-    ]);
+  const handleRemove = async (id: string) => {
+    const confirmed = await dialog.confirm({
+      title: "Remove Slot",
+      message: "Remove this recurring availability slot?",
+      cancelText: "Keep",
+      confirmText: "Remove",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    try {
+      await removeAvailability({ availabilityId: id as any });
+    } catch (e: any) {
+      dialog.alert("Error", e.message);
+    }
   };
 
   const byDay = (availability ?? []).reduce<Record<number, typeof availability>>((acc, slot) => {
@@ -199,25 +200,25 @@ export function ClassCard({
 export function EventsSection() {
   const { primary } = useGymColors();
   const router = useRouter();
+  const dialog = useAppDialog();
   const [showModal, setShowModal] = useState(false);
   const events = useQuery(api.events.listUpcoming);
   const cancelEvent = useMutation(api.events.cancel);
 
-  const handleCancel = (event: Doc<"events">) => {
-    Alert.alert("Cancel Event", `Cancel "${event.title}"? Registrations will not be automatically refunded.`, [
-      { text: "Keep", style: "cancel" },
-      {
-        text: "Cancel Event",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await cancelEvent({ eventId: event._id });
-          } catch (e: any) {
-            Alert.alert("Error", e.message);
-          }
-        },
-      },
-    ]);
+  const handleCancel = async (event: Doc<"events">) => {
+    const confirmed = await dialog.confirm({
+      title: "Cancel Event",
+      message: `Cancel "${event.title}"? Registrations will not be automatically refunded.`,
+      cancelText: "Keep",
+      confirmText: "Cancel Event",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    try {
+      await cancelEvent({ eventId: event._id });
+    } catch (e: any) {
+      dialog.alert("Error", e.message);
+    }
   };
 
   return (

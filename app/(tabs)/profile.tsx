@@ -3,7 +3,6 @@ import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -20,49 +19,7 @@ import { Doc } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
 import { Fonts } from "../../constants/Typography";
 import { useGymColors } from "../../constants/GymConfig";
-
-function ConfirmModal({
-  visible,
-  title,
-  message,
-  confirmLabel = "Confirm",
-  destructive = false,
-  onConfirm,
-  onCancel,
-}: {
-  visible: boolean;
-  title: string;
-  message: string;
-  confirmLabel?: string;
-  destructive?: boolean;
-  onConfirm: () => void;
-  onCancel: () => void;
-}) {
-  const { primary } = useGymColors();
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <Pressable style={confirmStyles.overlay} onPress={onCancel}>
-        <View style={confirmStyles.sheet} onStartShouldSetResponder={() => true}>
-          <Text style={confirmStyles.title}>{title}</Text>
-          <Text style={confirmStyles.message}>{message}</Text>
-          <View style={confirmStyles.actions}>
-            <Pressable style={confirmStyles.cancelBtn} onPress={onCancel}>
-              <Text style={confirmStyles.cancelText}>Cancel</Text>
-            </Pressable>
-            <Pressable
-              style={[confirmStyles.confirmBtn, { backgroundColor: primary }, destructive && confirmStyles.confirmBtnDestructive]}
-              onPress={onConfirm}
-            >
-              <Text style={[confirmStyles.confirmText, destructive && confirmStyles.confirmTextDestructive]}>
-                {confirmLabel}
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      </Pressable>
-    </Modal>
-  );
-}
+import { useAppDialog } from "../../components/AppDialog";
 
 function formatMemberSince(ts: number) {
   return new Date(ts).toLocaleDateString("en-US", {
@@ -73,6 +30,7 @@ function formatMemberSince(ts: number) {
 
 export default function ProfileScreen() {
   const { primary } = useGymColors();
+  const dialog = useAppDialog();
   const router = useRouter();
   const { signOut } = useAuthActions();
   const me = useQuery(api.users.getMe);
@@ -87,9 +45,6 @@ export default function ProfileScreen() {
   const [prMovement, setPrMovement] = useState("");
   const [prScore, setPrScore] = useState("");
   const [savingPR, setSavingPR] = useState(false);
-
-  type ConfirmState = { title: string; message: string; confirmLabel: string; destructive?: boolean; onConfirm: () => void } | null;
-  const [confirm, setConfirm] = useState<ConfirmState>(null);
 
   if (me === undefined) {
     return (
@@ -115,35 +70,36 @@ export default function ProfileScreen() {
       setPrScore("");
       setPrModalVisible(false);
     } catch (e: any) {
-      Alert.alert("Error", e.message);
+      dialog.alert("Error", e.message);
     } finally {
       setSavingPR(false);
     }
   };
 
-  const handleDeletePR = (pr: Doc<"personalRecords">) => {
-    setConfirm({
+  const handleDeletePR = async (pr: Doc<"personalRecords">) => {
+    const confirmed = await dialog.confirm({
       title: "Delete PR",
       message: `Remove ${pr.movement}?`,
-      confirmLabel: "Delete",
+      confirmText: "Delete",
       destructive: true,
-      onConfirm: () => {
-        setConfirm(null);
-        removePR({ id: pr._id });
-      },
     });
+    if (!confirmed) return;
+    try {
+      await removePR({ id: pr._id });
+    } catch (e: any) {
+      dialog.alert("Error", e.message);
+    }
   };
 
-  const handleSignOut = () => {
-    setConfirm({
+  const handleSignOut = async () => {
+    const confirmed = await dialog.confirm({
       title: "Sign Out",
       message: "Are you sure you want to sign out?",
-      confirmLabel: "Sign Out",
-      onConfirm: () => {
-        setConfirm(null);
-        signOut();
-      },
+      confirmText: "Sign Out",
     });
+    if (confirmed) {
+      signOut();
+    }
   };
 
   return (
@@ -335,17 +291,6 @@ export default function ProfileScreen() {
           </>
         )}
       </ScrollView>
-
-      {/* Confirm Modal */}
-      <ConfirmModal
-        visible={confirm !== null}
-        title={confirm?.title ?? ""}
-        message={confirm?.message ?? ""}
-        confirmLabel={confirm?.confirmLabel ?? "Confirm"}
-        destructive={confirm?.destructive ?? false}
-        onConfirm={confirm?.onConfirm ?? (() => {})}
-        onCancel={() => setConfirm(null)}
-      />
 
       {/* Add PR Modal */}
       <Modal
@@ -600,69 +545,4 @@ const styles = StyleSheet.create({
     marginTop: 24,
   },
   modalSaveBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
-});
-
-const confirmStyles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.6)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 32,
-  },
-  sheet: {
-    backgroundColor: Colors.surface,
-    borderRadius: 16,
-    padding: 24,
-    width: "100%",
-    maxWidth: 360,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: "700",
-    color: Colors.text,
-    marginBottom: 8,
-  },
-  message: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 24,
-  },
-  actions: {
-    flexDirection: "row",
-    gap: 10,
-  },
-  cancelBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: "center",
-  },
-  cancelText: {
-    color: Colors.textSecondary,
-    fontWeight: "600",
-    fontSize: 14,
-  },
-  confirmBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  confirmBtnDestructive: {
-    backgroundColor: Colors.error,
-  },
-  confirmText: {
-    color: "#fff",
-    fontWeight: "700",
-    fontSize: 14,
-  },
-  confirmTextDestructive: {
-    color: "#fff",
-  },
 });

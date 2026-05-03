@@ -2,7 +2,6 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Linking,
   Pressable,
   ScrollView,
@@ -20,6 +19,7 @@ import { Colors } from "../constants/Colors";
 import { useGymColors } from "../constants/GymConfig";
 import { formatTime } from "../utils/date";
 import { isMembershipRequiredError, showMembershipRequiredAlert } from "../utils/membershipErrors";
+import { useAppDialog } from "../components/AppDialog";
 
 function formatDate(dateStr: string): string {
   const [y, m, d] = dateStr.split("-").map(Number);
@@ -38,6 +38,7 @@ function formatPrice(cents: number): string {
 export default function EventDetailScreen() {
   const { primary } = useGymColors();
   const router = useRouter();
+  const dialog = useAppDialog();
   const params = useLocalSearchParams<{
     event_id?: string;
     status?: string;
@@ -71,18 +72,18 @@ export default function EventDetailScreen() {
       if (sessionId) {
         syncEventFromSession({ sessionId })
           .then(() => {
-            Alert.alert("Registered!", "You're registered for this event.");
+            dialog.alert("Registered!", "You're registered for this event.");
           })
           .catch(() => {
-            Alert.alert("Registered!", "You're registered for this event.");
+            dialog.alert("Registered!", "You're registered for this event.");
           });
       } else {
-        Alert.alert("Registered!", "You're registered for this event.");
+        dialog.alert("Registered!", "You're registered for this event.");
       }
     } else if (status === "cancelled") {
-      Alert.alert("Cancelled", "Checkout was cancelled. You were not charged.");
+      dialog.alert("Cancelled", "Checkout was cancelled. You were not charged.");
     }
-  }, [status, eventId]);
+  }, [status, eventId, dialog, session_id, syncEventFromSession]);
 
   const handleRegisterFree = async () => {
     if (!eventId) return;
@@ -91,10 +92,10 @@ export default function EventDetailScreen() {
       await registerFree({ eventId });
     } catch (e: any) {
       if (isMembershipRequiredError(e)) {
-        showMembershipRequiredAlert(router);
+        showMembershipRequiredAlert(dialog, router);
         return;
       }
-      Alert.alert("Error", e.message);
+      dialog.alert("Error", e.message);
     } finally {
       setLoading(false);
     }
@@ -109,38 +110,37 @@ export default function EventDetailScreen() {
       await Linking.openURL(url);
     } catch (e: any) {
       if (isMembershipRequiredError(e)) {
-        showMembershipRequiredAlert(router);
+        showMembershipRequiredAlert(dialog, router);
         return;
       }
-      Alert.alert("Error", e.message);
+      dialog.alert("Error", e.message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     if (!eventId) return;
-    Alert.alert("Cancel Registration", "Are you sure you want to cancel?", [
-      { text: "Keep", style: "cancel" },
-      {
-        text: "Cancel Registration",
-        style: "destructive",
-        onPress: async () => {
-          setLoading(true);
-          try {
-            await cancelRegistration({ eventId });
-            Alert.alert(
-              "Cancelled",
-              "You have been removed from this event, and any payment has been refunded."
-            );
-          } catch (e: any) {
-            Alert.alert("Error", e.message);
-          } finally {
-            setLoading(false);
-          }
-        },
-      },
-    ]);
+    const confirmed = await dialog.confirm({
+      title: "Cancel Registration",
+      message: "Are you sure you want to cancel?",
+      cancelText: "Keep",
+      confirmText: "Cancel Registration",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    setLoading(true);
+    try {
+      await cancelRegistration({ eventId });
+      dialog.alert(
+        "Cancelled",
+        "You have been removed from this event, and any payment has been refunded."
+      );
+    } catch (e: any) {
+      dialog.alert("Error", e.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (!eventId) {

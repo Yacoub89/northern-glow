@@ -3,7 +3,6 @@ import { useMutation, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -34,10 +33,12 @@ import {
   type PartName,
   type WodPart,
 } from "./types";
+import { useAppDialog } from "../AppDialog";
 
 export function CoachWodTab() {
   const gym = useGymConfig();
   const { primary } = useGymColors();
+  const dialog = useAppDialog();
   const today = getTodayDate();
 
   const [selectedDate, setSelectedDate] = useState(today);
@@ -113,7 +114,7 @@ export function CoachWodTab() {
 
   const handlePublish = async () => {
     if (!title.trim()) {
-      Alert.alert("Missing Title", "WOD title is required.");
+      dialog.alert("Missing Title", "WOD title is required.");
       return;
     }
 
@@ -160,9 +161,9 @@ export function CoachWodTab() {
         await createWod(wodPayload);
       }
       setEditMode(false);
-      Alert.alert(wod ? "Updated!" : "Published!", wod ? "WOD updated." : "WOD is live.");
+      dialog.alert(wod ? "Updated!" : "Published!", wod ? "WOD updated." : "WOD is live.");
     } catch (e: any) {
-      Alert.alert("Error", e.message);
+      dialog.alert("Error", e.message);
     } finally {
       setSaving(false);
     }

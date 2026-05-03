@@ -2,7 +2,6 @@ import { useMutation, useQuery } from "convex/react";
 import { useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   Image,
   Linking,
@@ -24,6 +23,7 @@ import { Doc, Id } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
 import { useGymColors } from "../../constants/GymConfig";
 import { formatTimestamp } from "../../utils/date";
+import { useAppDialog } from "../../components/AppDialog";
 
 // ─── Signature Pad ────────────────────────────────────────────────────────────
 
@@ -183,6 +183,7 @@ type DocumentListItem = Doc<"documents"> & {
 
 export default function DocumentsScreen() {
   const { primary } = useGymColors();
+  const dialog = useAppDialog();
   const me = useQuery(api.users.getMe);
   const isCoach = me?.role === "coach" || me?.role === "admin";
 
@@ -264,7 +265,7 @@ export default function DocumentsScreen() {
       resetCreate();
       setCreateVisible(false);
     } catch (e: any) {
-      Alert.alert("Error", e.message);
+      dialog.alert("Error", e.message);
     } finally {
       setCreating(false);
     }
@@ -283,20 +284,25 @@ export default function DocumentsScreen() {
       setSigName("");
       setSigPaths(null);
     } catch (e: any) {
-      Alert.alert("Error", e.message);
+      dialog.alert("Error", e.message);
     } finally {
       setSigning(false);
     }
   };
 
-  const handleDelete = (docId: Id<"documents">, title: string) => {
-    Alert.alert("Delete Document", `Delete "${title}"? This cannot be undone.`, [
-      { text: "Cancel", style: "cancel" },
-      { text: "Delete", style: "destructive", onPress: async () => {
-        try { await removeDoc({ documentId: docId }); }
-        catch (e: any) { Alert.alert("Error", e.message); }
-      }},
-    ]);
+  const handleDelete = async (docId: Id<"documents">, title: string) => {
+    const confirmed = await dialog.confirm({
+      title: "Delete Document",
+      message: `Delete "${title}"? This cannot be undone.`,
+      confirmText: "Delete",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    try {
+      await removeDoc({ documentId: docId });
+    } catch (e: any) {
+      dialog.alert("Error", e.message);
+    }
   };
 
   if (me === undefined || docs === undefined) {

@@ -3,7 +3,6 @@ import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -18,6 +17,7 @@ import { api } from "../convex/_generated/api";
 import { Colors } from "../constants/Colors";
 import { useGymColors } from "../constants/GymConfig";
 import { getTodayDate } from "../utils/date";
+import { useAppDialog } from "../components/AppDialog";
 
 const TIME_PRESETS = [
   "06:00",
@@ -47,6 +47,7 @@ function stringToDate(s: string) {
 export default function ClassFormScreen() {
   const { primary } = useGymColors();
   const router = useRouter();
+  const dialog = useAppDialog();
   const createClass = useMutation(api.classes.create);
 
   const [date, setDate] = useState(getTodayDate());
@@ -66,7 +67,7 @@ export default function ClassFormScreen() {
   const addCustomTime = () => {
     const t = customTime.trim();
     if (!/^\d{2}:\d{2}$/.test(t)) {
-      Alert.alert("Invalid Time", "Time must be in HH:MM format (24h), e.g. 06:00");
+      dialog.alert("Invalid Time", "Time must be in HH:MM format (24h), e.g. 06:00");
       return;
     }
     if (!startTimes.includes(t)) {
@@ -87,12 +88,12 @@ export default function ClassFormScreen() {
 
   const handleSave = async () => {
     if (!date || startTimes.length === 0) {
-      Alert.alert("Missing Fields", "Please select at least one time");
+      dialog.alert("Missing Fields", "Please select at least one time");
       return;
     }
     const cap = parseInt(capacity, 10);
     if (isNaN(cap) || cap < 1) {
-      Alert.alert("Invalid Capacity", "Must be at least 1");
+      dialog.alert("Invalid Capacity", "Must be at least 1");
       return;
     }
 
@@ -105,7 +106,7 @@ export default function ClassFormScreen() {
       );
       router.back();
     } catch (e: any) {
-      Alert.alert("Error", e.message);
+      dialog.alert("Error", e.message);
     } finally {
       setSaving(false);
     }

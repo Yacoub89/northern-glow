@@ -3,7 +3,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -17,6 +16,7 @@ import { Id } from "../convex/_generated/dataModel";
 import { Colors } from "../constants/Colors";
 import { useGymColors } from "../constants/GymConfig";
 import { formatDate, formatTime } from "../utils/date";
+import { useAppDialog } from "../components/AppDialog";
 
 function Initials({ name }: { name: string }) {
   const initials = (name ?? "?")
@@ -34,6 +34,7 @@ function Initials({ name }: { name: string }) {
 
 export default function RosterScreen() {
   const { primary } = useGymColors();
+  const dialog = useAppDialog();
   const params = useLocalSearchParams<{ classId?: string }>();
   const router = useRouter();
 
@@ -62,7 +63,7 @@ export default function RosterScreen() {
         await checkIn({ bookingId });
       }
     } catch (e: any) {
-      Alert.alert("Error", e.message);
+      dialog.alert("Error", e.message);
     }
   };
 

@@ -19,6 +19,7 @@ import {
   Manrope_800ExtraBold,
 } from "@expo-google-fonts/manrope";
 import { Colors } from "../constants/Colors";
+import { AppDialogProvider } from "../components/AppDialog";
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
@@ -143,13 +144,15 @@ export default function RootLayout() {
 
   return (
     <ConvexAuthProvider client={convex} storage={tokenStorage}>
-      <GymLinker />
-      <PushTokenRegistrar />
-      {Platform.OS === "web" ? (
-        <View style={webStyles.outer}>
-          <View style={webStyles.inner}>{stack}</View>
-        </View>
-      ) : stack}
+      <AppDialogProvider>
+        <GymLinker />
+        <PushTokenRegistrar />
+        {Platform.OS === "web" ? (
+          <View style={webStyles.outer}>
+            <View style={webStyles.inner}>{stack}</View>
+          </View>
+        ) : stack}
+      </AppDialogProvider>
     </ConvexAuthProvider>
   );
 }

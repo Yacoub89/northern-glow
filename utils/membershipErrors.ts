@@ -1,4 +1,4 @@
-import { Alert } from "react-native";
+import type { AppDialogAction } from "../components/AppDialog";
 
 export function isMembershipRequiredError(error: unknown): boolean {
   return error instanceof Error
@@ -6,8 +6,13 @@ export function isMembershipRequiredError(error: unknown): boolean {
     : false;
 }
 
-export function showMembershipRequiredAlert(router: { push: (href: "/membership") => void }) {
-  Alert.alert(
+export function showMembershipRequiredAlert(
+  dialog: {
+    alert: (title: string, message?: string, actions?: AppDialogAction[]) => void;
+  },
+  router: { push: (href: "/membership") => void }
+) {
+  dialog.alert(
     "Membership required",
     "You need an active membership before you can book or register. Please subscribe first.",
     [

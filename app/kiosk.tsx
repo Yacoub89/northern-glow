@@ -3,7 +3,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,6 +15,7 @@ import { api } from "../convex/_generated/api";
 import { Id } from "../convex/_generated/dataModel";
 import { Colors } from "../constants/Colors";
 import { useGymColors } from "../constants/GymConfig";
+import { useAppDialog } from "../components/AppDialog";
 
 function Initials({ name, size = 56 }: { name: string; size?: number }) {
   const initials = (name ?? "?")
@@ -48,6 +48,7 @@ function CheckedInBanner({ name, onDismiss }: { name: string; onDismiss: () => v
 
 export default function KioskScreen() {
   const { primary } = useGymColors();
+  const dialog = useAppDialog();
   const { classId } = useLocalSearchParams<{ classId: string }>();
   const router = useRouter();
   const [lastCheckedIn, setLastCheckedIn] = useState<string | null>(null);
@@ -83,7 +84,7 @@ export default function KioskScreen() {
       await checkIn({ bookingId });
       setLastCheckedIn(name);
     } catch (e: any) {
-      Alert.alert("Error", e.message);
+      dialog.alert("Error", e.message);
     }
   };
 

@@ -2,7 +2,6 @@ import { useAction, useQuery } from "convex/react";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Linking,
   Pressable,
   ScrollView,
@@ -17,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { api } from "../convex/_generated/api";
 import { Colors } from "../constants/Colors";
 import { useGymColors } from "../constants/GymConfig";
+import { useAppDialog } from "../components/AppDialog";
 
 type Plan = "unlimited" | "twice_weekly";
 type Period = "monthly" | "annual";
@@ -65,6 +65,7 @@ const PRICES: Record<Plan, Record<Period, string>> = {
 export default function MembershipScreen() {
   const { primary } = useGymColors();
   const router = useRouter();
+  const dialog = useAppDialog();
   const params = useLocalSearchParams<{
     status?: string;
     session_id?: string;
@@ -90,14 +91,14 @@ export default function MembershipScreen() {
           .then(finish)
           .catch(() => finish());
       } else {
-        Alert.alert("Subscribed!", "Your membership is now active.", [
+        dialog.alert("Subscribed!", "Your membership is now active.", [
           { text: "Done", onPress: finish },
         ]);
       }
     } else if (status === "cancelled") {
-      Alert.alert("No charge", "Checkout was cancelled.");
+      dialog.alert("No charge", "Checkout was cancelled.");
     }
-  }, [status]);
+  }, [status, dialog, router, session_id, syncFromSession]);
 
   const isActive =
     membership?.status === "active" || membership?.status === "trialing";
@@ -113,7 +114,7 @@ export default function MembershipScreen() {
       });
       await Linking.openURL(url);
     } catch (e: any) {
-      Alert.alert("Error", e.message);
+      dialog.alert("Error", e.message);
     } finally {
       setLoading(false);
     }
@@ -126,7 +127,7 @@ export default function MembershipScreen() {
       const url = await createPortalSession({ returnUrl });
       await Linking.openURL(url);
     } catch (e: any) {
-      Alert.alert("Error", e.message);
+      dialog.alert("Error", e.message);
     } finally {
       setLoading(false);
     }

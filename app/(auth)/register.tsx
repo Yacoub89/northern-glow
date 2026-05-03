@@ -2,7 +2,6 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { Link, router } from "expo-router";
 import { useRef, useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -17,11 +16,13 @@ import { Colors } from "../../constants/Colors";
 import { Fonts } from "../../constants/Typography";
 import { useGymColors, useGymConfig } from "../../constants/GymConfig";
 import { AuthHeader } from "../../components/auth/AuthHeader";
+import { useAppDialog } from "../../components/AppDialog";
 
 export default function RegisterScreen() {
   const { signIn } = useAuthActions();
   const { primary } = useGymColors();
   const gym = useGymConfig();
+  const dialog = useAppDialog();
   const insets = useSafeAreaInsets();
 
   // Step 1: registration fields
@@ -38,15 +39,15 @@ export default function RegisterScreen() {
   // ─── Step 1: sign up ────────────────────────────────────────────────────────
   const handleRegister = async () => {
     if (!name.trim() || !email.trim() || !password) {
-      Alert.alert("Error", "Please fill in all fields");
+      dialog.alert("Error", "Please fill in all fields");
       return;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
-      Alert.alert("Error", "Please enter a valid email address");
+      dialog.alert("Error", "Please enter a valid email address");
       return;
     }
     if (password.length < 8) {
-      Alert.alert("Error", "Password must be at least 8 characters");
+      dialog.alert("Error", "Password must be at least 8 characters");
       return;
     }
     setLoading(true);
@@ -61,7 +62,7 @@ export default function RegisterScreen() {
       setStep("verify");
       setTimeout(() => codeInputRef.current?.focus(), 300);
     } catch (e: any) {
-      Alert.alert("Sign Up Failed", e.message ?? "Could not create account");
+      dialog.alert("Sign Up Failed", e.message ?? "Could not create account");
     } finally {
       setLoading(false);
     }
@@ -70,7 +71,7 @@ export default function RegisterScreen() {
   // ─── Step 2: verify OTP ─────────────────────────────────────────────────────
   const handleVerify = async () => {
     if (code.length !== 6) {
-      Alert.alert("Error", "Please enter the 6-digit code");
+      dialog.alert("Error", "Please enter the 6-digit code");
       return;
     }
     setLoading(true);
@@ -81,7 +82,7 @@ export default function RegisterScreen() {
         flow: "email-verification",
       });
     } catch (e: any) {
-      Alert.alert("Verification Failed", e.message ?? "Invalid or expired code");
+      dialog.alert("Verification Failed", e.message ?? "Invalid or expired code");
     } finally {
       setLoading(false);
     }
@@ -96,9 +97,9 @@ export default function RegisterScreen() {
         name: name.trim(),
         password,
       });
-      Alert.alert("Code Resent", "A new verification code has been sent to your email.");
+      dialog.alert("Code Resent", "A new verification code has been sent to your email.");
     } catch (e: any) {
-      Alert.alert("Error", e.message ?? "Could not resend code");
+      dialog.alert("Error", e.message ?? "Could not resend code");
     } finally {
       setLoading(false);
     }

@@ -3,7 +3,6 @@ import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   ScrollView,
@@ -23,6 +22,7 @@ import {
   timeStrToDate,
   dateToTimeStr,
 } from "./styles";
+import { useAppDialog } from "../AppDialog";
 
 export function CreateEventModal({
   visible,
@@ -32,6 +32,7 @@ export function CreateEventModal({
   onClose: () => void;
 }) {
   const { primary } = useGymColors();
+  const dialog = useAppDialog();
   const createEvent = useMutation(api.events.create);
 
   const today = getTodayDate();
@@ -72,7 +73,7 @@ export function CreateEventModal({
 
   const handleSave = async () => {
     if (!title.trim()) {
-      Alert.alert("Validation", "Event title is required.");
+      dialog.alert("Validation", "Event title is required.");
       return;
     }
     const priceDollars = parseFloat(priceInput) || 0;
@@ -92,7 +93,7 @@ export function CreateEventModal({
       resetForm();
       onClose();
     } catch (e: any) {
-      Alert.alert("Error", e.message);
+      dialog.alert("Error", e.message);
     } finally {
       setSaving(false);
     }

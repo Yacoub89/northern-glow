@@ -1,7 +1,7 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { useMutation } from "convex/react";
 import { useEffect, useState } from "react";
-import { Alert, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../convex/_generated/api";
 import { Colors } from "../../constants/Colors";
@@ -15,6 +15,7 @@ import {
   timeStrToDate,
   dateToTimeStr,
 } from "./styles";
+import { useAppDialog } from "../AppDialog";
 
 const DEFAULT_DAY_OF_WEEK = 1;
 const DEFAULT_START_TIME = "09:00";
@@ -28,6 +29,7 @@ export function AddAvailabilityModal({
   onClose: () => void;
 }) {
   const { primary } = useGymColors();
+  const dialog = useAppDialog();
   const [dayOfWeek, setDayOfWeek] = useState(DEFAULT_DAY_OF_WEEK);
   const [startTime, setStartTime] = useState(DEFAULT_START_TIME);
   const [showStartTimePicker, setShowStartTimePicker] = useState(false);
@@ -55,7 +57,7 @@ export function AddAvailabilityModal({
         e?.message?.includes("Availability slot already exists")
           ? "You already have an availability slot at this day and time. Pick a different time or remove the existing slot first."
           : e.message;
-      Alert.alert("Could not add slot", message);
+      dialog.alert("Could not add slot", message);
     }
   };
 

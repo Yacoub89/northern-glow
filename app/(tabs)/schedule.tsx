@@ -2,7 +2,6 @@ import { useMutation, useQuery } from "convex/react";
 import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,6 +17,7 @@ import { useGymColors } from "../../constants/GymConfig";
 import { formatTime, getTodayDate } from "../../utils/date";
 import { isMembershipRequiredError, showMembershipRequiredAlert } from "../../utils/membershipErrors";
 import { getDayNum, parseMovement } from "../../components/wod/types";
+import { useAppDialog } from "../../components/AppDialog";
 
 function generateDates(count = 7): string[] {
   const dates: string[] = [];
@@ -57,6 +57,7 @@ function ClassCard({
 }) {
   const { primary } = useGymColors();
   const router = useRouter();
+  const dialog = useAppDialog();
   const book = useMutation(api.bookings.book);
   const cancel = useMutation(api.bookings.cancel);
   const myBooking = myBookings.find(
@@ -69,39 +70,34 @@ function ClassCard({
     try {
       const result = await book({ classId: cls._id });
       if (result.status === "waitlist") {
-        Alert.alert(
+        dialog.alert(
           "Added to Waitlist",
           `You're #${result.position} on the waitlist.`
         );
       }
     } catch (e: any) {
       if (isMembershipRequiredError(e)) {
-        showMembershipRequiredAlert(router);
+        showMembershipRequiredAlert(dialog, router);
         return;
       }
-      Alert.alert("Error", e.message);
+      dialog.alert("Error", e.message);
     }
   };
 
-  const handleCancel = () => {
-    Alert.alert(
-      myBooking?.status === "waitlist" ? "Leave Waitlist" : "Cancel Booking",
-      "Are you sure?",
-      [
-        { text: "Keep", style: "cancel" },
-        {
-          text: myBooking?.status === "waitlist" ? "Leave" : "Cancel",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await cancel({ classId: cls._id });
-            } catch (e: any) {
-              Alert.alert("Error", e.message);
-            }
-          },
-        },
-      ]
-    );
+  const handleCancel = async () => {
+    const confirmed = await dialog.confirm({
+      title: myBooking?.status === "waitlist" ? "Leave Waitlist" : "Cancel Booking",
+      message: "Are you sure?",
+      cancelText: "Keep",
+      confirmText: myBooking?.status === "waitlist" ? "Leave" : "Cancel",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    try {
+      await cancel({ classId: cls._id });
+    } catch (e: any) {
+      dialog.alert("Error", e.message);
+    }
   };
 
   return (
@@ -180,6 +176,7 @@ function AppointmentSlotCard({
   onBooked: () => void;
 }) {
   const router = useRouter();
+  const dialog = useAppDialog();
   const bookAppt = useMutation(api.appointments.book);
   const cancelAppt = useMutation(api.appointments.cancel);
 
@@ -196,29 +193,28 @@ function AppointmentSlotCard({
       onBooked();
     } catch (e: any) {
       if (isMembershipRequiredError(e)) {
-        showMembershipRequiredAlert(router);
+        showMembershipRequiredAlert(dialog, router);
         return;
       }
-      Alert.alert("Error", e.message);
+      dialog.alert("Error", e.message);
     }
   };
 
-  const handleCancel = () => {
+  const handleCancel = async () => {
     if (!myAppointmentId) return;
-    Alert.alert("Cancel Appointment", "Are you sure?", [
-      { text: "Keep", style: "cancel" },
-      {
-        text: "Cancel",
-        style: "destructive",
-        onPress: async () => {
-          try {
-            await cancelAppt({ appointmentId: myAppointmentId });
-          } catch (e: any) {
-            Alert.alert("Error", e.message);
-          }
-        },
-      },
-    ]);
+    const confirmed = await dialog.confirm({
+      title: "Cancel Appointment",
+      message: "Are you sure?",
+      cancelText: "Keep",
+      confirmText: "Cancel",
+      destructive: true,
+    });
+    if (!confirmed) return;
+    try {
+      await cancelAppt({ appointmentId: myAppointmentId });
+    } catch (e: any) {
+      dialog.alert("Error", e.message);
+    }
   };
 
   return (

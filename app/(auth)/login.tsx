@@ -2,7 +2,6 @@ import { useAuthActions } from "@convex-dev/auth/react";
 import { Link } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -17,10 +16,12 @@ import { Colors } from "../../constants/Colors";
 import { Fonts } from "../../constants/Typography";
 import { useGymColors, useGymConfig } from "../../constants/GymConfig";
 import { AuthHeader } from "../../components/auth/AuthHeader";
+import { useAppDialog } from "../../components/AppDialog";
 
 export default function LoginScreen() {
   const gym = useGymConfig();
   const { primary } = useGymColors();
+  const dialog = useAppDialog();
   const { signIn } = useAuthActions();
   const insets = useSafeAreaInsets();
   const [email, setEmail] = useState("");
@@ -29,7 +30,7 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
-      Alert.alert("Error", "Please fill in all fields");
+      dialog.alert("Error", "Please fill in all fields");
       return;
     }
     setLoading(true);
@@ -40,7 +41,7 @@ export default function LoginScreen() {
       // it fires before the Convex client processes the token, so the
       // TabsLayout sees isAuthenticated=false and redirects back to login.
     } catch (e: any) {
-      Alert.alert("Login Failed", e.message ?? "Invalid email or password");
+      dialog.alert("Login Failed", e.message ?? "Invalid email or password");
     } finally {
       setLoading(false);
     }
