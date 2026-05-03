@@ -33,7 +33,13 @@ const S = {
   table: { width: "100%", borderCollapse: "collapse" as const },
   th: { textAlign: "left" as const, padding: "8px 12px", fontSize: 12, color: "#666", borderBottom: "1px solid #252525" },
   td: { padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #1a1a1a", verticalAlign: "middle" as const },
-  idText: { color: "#666", fontFamily: "monospace", fontSize: 11, marginLeft: 8 },
+  idRow: { display: "inline-flex", alignItems: "center", gap: 5, marginLeft: 8 },
+  idText: { color: "#666", fontFamily: "monospace", fontSize: 11 },
+  copyBtn: {
+    width: 22, height: 22, display: "inline-flex", alignItems: "center", justifyContent: "center",
+    border: "1px solid #2b2b2b", borderRadius: 5, background: "#1a1a1a", color: "#888",
+    cursor: "pointer", padding: 0,
+  },
   dot: (color: string) => ({
     display: "inline-block", width: 8, height: 8, borderRadius: "50%",
     background: color, marginRight: 6,
@@ -89,6 +95,46 @@ function statusBadge(status?: string) {
   if (status === "failed") return <span style={S.badge("#ff453a22", "#ff453a")}>failed</span>;
   if (status === "pending") return <span style={S.badge("#FF9F0A22", "#FF9F0A")}>pending DNS</span>;
   return null;
+}
+
+function CopyGymIdButton({ gymId }: { gymId: Id<"gyms"> }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(gymId);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  };
+
+  return (
+    <button
+      type="button"
+      style={{ ...S.copyBtn, color: copied ? "#34C759" : S.copyBtn.color }}
+      onClick={handleCopy}
+      aria-label={`Copy gym id ${gymId}`}
+      title={copied ? "Copied" : "Copy gym id"}
+    >
+      {copied ? (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M20 6 9 17l-5-5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+      ) : (
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <rect x="9" y="9" width="11" height="11" rx="2" stroke="currentColor" strokeWidth="2" />
+          <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+      )}
+    </button>
+  );
+}
+
+function GymIdLabel({ gymId }: { gymId: Id<"gyms"> }) {
+  return (
+    <span style={S.idRow}>
+      <span style={S.idText}>{gymId}</span>
+      <CopyGymIdButton gymId={gymId} />
+    </span>
+  );
 }
 
 function DnsRecordsPanel({ gym }: { gym: Gym }) {
@@ -208,7 +254,7 @@ function PendingInvites() {
             <tr key={inv._id}>
               <td style={S.td}>
                 {inv.gymName}
-                <span style={S.idText}>{inv.gymId}</span>
+                <GymIdLabel gymId={inv.gymId} />
               </td>
               <td style={S.td}>{inv.email}</td>
               <td style={S.td}>
@@ -542,7 +588,7 @@ export default function SuperAdmin() {
                     <tr key={gym._id}>
                       <td style={S.td}>
                         {gym.name}
-                        <span style={S.idText}>{gym._id}</span>
+                        <GymIdLabel gymId={gym._id} />
                       </td>
                       <td style={S.td}>{gym.timezone}</td>
                       <td style={S.td}>
