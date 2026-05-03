@@ -1,3 +1,4 @@
+import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth, useQuery } from "convex/react";
 import { Redirect, Tabs, useRouter } from "expo-router";
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from "react-native";
@@ -75,6 +76,7 @@ const hdr = StyleSheet.create({
 });
 
 export default function TabsLayout() {
+  const { signOut } = useAuthActions();
   const { isAuthenticated, isLoading } = useConvexAuth();
   const me = useQuery(api.users.getMe);
   const insets = useSafeAreaInsets();
@@ -90,6 +92,23 @@ export default function TabsLayout() {
 
   if (!isAuthenticated) {
     return <Redirect href="/(auth)/login" />;
+  }
+
+  if (!me?.gymId) {
+    return (
+      <View style={[styles.centered, styles.noGym]}>
+        <Text style={styles.noGymTitle}>We couldn't find your gym</Text>
+        <Text style={styles.noGymText}>
+          You're signed in, but this email is not connected to a gym yet. Ask your gym admin for an invite, then sign in with the invited email.
+        </Text>
+        <Pressable
+          style={[styles.noGymButton, { backgroundColor: primary }]}
+          onPress={() => void signOut()}
+        >
+          <Text style={styles.noGymButtonText}>Sign out</Text>
+        </Pressable>
+      </View>
+    );
   }
 
   const isCoach = me?.role === "coach" || me?.role === "admin";
@@ -180,6 +199,34 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: Colors.background,
+  },
+  noGym: {
+    paddingHorizontal: 28,
+  },
+  noGymTitle: {
+    fontFamily: Fonts.display,
+    fontSize: 24,
+    color: Colors.text,
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  noGymText: {
+    fontFamily: Fonts.body,
+    fontSize: 14,
+    lineHeight: 21,
+    color: Colors.textSecondary,
+    textAlign: "center",
+    marginBottom: 24,
+  },
+  noGymButton: {
+    borderRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 13,
+  },
+  noGymButtonText: {
+    fontFamily: Fonts.bodyBold,
+    fontSize: 15,
+    color: Colors.background,
   },
   tabBar: {
     backgroundColor: Colors.surfaceContainerLow,

@@ -19,14 +19,26 @@ export const getMyGym = query({
   },
 });
 
-/** Returns a gym by its id. Caller must be a member of the gym, or a super-admin. */
+/** Returns public gym branding by id, with full config for members and super-admins. */
 export const get = query({
   args: { gymId: v.id("gyms") },
   handler: async (ctx, { gymId }) => {
+    const gym = await ctx.db.get(gymId);
+    if (!gym) return null;
+
+    const publicGymConfig = {
+      _id: gym._id,
+      _creationTime: gym._creationTime,
+      name: gym.name,
+      tagline: gym.tagline,
+      primaryColor: gym.primaryColor,
+      timezone: gym.timezone,
+    };
+
     const userId = await getAuthUserId(ctx);
-    if (!userId) return null;
+    if (!userId) return publicGymConfig;
     const user = await ctx.db.get(userId);
-    if (!user) return null;
+    if (!user) return publicGymConfig;
 
     const isMember = user.gymId === gymId;
     const allowlist = (process.env.NORTHERNGLOW_SUPERADMIN_EMAILS ?? "")
@@ -36,8 +48,8 @@ export const get = query({
     const isSuperAdmin =
       !!user.email && allowlist.includes(user.email.toLowerCase());
 
-    if (!isMember && !isSuperAdmin) throw new Error("Unauthorized");
-    return await ctx.db.get(gymId);
+    if (!isMember && !isSuperAdmin) return publicGymConfig;
+    return gym;
   },
 });
 
