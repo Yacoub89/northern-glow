@@ -163,6 +163,17 @@ export const sendInviteEmail = internalAction({
       role === "admin" ? "Admin" : role === "coach" ? "Coach" : "Athlete";
     const webUrl = process.env.NORTHERNGLOW_WEB_URL ?? DEFAULT_WEB_URL;
     const createAccountUrl = `${webUrl.replace(/\/$/, "")}/createaccount?invite=${encodeURIComponent(inviteCode)}`;
+    const isAthleteInvite = role === "athlete";
+    const bodyHtml = isAthleteInvite
+      ? `
+            <p>Your gym admin has invited you to use the NorthernGlow mobile app.</p>
+            <p>Download the app your admin told you to use, tap <strong>Sign Up</strong>, and create an account using <strong>this email address</strong>. Your gym membership will be activated automatically.</p>`
+      : `
+            <p>Create an account using <strong>this email address</strong>.</p>
+            <a href="${createAccountUrl}" style="display:inline-block;background:#1BBFBF;color:#000;font-weight:700;padding:12px 24px;border-radius:8px;text-decoration:none;font-size:14px;margin:16px 0">Create account</a>`;
+    const bodyText = isAthleteInvite
+      ? `Your gym admin has invited you to use the NorthernGlow mobile app. Download the app your admin told you to use, tap Sign Up, and create an account using this email address. Your gym membership will be activated automatically.`
+      : `Create your account using this email address: ${createAccountUrl}.`;
 
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -179,13 +190,12 @@ export const sendInviteEmail = internalAction({
           <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
             <h2 style="color:#111">You're invited to ${gymName}!</h2>
             <p>You've been invited as a <strong>${roleLabel}</strong>.</p>
-            <p>Create an account using <strong>this email address</strong>. Athlete accounts use the NorthernGlow mobile app after signup.</p>
-            <a href="${createAccountUrl}" style="display:inline-block;background:#1BBFBF;color:#000;font-weight:700;padding:12px 24px;border-radius:8px;text-decoration:none;font-size:14px;margin:16px 0">Create account</a>
+            ${bodyHtml}
             <p style="color:#555;font-size:13px">
               This invite expires in 7 days.
             </p>
           </div>`,
-        text: `You've been invited to join ${gymName} as a ${roleLabel}. Create your account using this email address: ${createAccountUrl}. Athlete accounts use the NorthernGlow mobile app after signup.`,
+        text: `You've been invited to join ${gymName} as a ${roleLabel}. ${bodyText}`,
       }),
     });
 
