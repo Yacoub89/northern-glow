@@ -50,6 +50,11 @@
       "exclude": [
         "react-native-worklets"
       ]
+    },
+    "doctor": {
+      "appConfigFieldsNotSyncedCheck": {
+        "enabled": false
+      }
     }
   },
   "devDependencies": {
