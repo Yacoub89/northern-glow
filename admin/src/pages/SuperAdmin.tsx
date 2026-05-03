@@ -353,78 +353,6 @@ function DomainEditor({ gym, onClose }: { gym: Gym; onClose: () => void }) {
 }
 
 // ── Leads panel ──────────────────────────────────────────────────────────────
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  );
-}
-
-// ── Domain editor (inline in gyms list) ──────────────────────────────────────
-
-function DomainEditor({ gym, onClose }: { gym: Gym; onClose: () => void }) {
-  const updateDomains = useMutation(api.gyms.superAdminUpdateGymDomains);
-  const [customDomain, setCustomDomain] = useState(gym.customDomain ?? "");
-  const [emailDomain, setEmailDomain] = useState(gym.emailDomain ?? "");
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState("");
-
-  const handleSave = async () => {
-    setSaving(true);
-    setMsg("");
-    try {
-      await updateDomains({
-        gymId: gym._id,
-        customDomain: customDomain.trim() || undefined,
-        emailDomain: emailDomain.trim() || undefined,
-      });
-      setMsg("Saved.");
-      setTimeout(onClose, 800);
-    } catch (e: any) {
-      setMsg(e.message ?? "Failed");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div style={{ padding: "14px 16px", background: "#0f0f0f", borderRadius: 8, border: "1px solid #333", marginTop: 8 }}>
-      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Domain settings — {gym.name}</div>
-      <div style={S.group}>
-        <label style={S.label}>Custom portal domain</label>
-        <input
-          style={S.input}
-          value={customDomain}
-          onChange={(e) => setCustomDomain(e.target.value)}
-          placeholder="admin.theirgym.com"
-        />
-        <div style={S.labelHint}>Gym adds a CNAME record pointing to your deployment. Leave blank to use the default portal URL.</div>
-      </div>
-      <div style={S.group}>
-        <label style={S.label}>Email sending domain</label>
-        <input
-          style={S.input}
-          value={emailDomain}
-          onChange={(e) => setEmailDomain(e.target.value)}
-          placeholder="theirgym.com"
-        />
-        <div style={S.labelHint}>Emails send as noreply@domain. Changing this re-registers with Resend and resets DNS verification.</div>
-      </div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-        <button style={{ ...S.btnSmall, padding: "7px 16px" }} onClick={handleSave} disabled={saving}>
-          {saving ? "Saving…" : "Save"}
-        </button>
-        <button style={{ ...S.btnSmall, background: "#1e1e1e", color: "#666" }} onClick={onClose}>
-          Cancel
-        </button>
-        {msg && <span style={{ fontSize: 12, color: "#aaa" }}>{msg}</span>}
-      </div>
-    </div>
-  );
-}
-
-// ── Leads panel ──────────────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, [string, string]> = {
   new: ["#1BBFBF22", "#1BBFBF"],
@@ -451,70 +379,72 @@ function Leads({ onPrefillForm }: { onPrefillForm: (fields: { gymName: string; a
   if (leads.length === 0) return <p style={{ color: "#666", fontSize: 13 }}>No leads yet.</p>;
 
   return (
-    <table style={S.table}>
-      <thead>
-        <tr>
-          <th style={S.th}>Type</th>
-          <th style={S.th}>Name</th>
-          <th style={S.th}>Email</th>
-          <th style={S.th}>Gym / Details</th>
-          <th style={S.th}>Status</th>
-          <th style={S.th}></th>
-        </tr>
-      </thead>
-      <tbody>
-        {leads.map((lead) => {
-          const [bg, color] = STATUS_COLORS[lead.status] ?? ["#33333322", "#aaa"];
-          const isUpdating = updating === lead._id;
-          return (
-            <tr key={lead._id}>
-              <td style={S.td}>
-                <span style={S.badge(lead.type === "signup" ? "#1BBFBF22" : "#FF9F0A22", lead.type === "signup" ? "#1BBFBF" : "#FF9F0A")}>
-                  {lead.type === "signup" ? "signup" : "info"}
-                </span>
-              </td>
-              <td style={S.td}>{lead.name}</td>
-              <td style={S.td}>{lead.email}</td>
-              <td style={{ ...S.td, fontSize: 12, color: "#aaa", maxWidth: 200 }}>
-                {lead.gymName && <div>{lead.gymName}</div>}
-                {lead.city && <div style={{ color: "#666" }}>{lead.city}</div>}
-                {lead.memberCount && <div style={{ color: "#666" }}>{lead.memberCount} members</div>}
-                {lead.message && <div style={{ color: "#666", fontStyle: "italic" }}>{lead.message.slice(0, 60)}{lead.message.length > 60 ? "…" : ""}</div>}
-              </td>
-              <td style={S.td}>
-                <span style={S.badge(bg, color)}>{lead.status}</span>
-              </td>
-              <td style={{ ...S.td, whiteSpace: "nowrap" as const }}>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" as const }}>
-                  {lead.status === "new" && (
-                    <button style={S.btnSmall} disabled={isUpdating} onClick={() => handleStatus(lead._id, "contacted")}>
-                      Contacted
-                    </button>
-                  )}
-                  {lead.type === "signup" && lead.status !== "converted" && lead.status !== "dismissed" && (
-                    <button
-                      style={S.btnSmall}
-                      disabled={isUpdating}
-                      onClick={() => {
-                        onPrefillForm({ gymName: lead.gymName ?? lead.name, adminEmail: lead.email });
-                        handleStatus(lead._id, "converted");
-                      }}
-                    >
-                      Create gym
-                    </button>
-                  )}
-                  {lead.status !== "dismissed" && lead.status !== "converted" && (
-                    <button style={S.btnDanger} disabled={isUpdating} onClick={() => handleStatus(lead._id, "dismissed")}>
-                      Dismiss
-                    </button>
-                  )}
-                </div>
-              </td>
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
+    <div style={S.tableWrap}>
+      <table style={{ ...S.table, minWidth: 760 }}>
+        <thead>
+          <tr>
+            <th style={S.th}>Type</th>
+            <th style={S.th}>Name</th>
+            <th style={S.th}>Email</th>
+            <th style={S.th}>Gym / Details</th>
+            <th style={S.th}>Status</th>
+            <th style={S.th}></th>
+          </tr>
+        </thead>
+        <tbody>
+          {leads.map((lead) => {
+            const [bg, color] = STATUS_COLORS[lead.status] ?? ["#33333322", "#aaa"];
+            const isUpdating = updating === lead._id;
+            return (
+              <tr key={lead._id}>
+                <td style={S.td}>
+                  <span style={S.badge(lead.type === "signup" ? "#1BBFBF22" : "#FF9F0A22", lead.type === "signup" ? "#1BBFBF" : "#FF9F0A")}>
+                    {lead.type === "signup" ? "signup" : "info"}
+                  </span>
+                </td>
+                <td style={S.td}>{lead.name}</td>
+                <td style={S.td}>{lead.email}</td>
+                <td style={{ ...S.td, fontSize: 12, color: "#aaa", maxWidth: 200 }}>
+                  {lead.gymName && <div>{lead.gymName}</div>}
+                  {lead.city && <div style={{ color: "#666" }}>{lead.city}</div>}
+                  {lead.memberCount && <div style={{ color: "#666" }}>{lead.memberCount} members</div>}
+                  {lead.message && <div style={{ color: "#666", fontStyle: "italic" }}>{lead.message.slice(0, 60)}{lead.message.length > 60 ? "…" : ""}</div>}
+                </td>
+                <td style={S.td}>
+                  <span style={S.badge(bg, color)}>{lead.status}</span>
+                </td>
+                <td style={{ ...S.td, whiteSpace: "nowrap" as const }}>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" as const }}>
+                    {lead.status === "new" && (
+                      <button style={S.btnSmall} disabled={isUpdating} onClick={() => handleStatus(lead._id, "contacted")}>
+                        Contacted
+                      </button>
+                    )}
+                    {lead.type === "signup" && lead.status !== "converted" && lead.status !== "dismissed" && (
+                      <button
+                        style={S.btnSmall}
+                        disabled={isUpdating}
+                        onClick={() => {
+                          onPrefillForm({ gymName: lead.gymName ?? lead.name, adminEmail: lead.email });
+                          handleStatus(lead._id, "converted");
+                        }}
+                      >
+                        Create gym
+                      </button>
+                    )}
+                    {lead.status !== "dismissed" && lead.status !== "converted" && (
+                      <button style={S.btnDanger} disabled={isUpdating} onClick={() => handleStatus(lead._id, "dismissed")}>
+                        Dismiss
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -538,6 +468,7 @@ export default function SuperAdmin() {
   const [success, setSuccess] = useState("");
   const [expandedGym, setExpandedGym] = useState<Id<"gyms"> | null>(null);
   const [editingDomains, setEditingDomains] = useState<Id<"gyms"> | null>(null);
+  const isMobile = useMediaQuery("(max-width: 980px)");
 
   const prefillForm = ({ gymName, adminEmail }: { gymName: string; adminEmail: string }) => {
     setForm((f) => ({ ...f, gymName, adminEmail }));
@@ -585,7 +516,7 @@ export default function SuperAdmin() {
       <h1 style={S.h1}>Super Admin</h1>
       <p style={S.sub}>Create and manage all gyms on the NorthernGlow platform.</p>
 
-      <div style={S.grid}>
+      <div style={{ ...S.grid, gridTemplateColumns: isMobile ? "1fr" : S.grid.gridTemplateColumns, gap: isMobile ? 18 : S.grid.gap }}>
         {/* Left column */}
         <div>
           {/* Create gym form */}
@@ -642,88 +573,90 @@ export default function SuperAdmin() {
         </div>
 
         {/* Right column — gyms list */}
-        <div style={S.card}>
+        <div style={{ ...S.card, padding: isMobile ? 18 : S.card.padding }}>
           <div style={S.cardTitle}>All gyms ({gyms?.length ?? "…"})</div>
           {gyms === undefined ? (
             <p style={{ color: "#666", fontSize: 13 }}>Loading…</p>
           ) : gyms.length === 0 ? (
             <p style={{ color: "#666", fontSize: 13 }}>No gyms yet.</p>
           ) : (
-            <table style={S.table}>
-              <thead>
-                <tr>
-                  <th style={S.th}>Name</th>
-                  <th style={S.th}>Timezone</th>
-                  <th style={S.th}>Colour</th>
-                  <th style={S.th}>Email domain</th>
-                  <th style={S.th}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {gyms.map((gym) => (
-                  <>
-                    <tr key={gym._id}>
-                      <td style={S.td}>
-                        {gym.name}
-                        <GymIdLabel gymId={gym._id} />
-                      </td>
-                      <td style={S.td}>{gym.timezone}</td>
-                      <td style={S.td}>
-                        <span style={S.dot(gym.primaryColor)} />
-                        {gym.primaryColor}
-                      </td>
-                      <td style={S.td}>
-                        {gym.emailDomain ? (
-                          <span
-                            style={{ cursor: "pointer" }}
+            <div style={S.tableWrap}>
+              <table style={{ ...S.table, minWidth: 820 }}>
+                <thead>
+                  <tr>
+                    <th style={S.th}>Name</th>
+                    <th style={S.th}>Timezone</th>
+                    <th style={S.th}>Colour</th>
+                    <th style={S.th}>Email domain</th>
+                    <th style={S.th}></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {gyms.map((gym) => (
+                    <Fragment key={gym._id}>
+                      <tr>
+                        <td style={S.td}>
+                          {gym.name}
+                          <GymIdLabel gymId={gym._id} />
+                        </td>
+                        <td style={S.td}>{gym.timezone}</td>
+                        <td style={S.td}>
+                          <span style={S.dot(gym.primaryColor)} />
+                          {gym.primaryColor}
+                        </td>
+                        <td style={S.td}>
+                          {gym.emailDomain ? (
+                            <span
+                              style={{ cursor: "pointer" }}
+                              onClick={() =>
+                                setExpandedGym(expandedGym === gym._id ? null : gym._id)
+                              }
+                            >
+                              {gym.emailDomain} {statusBadge(gym.emailDomainStatus)}
+                            </span>
+                          ) : (
+                            <span style={{ color: "#444", fontSize: 12 }}>none</span>
+                          )}
+                        </td>
+                        <td style={S.td}>
+                          <button
+                            style={S.btnSmall}
                             onClick={() =>
-                              setExpandedGym(expandedGym === gym._id ? null : gym._id)
+                              setEditingDomains(editingDomains === gym._id ? null : gym._id)
                             }
                           >
-                            {gym.emailDomain} {statusBadge(gym.emailDomainStatus)}
-                          </span>
-                        ) : (
-                          <span style={{ color: "#444", fontSize: 12 }}>none</span>
-                        )}
-                      </td>
-                      <td style={S.td}>
-                        <button
-                          style={S.btnSmall}
-                          onClick={() =>
-                            setEditingDomains(editingDomains === gym._id ? null : gym._id)
-                          }
-                        >
-                          Domains
-                        </button>
-                      </td>
-                    </tr>
-                    {expandedGym === gym._id && (
-                      <tr key={`${gym._id}-dns`}>
-                        <td colSpan={5} style={{ padding: "0 12px 12px" }}>
-                          <DnsRecordsPanel gym={gym} />
+                            Domains
+                          </button>
                         </td>
                       </tr>
-                    )}
-                    {editingDomains === gym._id && (
-                      <tr key={`${gym._id}-edit`}>
-                        <td colSpan={5} style={{ padding: "0 12px 12px" }}>
-                          <DomainEditor
-                            gym={gym}
-                            onClose={() => setEditingDomains(null)}
-                          />
-                        </td>
-                      </tr>
-                    )}
-                  </>
-                ))}
-              </tbody>
-            </table>
+                      {expandedGym === gym._id && (
+                        <tr>
+                          <td colSpan={5} style={{ padding: "0 12px 12px" }}>
+                            <DnsRecordsPanel gym={gym} />
+                          </td>
+                        </tr>
+                      )}
+                      {editingDomains === gym._id && (
+                        <tr>
+                          <td colSpan={5} style={{ padding: "0 12px 12px" }}>
+                            <DomainEditor
+                              gym={gym}
+                              onClose={() => setEditingDomains(null)}
+                            />
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>
 
       {/* Leads — full width */}
-      <div style={{ ...S.card, marginTop: 0 }}>
+      <div style={{ ...S.card, marginTop: 0, padding: isMobile ? 18 : S.card.padding }}>
         <div style={S.cardTitle}>Incoming leads</div>
         <Leads onPrefillForm={prefillForm} />
       </div>
