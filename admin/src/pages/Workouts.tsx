@@ -439,7 +439,7 @@ export default function Workouts() {
 
             <div style={S.formActions}>
               <button style={S.btn(false)} type="button" onClick={resetForm}>
-                Clear
+                {editingId ? "Cancel" : "Clear"}
               </button>
               <button style={S.btn(true)} type="submit" disabled={saving}>
                 {saving ? "Saving..." : editingId ? "Update WOD" : "Create WOD"}
