@@ -7,7 +7,6 @@ import { useMediaQuery } from "./useMediaQuery";
 const GYM_NAV = [
   { to: "/dashboard", label: "Dashboard" },
   { to: "/gym/settings", label: "Gym Settings" },
-  { to: "/gym/invites", label: "Invites" },
   { to: "/gym/staff", label: "Staff", adminOnly: true },
   { to: "/gym/members", label: "Members" },
 ];
