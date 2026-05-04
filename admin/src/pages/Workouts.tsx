@@ -44,7 +44,7 @@ const S = {
   panelHead: { display: "flex", justifyContent: "space-between", gap: 16, alignItems: "baseline", marginBottom: 16 },
   panelTitle: { fontSize: 15, color: "#fff", fontWeight: 750, margin: 0 },
   panelMeta: { fontSize: 13, color: "#666" },
-  formGrid: { display: "grid", gridTemplateColumns: "150px minmax(180px, 1fr) 170px 190px", gap: 12, marginBottom: 12 },
+  formGrid: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginBottom: 12 },
   field: { display: "flex", flexDirection: "column" as const, gap: 6 },
   label: { fontSize: 12, color: "#777", fontWeight: 650 },
   input: {
