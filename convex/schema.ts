@@ -74,6 +74,7 @@ export default defineSchema({
       v.union(v.literal("athlete"), v.literal("coach"), v.literal("admin")),
     ),
     staffStatus: v.optional(v.union(v.literal("active"), v.literal("inactive"))),
+    canCoach: v.optional(v.boolean()),
     staffTitle: v.optional(v.string()),
     staffPhone: v.optional(v.string()),
     staffNotes: v.optional(v.string()),

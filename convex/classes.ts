@@ -62,16 +62,30 @@ export const create = mutation({
     date: v.string(),
     startTime: v.string(),
     capacity: v.number(),
+    coachId: v.optional(v.id("users")),
     wodId: v.optional(v.id("wods")),
   },
   handler: async (ctx, args) => {
-    const { userId: coachId, gymId } = await requireCoachOrAdmin(ctx);
+    const { userId, gymId } = await requireCoachOrAdmin(ctx);
+    const coachId = args.coachId ?? userId;
+    if (args.capacity < 1) throw new Error("Capacity must be at least 1");
+    const coach = await ctx.db.get(coachId);
+    if (!coach || coach.gymId !== gymId) {
+      throw new Error("Coach not found");
+    }
+    const canAssignedUserCoach = coach.canCoach ?? coach.role === "coach";
+    if (!canAssignedUserCoach || coach.staffStatus === "inactive") {
+      throw new Error("Coach not found");
+    }
     if (args.wodId) {
       const wod = await ctx.db.get(args.wodId);
       if (!wod || wod.gymId !== gymId) throw new Error("WOD not found");
     }
     return await ctx.db.insert("classes", {
-      ...args,
+      date: args.date,
+      startTime: args.startTime,
+      capacity: args.capacity,
+      ...(args.wodId ? { wodId: args.wodId } : {}),
       gymId,
       coachId,
       bookedCount: 0,

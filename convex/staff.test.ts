@@ -19,6 +19,7 @@ describe("staff.list", () => {
     expect(staff.map((member) => member.email)).toContain("coach@test.com");
     expect(staff.map((member) => member.email)).not.toContain("athlete@test.com");
     expect(staff.every((member) => member.staffStatus === "active")).toBe(true);
+    expect(staff.find((member) => member.email === "coach@test.com")?.canCoach).toBe(true);
   });
 
   test("rejects coaches", async () => {
@@ -41,6 +42,7 @@ describe("staff.updateProfile", () => {
       userId: coachId,
       role: "admin",
       staffStatus: "inactive",
+      canCoach: true,
       staffTitle: "Head Coach",
       staffPhone: "555-123-4567",
       staffNotes: "CF-L2",
@@ -49,6 +51,7 @@ describe("staff.updateProfile", () => {
     const coach = await t.run((ctx) => ctx.db.get(coachId));
     expect(coach?.role).toBe("admin");
     expect(coach?.staffStatus).toBe("inactive");
+    expect(coach?.canCoach).toBe(true);
     expect(coach?.staffTitle).toBe("Head Coach");
   });
 
@@ -61,6 +64,7 @@ describe("staff.updateProfile", () => {
         userId,
         role: "admin",
         staffStatus: "inactive",
+        canCoach: false,
       })
     ).rejects.toThrow("Cannot deactivate yourself");
   });

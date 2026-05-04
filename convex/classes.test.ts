@@ -3,7 +3,7 @@ import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api } from "./_generated/api";
 import schema from "./schema";
-import { seedGymAndUser, insertClass, insertWod } from "./testHelpers";
+import { seedGymAndUser, insertClass, insertUser, insertWod } from "./testHelpers";
 
 const modules = import.meta.glob("./**/*.ts");
 
@@ -24,9 +24,19 @@ describe("classes.create", () => {
     expect(cls).toMatchObject({ gymId, date: "2099-09-01", capacity: 15, bookedCount: 0 });
   });
 
-  test("admin can create a class", async () => {
+  test("admin must be coach-enabled to create a class as themselves", async () => {
     const t = convexTest(schema, modules);
-    const { identity } = await seedGymAndUser(t, { role: "admin" });
+    const { userId, identity } = await seedGymAndUser(t, { role: "admin" });
+
+    await expect(
+      t.withIdentity(identity).mutation(api.classes.create, {
+        date: "2099-09-02",
+        startTime: "08:00",
+        capacity: 20,
+      })
+    ).rejects.toThrow("Coach not found");
+
+    await t.run((ctx) => ctx.db.patch(userId, { canCoach: true }));
 
     const classId = await t.withIdentity(identity).mutation(api.classes.create, {
       date: "2099-09-02",
@@ -35,6 +45,69 @@ describe("classes.create", () => {
     });
 
     expect(classId).toBeTruthy();
+  });
+
+  test("admin can assign another admin marked as able to coach", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, identity } = await seedGymAndUser(t, { role: "admin" });
+    const coachId = await t.run((ctx) =>
+      ctx.db.insert("users", {
+        gymId,
+        name: "Owner Coach",
+        email: "owner-coach@test.com",
+        role: "admin",
+        canCoach: true,
+      })
+    );
+
+    const classId = await t.withIdentity(identity).mutation(api.classes.create, {
+      date: "2099-09-02",
+      startTime: "08:00",
+      capacity: 20,
+      coachId,
+    });
+
+    const cls = await t.run((ctx) => ctx.db.get(classId));
+    expect(cls?.coachId).toBe(coachId);
+  });
+
+  test("admin can assign an active coach", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, identity } = await seedGymAndUser(t, { role: "admin" });
+    const coachId = await insertUser(t, gymId, { role: "coach", email: "coach@test.com" });
+
+    const classId = await t.withIdentity(identity).mutation(api.classes.create, {
+      date: "2099-09-02",
+      startTime: "08:00",
+      capacity: 20,
+      coachId,
+    });
+
+    const cls = await t.run((ctx) => ctx.db.get(classId));
+    expect(cls?.coachId).toBe(coachId);
+  });
+
+  test("admin cannot assign an inactive coach", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, identity } = await seedGymAndUser(t, { role: "admin" });
+    const coachId = await t.run((ctx) =>
+      ctx.db.insert("users", {
+        gymId,
+        name: "Inactive Coach",
+        email: "inactive@test.com",
+        role: "coach",
+        staffStatus: "inactive",
+      })
+    );
+
+    await expect(
+      t.withIdentity(identity).mutation(api.classes.create, {
+        date: "2099-09-02",
+        startTime: "08:00",
+        capacity: 20,
+        coachId,
+      })
+    ).rejects.toThrow("Coach not found");
   });
 
   test("athlete cannot create a class", async () => {

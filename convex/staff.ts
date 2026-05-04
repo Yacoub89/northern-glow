@@ -26,6 +26,7 @@ export const list = query({
       .map((member) => ({
         ...member,
         staffStatus: member.staffStatus ?? "active",
+        canCoach: member.canCoach ?? member.role === "coach",
       }))
       .sort((a, b) => {
         const roleOrder = a.role === b.role ? 0 : a.role === "admin" ? -1 : 1;
@@ -40,6 +41,7 @@ export const updateProfile = mutation({
     userId: v.id("users"),
     role: staffRole,
     staffStatus,
+    canCoach: v.boolean(),
     staffTitle: v.optional(v.string()),
     staffPhone: v.optional(v.string()),
     staffNotes: v.optional(v.string()),
@@ -61,6 +63,7 @@ export const updateProfile = mutation({
     await ctx.db.patch(args.userId, {
       role: args.role,
       staffStatus: args.staffStatus,
+      canCoach: args.canCoach,
       staffTitle: cleanOptional(args.staffTitle),
       staffPhone: cleanOptional(args.staffPhone),
       staffNotes: cleanOptional(args.staffNotes),

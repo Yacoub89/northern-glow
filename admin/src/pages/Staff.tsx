@@ -9,6 +9,7 @@ type StaffStatus = "active" | "inactive";
 type Draft = {
   role: StaffRole;
   staffStatus: StaffStatus;
+  canCoach: boolean;
   staffTitle: string;
   staffPhone: string;
   staffNotes: string;
@@ -76,6 +77,15 @@ const S = {
     width: "100%",
     boxSizing: "border-box" as const,
   },
+  checkboxLabel: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    color: "#ddd",
+    fontSize: 13,
+    whiteSpace: "nowrap" as const,
+  },
+  checkbox: { width: 16, height: 16, accentColor: "#1BBFBF" },
   btn: (primary: boolean) => ({
     padding: "10px 18px",
     borderRadius: 8,
@@ -113,6 +123,7 @@ const S = {
 function draftFor(member: {
   role?: "athlete" | "coach" | "admin";
   staffStatus?: StaffStatus;
+  canCoach?: boolean;
   staffTitle?: string;
   staffPhone?: string;
   staffNotes?: string;
@@ -120,6 +131,7 @@ function draftFor(member: {
   return {
     role: member.role === "admin" ? "admin" : "coach",
     staffStatus: member.staffStatus ?? "active",
+    canCoach: member.canCoach ?? member.role === "coach",
     staffTitle: member.staffTitle ?? "",
     staffPhone: member.staffPhone ?? "",
     staffNotes: member.staffNotes ?? "",
@@ -200,12 +212,13 @@ export default function Staff() {
         <p style={S.empty}>No staff yet. Invite a coach to get started.</p>
       ) : (
         <div style={S.tableWrap}>
-          <table style={{ ...S.table, minWidth: 980 }}>
+          <table style={{ ...S.table, minWidth: 1060 }}>
             <thead>
               <tr>
                 <th style={S.th}>Name</th>
                 <th style={S.th}>Email</th>
                 <th style={S.th}>Role</th>
+                <th style={S.th}>Can coach</th>
                 <th style={S.th}>Status</th>
                 <th style={S.th}>Title</th>
                 <th style={S.th}>Phone</th>
@@ -234,6 +247,22 @@ export default function Staff() {
                         <option value="coach">Coach</option>
                         <option value="admin">Admin</option>
                       </select>
+                    </td>
+                    <td style={S.td}>
+                      <label style={S.checkboxLabel}>
+                        <input
+                          style={S.checkbox}
+                          type="checkbox"
+                          checked={draft.canCoach}
+                          onChange={(e) =>
+                            setDrafts((prev) => ({
+                              ...prev,
+                              [member._id]: { ...draft, canCoach: e.target.checked },
+                            }))
+                          }
+                        />
+                        Can coach
+                      </label>
                     </td>
                     <td style={S.td}>
                       <select

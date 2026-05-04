@@ -9,6 +9,7 @@ import GymSettings from "./pages/GymSettings";
 import Invites from "./pages/Invites";
 import Members from "./pages/Members";
 import Staff from "./pages/Staff";
+import Schedule from "./pages/Schedule";
 import GymCreate from "./pages/GymCreate";
 import SuperAdmin from "./pages/SuperAdmin";
 import AcceptInvite from "./pages/AcceptInvite";
@@ -89,6 +90,7 @@ export default function App() {
         <Route path="/dashboard" element={<GymGuard><Dashboard /></GymGuard>} />
         <Route path="/gym/settings" element={<GymGuard><GymSettings /></GymGuard>} />
         <Route path="/gym/invites" element={<GymGuard><Invites /></GymGuard>} />
+        <Route path="/gym/schedule" element={<GymGuard><GymAdminGuard><Schedule /></GymAdminGuard></GymGuard>} />
         <Route path="/gym/staff" element={<GymGuard><GymAdminGuard><Staff /></GymAdminGuard></GymGuard>} />
         <Route path="/gym/members" element={<GymGuard><Members /></GymGuard>} />
         <Route path="/gym/create" element={<GymCreateGuard />} />
