@@ -73,6 +73,10 @@ export default function Dashboard() {
               <div style={{ ...S.stat, fontSize: 18, paddingTop: 6 }}>Schedule</div>
               <div style={S.statLabel}>Plan classes and coaches</div>
             </Link>
+            <Link to="/gym/workouts" style={S.cardLink}>
+              <div style={{ ...S.stat, fontSize: 18, paddingTop: 6 }}>Workouts</div>
+              <div style={S.statLabel}>Program WODs for mobile</div>
+            </Link>
             <Link to="/gym/staff" style={S.cardLink}>
               <div style={{ ...S.stat, fontSize: 18, paddingTop: 6 }}>Staff</div>
               <div style={S.statLabel}>Manage coaches and admins</div>
