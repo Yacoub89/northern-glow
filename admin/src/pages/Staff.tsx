@@ -26,9 +26,9 @@ const S = {
   },
   h1: { fontSize: 28, fontWeight: 750, margin: "0 0 8px", color: "#fff" },
   sub: { color: "#888", fontSize: 14, margin: 0, maxWidth: 560, lineHeight: 1.5 },
-  invitePanel: { background: "#141414", border: "1px solid #252525", borderRadius: 8, padding: 18, minWidth: 390 },
+  invitePanel: { background: "#141414", border: "1px solid #252525", borderRadius: 8, padding: 18, minWidth: 430 },
   panelTitle: { fontSize: 13, color: "#aaa", fontWeight: 700, margin: "0 0 12px" },
-  form: { display: "grid", gridTemplateColumns: "1fr 128px auto", gap: 10, alignItems: "center" },
+  form: { display: "grid", gridTemplateColumns: "minmax(220px, 1fr) 128px auto", gap: 12, alignItems: "center" },
   input: {
     background: "#1e1e1e",
     border: "1px solid #333",
@@ -124,7 +124,15 @@ const S = {
     padding: "10px 0 14px",
   },
   checkbox: { width: 16, height: 16, accentColor: "#1BBFBF" },
-  cardActions: { display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10 },
+  cardActions: {
+    display: "flex",
+    justifyContent: "flex-end",
+    alignItems: "center",
+    gap: 10,
+    borderTop: "1px solid #252525",
+    marginTop: 16,
+    paddingTop: 14,
+  },
   error: { color: "#ff453a", fontSize: 13, margin: "10px 0 0" },
   empty: { color: "#666", fontSize: 14, padding: "22px 0" },
 };
