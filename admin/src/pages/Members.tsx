@@ -4,63 +4,103 @@ import { api } from "@convex/_generated/api";
 import { useMediaQuery } from "../components/useMediaQuery";
 
 const S = {
-  h1: { fontSize: 24, fontWeight: 700, marginBottom: 8 },
-  sub: { color: "#777", fontSize: 14, margin: "0 0 28px" },
-  sectionTitle: { fontSize: 16, fontWeight: 700, margin: "0 0 14px" },
-  form: { display: "flex", gap: 12, alignItems: "flex-end", marginBottom: 34, flexWrap: "wrap" as const },
-  group: { display: "flex", flexDirection: "column" as const, gap: 6 },
-  label: { fontSize: 13, color: "#aaa" },
+  page: { maxWidth: 1180 },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 24,
+    alignItems: "flex-start",
+    marginBottom: 26,
+  },
+  h1: { fontSize: 28, fontWeight: 750, margin: "0 0 8px", color: "#fff" },
+  sub: { color: "#888", fontSize: 14, margin: 0, maxWidth: 520, lineHeight: 1.5 },
+  panel: { background: "#141414", border: "1px solid #252525", borderRadius: 8, padding: 18 },
+  invitePanel: { background: "#141414", border: "1px solid #252525", borderRadius: 8, padding: 18, minWidth: 340 },
+  panelTitle: { fontSize: 13, color: "#aaa", fontWeight: 700, margin: "0 0 12px" },
+  form: { display: "flex", gap: 10, alignItems: "center" },
   input: {
     background: "#1e1e1e",
     border: "1px solid #333",
-    borderRadius: 8,
-    padding: "10px 12px",
+    borderRadius: 7,
+    padding: "10px 11px",
     color: "#fff",
     fontSize: 14,
     outline: "none",
-    width: 280,
+    width: "100%",
     boxSizing: "border-box" as const,
   },
   btn: (primary: boolean) => ({
-    padding: "10px 18px",
-    borderRadius: 8,
-    fontWeight: 600,
-    fontSize: 14,
+    padding: "10px 14px",
+    borderRadius: 7,
+    fontWeight: 700,
+    fontSize: 13,
     cursor: "pointer",
-    border: "none",
+    border: primary ? "none" : "1px solid #333",
     background: primary ? "#1BBFBF" : "#1e1e1e",
-    color: primary ? "#000" : "#aaa",
+    color: primary ? "#001313" : "#aaa",
     whiteSpace: "nowrap" as const,
   }),
-  tableWrap: { width: "100%", overflowX: "auto" as const, marginBottom: 34 },
-  table: { width: "100%", borderCollapse: "collapse" as const },
-  th: {
-    textAlign: "left" as const,
-    padding: "8px 12px",
-    fontSize: 12,
-    color: "#666",
-    borderBottom: "1px solid #252525",
-    whiteSpace: "nowrap" as const,
+  stats: { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, marginBottom: 24 },
+  stat: { background: "#101010", border: "1px solid #242424", borderRadius: 8, padding: 16 },
+  statValue: { fontSize: 26, color: "#1BBFBF", fontWeight: 800 },
+  statLabel: { fontSize: 12, color: "#777", marginTop: 3 },
+  sectionHead: { display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, margin: "26px 0 12px" },
+  sectionTitle: { fontSize: 16, fontWeight: 750, margin: 0, color: "#fff" },
+  sectionMeta: { fontSize: 13, color: "#666" },
+  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 },
+  memberCard: { background: "#141414", border: "1px solid #252525", borderRadius: 8, padding: 16 },
+  avatar: {
+    width: 38,
+    height: 38,
+    borderRadius: "50%",
+    background: "#1BBFBF22",
+    color: "#1BBFBF",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    fontWeight: 800,
+    fontSize: 14,
+    flexShrink: 0,
   },
-  td: { padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #1a1a1a" },
-  badge: (status: string) => ({
+  personRow: { display: "flex", gap: 12, alignItems: "center" },
+  name: { color: "#fff", fontSize: 14, fontWeight: 750, overflowWrap: "anywhere" as const },
+  email: { color: "#888", fontSize: 13, marginTop: 3, overflowWrap: "anywhere" as const },
+  detail: { color: "#666", fontSize: 12, marginTop: 14 },
+  inviteList: { display: "grid", gap: 8 },
+  inviteRow: {
+    display: "grid",
+    gridTemplateColumns: "minmax(180px, 1fr) 120px 110px auto",
+    gap: 12,
+    alignItems: "center",
+    background: "#141414",
+    border: "1px solid #252525",
+    borderRadius: 8,
+    padding: "12px 14px",
+  },
+  badge: {
     display: "inline-block",
-    padding: "2px 8px",
+    padding: "3px 8px",
     borderRadius: 4,
     fontSize: 12,
-    background: status === "pending" ? "#FF9F0A22" : "#34C75922",
-    color: status === "pending" ? "#FF9F0A" : "#34C759",
-  }),
-  empty: { color: "#666", fontSize: 14, padding: "24px 0", textAlign: "center" as const },
-  error: { color: "#ff453a", fontSize: 13, marginTop: 8 },
+    background: "#FF9F0A22",
+    color: "#FF9F0A",
+    width: "fit-content",
+  },
+  empty: { color: "#666", fontSize: 14, padding: "22px 0" },
+  error: { color: "#ff453a", fontSize: 13, margin: "10px 0 0" },
 };
+
+function initials(name?: string, email?: string) {
+  const source = name?.trim() || email?.trim() || "?";
+  return source.slice(0, 2).toUpperCase();
+}
 
 export default function Members() {
   const members = useQuery(api.users.listMembers);
   const invites = useQuery(api.invites.list);
   const sendInvite = useMutation(api.invites.send);
   const revokeInvite = useMutation(api.invites.revoke);
-  const isMobile = useMediaQuery("(max-width: 760px)");
+  const isMobile = useMediaQuery("(max-width: 820px)");
 
   const [email, setEmail] = useState("");
   const [sending, setSending] = useState(false);
@@ -85,98 +125,93 @@ export default function Members() {
   };
 
   return (
-    <div>
-      <h1 style={S.h1}>Members</h1>
-      <p style={S.sub}>Invite and manage athletes in this gym.</p>
-
-      <h2 style={S.sectionTitle}>Invite athlete</h2>
-      <form
-        style={{
-          ...S.form,
-          flexDirection: isMobile ? "column" : "row",
-          alignItems: isMobile ? "stretch" : "flex-end",
-        }}
-        onSubmit={handleInvite}
-      >
-        <div style={{ ...S.group, width: isMobile ? "100%" : "auto" }}>
-          <label style={S.label}>Email address</label>
-          <input
-            style={{ ...S.input, width: isMobile ? "100%" : S.input.width }}
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="athlete@example.com"
-            required
-          />
+    <div style={S.page}>
+      <div style={{ ...S.header, flexDirection: isMobile ? "column" : "row" }}>
+        <div>
+          <h1 style={S.h1}>Members</h1>
+          <p style={S.sub}>Invite athletes, review the active member list, and keep pending athlete invites tidy.</p>
         </div>
-        <button style={{ ...S.btn(true), width: isMobile ? "100%" : "auto" }} type="submit" disabled={sending}>
-          {sending ? "Sending..." : "Send invite"}
-        </button>
-        {error && <p style={S.error}>{error}</p>}
-      </form>
+        <section style={{ ...S.invitePanel, width: isMobile ? "100%" : S.invitePanel.minWidth, boxSizing: "border-box" }}>
+          <h2 style={S.panelTitle}>Invite athlete</h2>
+          <form style={{ ...S.form, flexDirection: isMobile ? "column" : "row" }} onSubmit={handleInvite}>
+            <input
+              style={S.input}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="athlete@example.com"
+              required
+            />
+            <button style={{ ...S.btn(true), width: isMobile ? "100%" : "auto" }} type="submit" disabled={sending}>
+              {sending ? "Sending..." : "Invite"}
+            </button>
+          </form>
+          {error && <p style={S.error}>{error}</p>}
+        </section>
+      </div>
 
-      <h2 style={S.sectionTitle}>Athletes</h2>
+      <div style={{ ...S.stats, gridTemplateColumns: isMobile ? "1fr" : S.stats.gridTemplateColumns }}>
+        <div style={S.stat}>
+          <div style={S.statValue}>{athletes.length}</div>
+          <div style={S.statLabel}>Active athletes</div>
+        </div>
+        <div style={S.stat}>
+          <div style={S.statValue}>{pendingAthleteInvites.length}</div>
+          <div style={S.statLabel}>Pending invites</div>
+        </div>
+        <div style={S.stat}>
+          <div style={S.statValue}>{members?.length ?? "-"}</div>
+          <div style={S.statLabel}>Total gym users</div>
+        </div>
+      </div>
+
+      <div style={S.sectionHead}>
+        <h2 style={S.sectionTitle}>Athletes</h2>
+        <span style={S.sectionMeta}>{athletes.length} listed</span>
+      </div>
       {athletes.length === 0 ? (
         <p style={S.empty}>No athletes yet. Send an invite to get started.</p>
       ) : (
-        <div style={S.tableWrap}>
-          <table style={{ ...S.table, minWidth: 520 }}>
-            <thead>
-              <tr>
-                <th style={S.th}>Name</th>
-                <th style={S.th}>Email</th>
-                <th style={S.th}>Joined</th>
-              </tr>
-            </thead>
-            <tbody>
-              {athletes.map((member) => (
-                <tr key={member._id}>
-                  <td style={S.td}>{member.name ?? "-"}</td>
-                  <td style={S.td}>{member.email ?? "-"}</td>
-                  <td style={S.td}>{new Date(member._creationTime).toLocaleDateString()}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div style={S.grid}>
+          {athletes.map((member) => (
+            <article key={member._id} style={S.memberCard}>
+              <div style={S.personRow}>
+                <div style={S.avatar}>{initials(member.name, member.email)}</div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={S.name}>{member.name ?? "Unnamed athlete"}</div>
+                  <div style={S.email}>{member.email ?? "No email"}</div>
+                </div>
+              </div>
+              <div style={S.detail}>Joined {new Date(member._creationTime).toLocaleDateString()}</div>
+            </article>
+          ))}
         </div>
       )}
 
-      <h2 style={S.sectionTitle}>Pending athlete invites</h2>
+      <div style={S.sectionHead}>
+        <h2 style={S.sectionTitle}>Pending Invites</h2>
+        <span style={S.sectionMeta}>{pendingAthleteInvites.length} open</span>
+      </div>
       {pendingAthleteInvites.length === 0 ? (
         <p style={S.empty}>No pending athlete invites.</p>
       ) : (
-        <div style={S.tableWrap}>
-          <table style={{ ...S.table, minWidth: 620 }}>
-            <thead>
-              <tr>
-                <th style={S.th}>Email</th>
-                <th style={S.th}>Status</th>
-                <th style={S.th}>Invited by</th>
-                <th style={S.th}>Expires</th>
-                <th style={S.th} />
-              </tr>
-            </thead>
-            <tbody>
-              {pendingAthleteInvites.map((invite) => (
-                <tr key={invite._id}>
-                  <td style={S.td}>{invite.email}</td>
-                  <td style={S.td}>
-                    <span style={S.badge(invite.status)}>{invite.status}</span>
-                  </td>
-                  <td style={S.td}>{invite.invitedByName}</td>
-                  <td style={S.td}>{new Date(invite.expiresAt).toLocaleDateString()}</td>
-                  <td style={S.td}>
-                    <button
-                      style={{ ...S.btn(false), padding: "6px 10px", fontSize: 12 }}
-                      onClick={() => revokeInvite({ inviteId: invite._id })}
-                    >
-                      Revoke
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div style={S.inviteList}>
+          {pendingAthleteInvites.map((invite) => (
+            <div
+              key={invite._id}
+              style={{ ...S.inviteRow, gridTemplateColumns: isMobile ? "1fr" : S.inviteRow.gridTemplateColumns }}
+            >
+              <div>
+                <div style={S.name}>{invite.email}</div>
+                <div style={S.email}>Invited by {invite.invitedByName}</div>
+              </div>
+              <span style={S.badge}>{invite.status}</span>
+              <div style={S.email}>{new Date(invite.expiresAt).toLocaleDateString()}</div>
+              <button style={{ ...S.btn(false), padding: "7px 10px" }} onClick={() => revokeInvite({ inviteId: invite._id })}>
+                Revoke
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </div>
