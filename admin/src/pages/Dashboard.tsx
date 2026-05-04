@@ -1,4 +1,5 @@
 import { useQuery } from "convex/react";
+import { Link } from "react-router-dom";
 import { api } from "@convex/_generated/api";
 import { useMediaQuery } from "../components/useMediaQuery";
 
@@ -7,6 +8,14 @@ const S = {
   sub: { color: "#888", fontSize: 14, marginBottom: 32 },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16, marginBottom: 32 },
   card: { background: "#141414", border: "1px solid #252525", borderRadius: 10, padding: 20 },
+  cardLink: {
+    background: "#141414",
+    border: "1px solid #252525",
+    borderRadius: 10,
+    padding: 20,
+    textDecoration: "none",
+    display: "block",
+  },
   stat: { fontSize: 32, fontWeight: 700, color: "#1BBFBF" },
   statLabel: { fontSize: 13, color: "#888", marginTop: 4 },
   section: { marginTop: 32 },
@@ -27,6 +36,7 @@ const S = {
 
 export default function Dashboard() {
   const gym = useQuery(api.gyms.getMyGym);
+  const me = useQuery(api.users.getMe);
   const members = useQuery(api.users.listMembers);
   const invites = useQuery(api.invites.list);
   const isMobile = useMediaQuery("(max-width: 760px)");
@@ -57,6 +67,12 @@ export default function Dashboard() {
           <div style={{ ...S.stat, fontSize: 18, paddingTop: 6 }}>{gym?.timezone ?? "—"}</div>
           <div style={S.statLabel}>Timezone</div>
         </div>
+        {me?.role === "admin" && (
+          <Link to="/gym/staff" style={S.cardLink}>
+            <div style={{ ...S.stat, fontSize: 18, paddingTop: 6 }}>Staff</div>
+            <div style={S.statLabel}>Manage coaches and admins</div>
+          </Link>
+        )}
       </div>
 
       {pendingInvites.length > 0 && (
