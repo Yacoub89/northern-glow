@@ -16,109 +16,123 @@ type Draft = {
 };
 
 const S = {
-  h1: { fontSize: 24, fontWeight: 700, marginBottom: 8 },
-  sub: { color: "#777", fontSize: 14, margin: "0 0 28px" },
-  sectionTitle: { fontSize: 16, fontWeight: 700, margin: "0 0 14px" },
-  form: { display: "flex", gap: 12, alignItems: "flex-end", marginBottom: 34, flexWrap: "wrap" as const },
-  group: { display: "flex", flexDirection: "column" as const, gap: 6 },
-  label: { fontSize: 13, color: "#aaa" },
+  page: { maxWidth: 1180 },
+  header: {
+    display: "flex",
+    justifyContent: "space-between",
+    gap: 24,
+    alignItems: "flex-start",
+    marginBottom: 26,
+  },
+  h1: { fontSize: 28, fontWeight: 750, margin: "0 0 8px", color: "#fff" },
+  sub: { color: "#888", fontSize: 14, margin: 0, maxWidth: 560, lineHeight: 1.5 },
+  invitePanel: { background: "#141414", border: "1px solid #252525", borderRadius: 8, padding: 18, minWidth: 390 },
+  panelTitle: { fontSize: 13, color: "#aaa", fontWeight: 700, margin: "0 0 12px" },
+  form: { display: "grid", gridTemplateColumns: "1fr 128px auto", gap: 10, alignItems: "center" },
   input: {
     background: "#1e1e1e",
     border: "1px solid #333",
-    borderRadius: 8,
-    padding: "10px 12px",
+    borderRadius: 7,
+    padding: "10px 11px",
     color: "#fff",
     fontSize: 14,
     outline: "none",
-    width: 260,
+    width: "100%",
     boxSizing: "border-box" as const,
   },
   select: {
     background: "#1e1e1e",
     border: "1px solid #333",
-    borderRadius: 8,
-    padding: "10px 12px",
+    borderRadius: 7,
+    padding: "10px 11px",
     color: "#fff",
     fontSize: 14,
     outline: "none",
-    width: 132,
+    width: "100%",
     boxSizing: "border-box" as const,
   },
-  tableWrap: { width: "100%", overflowX: "auto" as const },
-  table: { width: "100%", borderCollapse: "collapse" as const },
-  th: {
-    textAlign: "left" as const,
-    padding: "8px 10px",
-    fontSize: 12,
-    color: "#666",
-    borderBottom: "1px solid #252525",
+  btn: (primary: boolean) => ({
+    padding: "10px 14px",
+    borderRadius: 7,
+    fontWeight: 700,
+    fontSize: 13,
+    cursor: "pointer",
+    border: primary ? "none" : "1px solid #333",
+    background: primary ? "#1BBFBF" : "#1e1e1e",
+    color: primary ? "#001313" : "#aaa",
     whiteSpace: "nowrap" as const,
-  },
-  td: { padding: "10px", fontSize: 13, borderBottom: "1px solid #1a1a1a", verticalAlign: "top" as const },
-  compactInput: {
-    background: "#1e1e1e",
-    border: "1px solid #333",
-    borderRadius: 6,
-    padding: "7px 8px",
-    color: "#fff",
-    fontSize: 13,
-    outline: "none",
-    width: "100%",
-    boxSizing: "border-box" as const,
-  },
-  compactSelect: {
-    background: "#1e1e1e",
-    border: "1px solid #333",
-    borderRadius: 6,
-    padding: "7px 8px",
-    color: "#fff",
-    fontSize: 13,
-    outline: "none",
-    width: "100%",
-    boxSizing: "border-box" as const,
-  },
-  checkboxLabel: {
+  }),
+  stats: { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, marginBottom: 24 },
+  stat: { background: "#101010", border: "1px solid #242424", borderRadius: 8, padding: 16 },
+  statValue: { fontSize: 26, color: "#1BBFBF", fontWeight: 800 },
+  statLabel: { fontSize: 12, color: "#777", marginTop: 3 },
+  sectionHead: { display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 12, margin: "26px 0 12px" },
+  sectionTitle: { fontSize: 16, fontWeight: 750, margin: 0, color: "#fff" },
+  sectionMeta: { fontSize: 13, color: "#666" },
+  grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(330px, 1fr))", gap: 14 },
+  card: { background: "#141414", border: "1px solid #252525", borderRadius: 8, padding: 16 },
+  cardHead: { display: "flex", justifyContent: "space-between", gap: 14, alignItems: "flex-start", marginBottom: 16 },
+  personRow: { display: "flex", gap: 12, alignItems: "center", minWidth: 0 },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: "50%",
+    background: "#1BBFBF22",
+    color: "#1BBFBF",
     display: "flex",
     alignItems: "center",
-    gap: 8,
-    color: "#ddd",
-    fontSize: 13,
-    whiteSpace: "nowrap" as const,
-  },
-  checkbox: { width: 16, height: 16, accentColor: "#1BBFBF" },
-  btn: (primary: boolean) => ({
-    padding: "10px 18px",
-    borderRadius: 8,
-    fontWeight: 600,
+    justifyContent: "center",
+    fontWeight: 800,
     fontSize: 14,
-    cursor: "pointer",
-    border: "none",
-    background: primary ? "#1BBFBF" : "#1e1e1e",
-    color: primary ? "#000" : "#aaa",
-    whiteSpace: "nowrap" as const,
-  }),
-  smallBtn: (primary: boolean) => ({
-    padding: "7px 10px",
-    borderRadius: 6,
-    fontWeight: 600,
-    fontSize: 12,
-    cursor: "pointer",
-    border: "none",
-    background: primary ? "#1BBFBF" : "#1e1e1e",
-    color: primary ? "#000" : "#aaa",
-    whiteSpace: "nowrap" as const,
-  }),
-  badge: (status: StaffStatus) => ({
+    flexShrink: 0,
+  },
+  name: { color: "#fff", fontSize: 14, fontWeight: 750, overflowWrap: "anywhere" as const },
+  email: { color: "#888", fontSize: 13, marginTop: 3, overflowWrap: "anywhere" as const },
+  badges: { display: "flex", gap: 6, flexWrap: "wrap" as const, justifyContent: "flex-end" },
+  badge: (tone: "admin" | "coach" | "active" | "inactive") => ({
     display: "inline-block",
-    padding: "2px 8px",
+    padding: "3px 8px",
     borderRadius: 4,
     fontSize: 12,
-    background: status === "active" ? "#34C75922" : "#88888822",
-    color: status === "active" ? "#34C759" : "#888",
+    background:
+      tone === "admin" ? "#1BBFBF22" : tone === "coach" ? "#FF9F0A22" : tone === "active" ? "#34C75922" : "#88888822",
+    color:
+      tone === "admin" ? "#1BBFBF" : tone === "coach" ? "#FF9F0A" : tone === "active" ? "#34C759" : "#888",
   }),
-  error: { color: "#ff453a", fontSize: 13, marginTop: 8 },
-  empty: { color: "#666", fontSize: 14, padding: "32px 0", textAlign: "center" as const },
+  fieldGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 },
+  field: { display: "flex", flexDirection: "column" as const, gap: 6 },
+  label: { fontSize: 12, color: "#777", fontWeight: 650 },
+  textarea: {
+    background: "#1e1e1e",
+    border: "1px solid #333",
+    borderRadius: 7,
+    padding: "9px 10px",
+    color: "#fff",
+    fontSize: 13,
+    outline: "none",
+    width: "100%",
+    minHeight: 62,
+    resize: "vertical" as const,
+    boxSizing: "border-box" as const,
+  },
+  checkboxRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 9,
+    color: "#ddd",
+    fontSize: 13,
+    padding: "10px 0 14px",
+  },
+  checkbox: { width: 16, height: 16, accentColor: "#1BBFBF" },
+  cardActions: { display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 10 },
+  error: { color: "#ff453a", fontSize: 13, margin: "10px 0 0" },
+  empty: { color: "#666", fontSize: 14, padding: "22px 0" },
 };
+
+function initials(name?: string, email?: string) {
+  const source = name?.trim() || email?.trim() || "?";
+  return source.slice(0, 2).toUpperCase();
+}
 
 function draftFor(member: {
   role?: "athlete" | "coach" | "admin";
@@ -142,7 +156,7 @@ export default function Staff() {
   const staff = useQuery(api.staff.list);
   const sendInvite = useMutation(api.invites.send);
   const updateProfile = useMutation(api.staff.updateProfile);
-  const isMobile = useMediaQuery("(max-width: 760px)");
+  const isMobile = useMediaQuery("(max-width: 820px)");
 
   const [email, setEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<StaffRole>("coach");
@@ -150,6 +164,10 @@ export default function Staff() {
   const [savingId, setSavingId] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [drafts, setDrafts] = useState<Record<string, Draft>>({});
+
+  const activeStaff = staff?.filter((member) => (member.staffStatus ?? "active") === "active").length ?? 0;
+  const coachEnabled = staff?.filter((member) => member.canCoach).length ?? 0;
+  const admins = staff?.filter((member) => member.role === "admin").length ?? 0;
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -166,193 +184,199 @@ export default function Staff() {
   };
 
   return (
-    <div>
-      <h1 style={S.h1}>Staff</h1>
-      <p style={S.sub}>Manage admins and coaches for this gym.</p>
-
-      <h2 style={S.sectionTitle}>Invite staff</h2>
-      <form
-        style={{
-          ...S.form,
-          flexDirection: isMobile ? "column" : "row",
-          alignItems: isMobile ? "stretch" : "flex-end",
-        }}
-        onSubmit={handleInvite}
-      >
-        <div style={{ ...S.group, width: isMobile ? "100%" : "auto" }}>
-          <label style={S.label}>Email address</label>
-          <input
-            style={{ ...S.input, width: isMobile ? "100%" : S.input.width }}
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="coach@example.com"
-            required
-          />
+    <div style={S.page}>
+      <div style={{ ...S.header, flexDirection: isMobile ? "column" : "row" }}>
+        <div>
+          <h1 style={S.h1}>Staff</h1>
+          <p style={S.sub}>Invite coaches and admins, set who can coach classes, and keep staff details ready for scheduling.</p>
         </div>
-        <div style={{ ...S.group, width: isMobile ? "100%" : "auto" }}>
-          <label style={S.label}>Role</label>
-          <select
-            style={{ ...S.select, width: isMobile ? "100%" : S.select.width }}
-            value={inviteRole}
-            onChange={(e) => setInviteRole(e.target.value as StaffRole)}
-          >
-            <option value="coach">Coach</option>
-            <option value="admin">Admin</option>
-          </select>
-        </div>
-        <button style={{ ...S.btn(true), width: isMobile ? "100%" : "auto" }} type="submit" disabled={sending}>
-          {sending ? "Sending..." : "Send invite"}
-        </button>
-      </form>
+        <section style={{ ...S.invitePanel, width: isMobile ? "100%" : S.invitePanel.minWidth, boxSizing: "border-box" }}>
+          <h2 style={S.panelTitle}>Invite staff</h2>
+          <form style={{ ...S.form, gridTemplateColumns: isMobile ? "1fr" : S.form.gridTemplateColumns }} onSubmit={handleInvite}>
+            <input
+              style={S.input}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="coach@example.com"
+              required
+            />
+            <select style={S.select} value={inviteRole} onChange={(e) => setInviteRole(e.target.value as StaffRole)}>
+              <option value="coach">Coach</option>
+              <option value="admin">Admin</option>
+            </select>
+            <button style={{ ...S.btn(true), width: isMobile ? "100%" : "auto" }} type="submit" disabled={sending}>
+              {sending ? "Sending..." : "Invite"}
+            </button>
+          </form>
+          {error && <p style={S.error}>{error}</p>}
+        </section>
+      </div>
 
-      <h2 style={S.sectionTitle}>Roster</h2>
-      {error && <p style={S.error}>{error}</p>}
+      <div style={{ ...S.stats, gridTemplateColumns: isMobile ? "1fr" : S.stats.gridTemplateColumns }}>
+        <div style={S.stat}>
+          <div style={S.statValue}>{activeStaff}</div>
+          <div style={S.statLabel}>Active staff</div>
+        </div>
+        <div style={S.stat}>
+          <div style={S.statValue}>{coachEnabled}</div>
+          <div style={S.statLabel}>Can coach classes</div>
+        </div>
+        <div style={S.stat}>
+          <div style={S.statValue}>{admins}</div>
+          <div style={S.statLabel}>Admins</div>
+        </div>
+      </div>
+
+      <div style={S.sectionHead}>
+        <h2 style={S.sectionTitle}>Staff Roster</h2>
+        <span style={S.sectionMeta}>{staff?.length ?? 0} listed</span>
+      </div>
       {staff?.length === 0 ? (
         <p style={S.empty}>No staff yet. Invite a coach to get started.</p>
       ) : (
-        <div style={S.tableWrap}>
-          <table style={{ ...S.table, minWidth: 1060 }}>
-            <thead>
-              <tr>
-                <th style={S.th}>Name</th>
-                <th style={S.th}>Email</th>
-                <th style={S.th}>Role</th>
-                <th style={S.th}>Can coach</th>
-                <th style={S.th}>Status</th>
-                <th style={S.th}>Title</th>
-                <th style={S.th}>Phone</th>
-                <th style={S.th}>Notes</th>
-                <th style={S.th} />
-              </tr>
-            </thead>
-            <tbody>
-              {staff?.map((member) => {
-                const draft = drafts[member._id] ?? draftFor(member);
-                return (
-                  <tr key={member._id}>
-                    <td style={S.td}>{member.name ?? "-"}</td>
-                    <td style={S.td}>{member.email ?? "-"}</td>
-                    <td style={S.td}>
-                      <select
-                        style={S.compactSelect}
-                        value={draft.role}
-                        onChange={(e) =>
-                          setDrafts((prev) => ({
-                            ...prev,
-                            [member._id]: { ...draft, role: e.target.value as StaffRole },
-                          }))
-                        }
-                      >
-                        <option value="coach">Coach</option>
-                        <option value="admin">Admin</option>
-                      </select>
-                    </td>
-                    <td style={S.td}>
-                      <label style={S.checkboxLabel}>
-                        <input
-                          style={S.checkbox}
-                          type="checkbox"
-                          checked={draft.canCoach}
-                          onChange={(e) =>
-                            setDrafts((prev) => ({
-                              ...prev,
-                              [member._id]: { ...draft, canCoach: e.target.checked },
-                            }))
-                          }
-                        />
-                        Can coach
-                      </label>
-                    </td>
-                    <td style={S.td}>
-                      <select
-                        style={S.compactSelect}
-                        value={draft.staffStatus}
-                        onChange={(e) =>
-                          setDrafts((prev) => ({
-                            ...prev,
-                            [member._id]: { ...draft, staffStatus: e.target.value as StaffStatus },
-                          }))
-                        }
-                      >
-                        <option value="active">Active</option>
-                        <option value="inactive">Inactive</option>
-                      </select>
-                      <div style={{ marginTop: 6 }}>
-                        <span style={S.badge(draft.staffStatus)}>{draft.staffStatus}</span>
-                      </div>
-                    </td>
-                    <td style={S.td}>
-                      <input
-                        style={S.compactInput}
-                        value={draft.staffTitle}
-                        onChange={(e) =>
-                          setDrafts((prev) => ({
-                            ...prev,
-                            [member._id]: { ...draft, staffTitle: e.target.value },
-                          }))
-                        }
-                        placeholder="Head coach"
-                      />
-                    </td>
-                    <td style={S.td}>
-                      <input
-                        style={S.compactInput}
-                        value={draft.staffPhone}
-                        onChange={(e) =>
-                          setDrafts((prev) => ({
-                            ...prev,
-                            [member._id]: { ...draft, staffPhone: e.target.value },
-                          }))
-                        }
-                        placeholder="(555) 123-4567"
-                      />
-                    </td>
-                    <td style={S.td}>
-                      <input
-                        style={S.compactInput}
-                        value={draft.staffNotes}
-                        onChange={(e) =>
-                          setDrafts((prev) => ({
-                            ...prev,
-                            [member._id]: { ...draft, staffNotes: e.target.value },
-                          }))
-                        }
-                        placeholder="Certs, focus, notes"
-                      />
-                    </td>
-                    <td style={S.td}>
-                      <button
-                        style={S.smallBtn(true)}
-                        disabled={savingId === member._id}
-                        onClick={async () => {
-                          setSavingId(member._id);
-                          setError("");
-                          try {
-                            await updateProfile({
-                              userId: member._id as Id<"users">,
-                              ...draft,
-                            });
-                            setDrafts((prev) => {
-                              const next = { ...prev };
-                              delete next[member._id];
-                              return next;
-                            });
-                          } catch (err: unknown) {
-                            setError(err instanceof Error ? err.message : "Failed to save staff member");
-                          } finally {
-                            setSavingId(null);
-                          }
-                        }}
-                      >
-                        {savingId === member._id ? "Saving..." : "Save"}
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        <div style={{ ...S.grid, gridTemplateColumns: isMobile ? "1fr" : S.grid.gridTemplateColumns }}>
+          {staff?.map((member) => {
+            const draft = drafts[member._id] ?? draftFor(member);
+            return (
+              <article key={member._id} style={S.card}>
+                <div style={S.cardHead}>
+                  <div style={S.personRow}>
+                    <div style={S.avatar}>{initials(member.name, member.email)}</div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={S.name}>{member.name ?? "Unnamed staff"}</div>
+                      <div style={S.email}>{member.email ?? "No email"}</div>
+                    </div>
+                  </div>
+                  <div style={S.badges}>
+                    <span style={S.badge(draft.role)}>{draft.role}</span>
+                    <span style={S.badge(draft.staffStatus)}>{draft.staffStatus}</span>
+                  </div>
+                </div>
+
+                <div style={{ ...S.fieldGrid, gridTemplateColumns: isMobile ? "1fr" : S.fieldGrid.gridTemplateColumns }}>
+                  <label style={S.field}>
+                    <span style={S.label}>Access role</span>
+                    <select
+                      style={S.select}
+                      value={draft.role}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [member._id]: { ...draft, role: e.target.value as StaffRole },
+                        }))
+                      }
+                    >
+                      <option value="coach">Coach</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                  </label>
+                  <label style={S.field}>
+                    <span style={S.label}>Status</span>
+                    <select
+                      style={S.select}
+                      value={draft.staffStatus}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [member._id]: { ...draft, staffStatus: e.target.value as StaffStatus },
+                        }))
+                      }
+                    >
+                      <option value="active">Active</option>
+                      <option value="inactive">Inactive</option>
+                    </select>
+                  </label>
+                  <label style={S.field}>
+                    <span style={S.label}>Title</span>
+                    <input
+                      style={S.input}
+                      value={draft.staffTitle}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [member._id]: { ...draft, staffTitle: e.target.value },
+                        }))
+                      }
+                      placeholder="Head coach"
+                    />
+                  </label>
+                  <label style={S.field}>
+                    <span style={S.label}>Phone</span>
+                    <input
+                      style={S.input}
+                      value={draft.staffPhone}
+                      onChange={(e) =>
+                        setDrafts((prev) => ({
+                          ...prev,
+                          [member._id]: { ...draft, staffPhone: e.target.value },
+                        }))
+                      }
+                      placeholder="(555) 123-4567"
+                    />
+                  </label>
+                </div>
+
+                <label style={S.checkboxRow}>
+                  <input
+                    style={S.checkbox}
+                    type="checkbox"
+                    checked={draft.canCoach}
+                    onChange={(e) =>
+                      setDrafts((prev) => ({
+                        ...prev,
+                        [member._id]: { ...draft, canCoach: e.target.checked },
+                      }))
+                    }
+                  />
+                  Can be assigned to coach classes
+                </label>
+
+                <label style={S.field}>
+                  <span style={S.label}>Internal notes</span>
+                  <textarea
+                    style={S.textarea}
+                    value={draft.staffNotes}
+                    onChange={(e) =>
+                      setDrafts((prev) => ({
+                        ...prev,
+                        [member._id]: { ...draft, staffNotes: e.target.value },
+                      }))
+                    }
+                    placeholder="Certifications, focus areas, payroll notes"
+                  />
+                </label>
+
+                <div style={S.cardActions}>
+                  <button
+                    style={S.btn(true)}
+                    disabled={savingId === member._id}
+                    onClick={async () => {
+                      setSavingId(member._id);
+                      setError("");
+                      try {
+                        await updateProfile({
+                          userId: member._id as Id<"users">,
+                          ...draft,
+                        });
+                        setDrafts((prev) => {
+                          const next = { ...prev };
+                          delete next[member._id];
+                          return next;
+                        });
+                      } catch (err: unknown) {
+                        setError(err instanceof Error ? err.message : "Failed to save staff member");
+                      } finally {
+                        setSavingId(null);
+                      }
+                    }}
+                  >
+                    {savingId === member._id ? "Saving..." : "Save changes"}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
         </div>
       )}
     </div>
