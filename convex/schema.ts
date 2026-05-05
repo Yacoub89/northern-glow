@@ -133,6 +133,19 @@ export default defineSchema({
     .index("by_gym_date", ["gymId", "date"])
     .index("by_gym_date_program", ["gymId", "date", "program"]),
 
+  announcements: defineTable({
+    gymId: v.id("gyms"),
+    title: v.string(),
+    body: v.string(),
+    startDate: v.string(),
+    endDate: v.optional(v.string()),
+    pinned: v.boolean(),
+    createdBy: v.id("users"),
+    createdAt: v.number(),
+  })
+    .index("by_gym_startDate", ["gymId", "startDate"])
+    .index("by_gym_createdAt", ["gymId", "createdAt"]),
+
   classes: defineTable({
     gymId: v.id("gyms"),
     date: v.string(), // YYYY-MM-DD

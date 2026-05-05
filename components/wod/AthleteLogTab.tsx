@@ -41,6 +41,7 @@ export function AthleteLogTab() {
     days: 7,
     program: selectedProgram,
   });
+  const announcements = useQuery(api.announcements.listActive, { date: selectedDate });
   const todayBooking = useQuery(api.bookings.getMyUpcomingBooking, { date: selectedDate });
   const myResult = useQuery(
     api.results.getByWod,
@@ -69,6 +70,7 @@ export function AthleteLogTab() {
 
   const isLoading =
     wod === undefined ||
+    announcements === undefined ||
     todayBooking === undefined;
 
   const openLogModal = (partLabel = "") => {
@@ -143,6 +145,25 @@ export function AthleteLogTab() {
               </Text>
             </View>
           </View>
+
+          {announcements.length > 0 ? (
+            <>
+              <Text style={s.sectionLabel}>ANNOUNCEMENTS</Text>
+              <View style={s.announcementList}>
+                {announcements.map((item) => (
+                  <View key={item._id} style={s.announcementCard}>
+                    <View style={s.announcementIcon}>
+                      <Ionicons name="megaphone-outline" size={18} color={primary} />
+                    </View>
+                    <View style={s.announcementTextWrap}>
+                      <Text style={s.announcementTitle}>{item.title}</Text>
+                      <Text style={s.announcementBody}>{item.body}</Text>
+                    </View>
+                  </View>
+                ))}
+              </View>
+            </>
+          ) : null}
 
           {wod ? (
             <>

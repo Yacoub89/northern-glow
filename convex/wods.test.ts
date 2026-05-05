@@ -233,6 +233,46 @@ describe("wods.update", () => {
   });
 });
 
+// ── wods.remove ───────────────────────────────────────────────────────────────
+
+describe("wods.remove", () => {
+  test("coach can delete a WOD and its results", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId, identity } = await seedGymAndUser(t, { role: "coach" });
+    const wodId = await insertWod(t, gymId, userId);
+    await t.run((ctx) =>
+      ctx.db.insert("results", {
+        gymId,
+        wodId,
+        userId,
+        score: "10:00",
+        rx: true,
+        loggedAt: Date.now(),
+      })
+    );
+
+    await t.withIdentity(identity).mutation(api.wods.remove, { id: wodId });
+
+    const wod = await t.run((ctx) => ctx.db.get(wodId));
+    const results = await t.run((ctx) =>
+      ctx.db.query("results").withIndex("by_wod", (q) => q.eq("wodId", wodId)).collect()
+    );
+    expect(wod).toBeNull();
+    expect(results).toHaveLength(0);
+  });
+
+  test("athlete cannot delete a WOD", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId } = await seedGymAndUser(t, { role: "coach" });
+    const { identity: athleteIdentity } = await seedGymAndUser(t);
+    const wodId = await insertWod(t, gymId, userId);
+
+    await expect(
+      t.withIdentity(athleteIdentity).mutation(api.wods.remove, { id: wodId })
+    ).rejects.toThrow("Unauthorized");
+  });
+});
+
 // ── wods.importMany ───────────────────────────────────────────────────────────
 
 describe("wods.importMany", () => {

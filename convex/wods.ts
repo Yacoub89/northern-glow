@@ -551,6 +551,27 @@ export const update = mutation({
   },
 });
 
+export const remove = mutation({
+  args: { id: v.id("wods") },
+  handler: async (ctx, { id }) => {
+    const { gymId } = await requireCoachOrAdmin(ctx);
+    const wod = await ctx.db.get(id);
+    if (wod?.gymId !== gymId) throw new Error("WOD not found");
+
+    const results = await ctx.db
+      .query("results")
+      .withIndex("by_wod", (q) => q.eq("wodId", id))
+      .take(200);
+    if (results.length >= 200) {
+      throw new Error("This WOD has too many results to delete at once");
+    }
+    for (const result of results) {
+      await ctx.db.delete(result._id);
+    }
+    await ctx.db.delete(id);
+  },
+});
+
 export const importMany = mutation({
   args: {
     wods: v.array(WodImportItem),

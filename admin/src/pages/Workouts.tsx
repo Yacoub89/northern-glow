@@ -14,7 +14,7 @@ type WodProgram =
   | "OC-Hyrox"
   | "OC-Lift"
   | "OC-Teens";
-type WorkoutsTab = "week" | "create" | "import";
+type WorkoutsTab = "week" | "create" | "import" | "announcements";
 type PartDraft = {
   label: string;
   name: string;
@@ -48,6 +48,14 @@ type ImportedWod = {
     description?: string;
     coachNotes?: string;
   }>;
+};
+type Announcement = {
+  _id: Id<"announcements">;
+  title: string;
+  body: string;
+  startDate: string;
+  endDate?: string;
+  pinned: boolean;
 };
 
 const WOD_TYPES: Array<{ value: WodType; label: string }> = [
@@ -250,12 +258,24 @@ export default function Workouts() {
   const [importing, setImporting] = useState(false);
   const [importError, setImportError] = useState("");
   const [importSuccess, setImportSuccess] = useState("");
+  const [announcementTitle, setAnnouncementTitle] = useState("");
+  const [announcementBody, setAnnouncementBody] = useState("");
+  const [announcementStartDate, setAnnouncementStartDate] = useState(todayString());
+  const [announcementEndDate, setAnnouncementEndDate] = useState("");
+  const [announcementPinned, setAnnouncementPinned] = useState(true);
+  const [announcementSaving, setAnnouncementSaving] = useState(false);
+  const [announcementError, setAnnouncementError] = useState("");
+  const [announcementSuccess, setAnnouncementSuccess] = useState("");
 
   const schedule = useQuery(api.wods.getSchedule, { startDate, days: 7, program: viewProgram });
+  const announcements = useQuery(api.announcements.listForAdmin) as Announcement[] | undefined;
   const createWod = useMutation(api.wods.create);
   const updateWod = useMutation(api.wods.update);
+  const deleteWod = useMutation(api.wods.remove);
   const previewGoogleDoc = useAction(api.wods.previewGoogleDoc);
   const importMany = useMutation(api.wods.importMany);
+  const createAnnouncement = useMutation(api.announcements.create);
+  const deleteAnnouncement = useMutation(api.announcements.remove);
 
   const programmed = schedule?.filter((item) => item.wod !== null) ?? [];
   const movementCount = programmed.reduce((sum, item) => sum + (item.wod?.movements.length ?? 0), 0);
@@ -371,6 +391,63 @@ export default function Workouts() {
       setError(err instanceof Error ? err.message : "Failed to save WOD");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDeleteWod = async (wod: { _id: Id<"wods">; title: string; date: string }) => {
+    const confirmed = window.confirm(`Delete ${wod.title} on ${shortDate(wod.date)}? Logged results for this WOD will also be removed.`);
+    if (!confirmed) return;
+    setSaving(true);
+    setError("");
+    try {
+      await deleteWod({ id: wod._id });
+      if (editingId === wod._id) resetForm();
+      setActiveTab("week");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to delete WOD");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCreateAnnouncement = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setAnnouncementSaving(true);
+    setAnnouncementError("");
+    setAnnouncementSuccess("");
+    try {
+      const payload = {
+        title: announcementTitle.trim(),
+        body: announcementBody.trim(),
+        startDate: announcementStartDate,
+        pinned: announcementPinned,
+        ...(announcementEndDate ? { endDate: announcementEndDate } : {}),
+      };
+      if (!payload.title || !payload.body) throw new Error("Title and message are required");
+      await createAnnouncement(payload);
+      setAnnouncementTitle("");
+      setAnnouncementBody("");
+      setAnnouncementStartDate(todayString());
+      setAnnouncementEndDate("");
+      setAnnouncementPinned(true);
+      setAnnouncementSuccess("Announcement posted.");
+    } catch (err: unknown) {
+      setAnnouncementError(err instanceof Error ? err.message : "Failed to post announcement");
+    } finally {
+      setAnnouncementSaving(false);
+    }
+  };
+
+  const handleDeleteAnnouncement = async (id: Id<"announcements">) => {
+    const confirmed = window.confirm("Delete this announcement?");
+    if (!confirmed) return;
+    setAnnouncementError("");
+    setAnnouncementSuccess("");
+    try {
+      await deleteAnnouncement({ id });
+      setAnnouncementSuccess("Announcement deleted.");
+    } catch (err: unknown) {
+      setAnnouncementError(err instanceof Error ? err.message : "Failed to delete announcement");
     }
   };
 
@@ -493,7 +570,73 @@ export default function Workouts() {
         <button style={S.tabBtn(activeTab === "import")} type="button" onClick={() => setActiveTab("import")}>
           Import
         </button>
+        <button style={S.tabBtn(activeTab === "announcements")} type="button" onClick={() => setActiveTab("announcements")}>
+          Announcements
+        </button>
       </div>
+
+      {activeTab === "announcements" && (
+        <section style={S.panel}>
+          <div style={S.panelHead}>
+            <div>
+              <h2 style={S.panelTitle}>Announcements</h2>
+              <p style={{ ...S.sub, marginTop: 6 }}>Post short gym notices that athletes see above the WOD.</p>
+            </div>
+          </div>
+          <form onSubmit={handleCreateAnnouncement}>
+            <div style={{ ...S.formGrid, gridTemplateColumns: isMobile ? "1fr" : S.formGrid.gridTemplateColumns }}>
+              <label style={S.field}>
+                <span style={S.label}>Title</span>
+                <input style={S.input} value={announcementTitle} onChange={(e) => setAnnouncementTitle(e.target.value)} placeholder="New gym number" required />
+              </label>
+              <label style={S.field}>
+                <span style={S.label}>Start date</span>
+                <input style={S.input} type="date" value={announcementStartDate} onChange={(e) => setAnnouncementStartDate(e.target.value)} required />
+              </label>
+              <label style={S.field}>
+                <span style={S.label}>End date</span>
+                <input style={S.input} type="date" value={announcementEndDate} onChange={(e) => setAnnouncementEndDate(e.target.value)} />
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#aaa", fontSize: 13, paddingTop: 25 }}>
+                <input style={S.check} type="checkbox" checked={announcementPinned} onChange={(e) => setAnnouncementPinned(e.target.checked)} />
+                Pin to top
+              </label>
+            </div>
+            <label style={{ ...S.field, marginBottom: 12 }}>
+              <span style={S.label}>Message</span>
+              <textarea style={S.textarea} value={announcementBody} onChange={(e) => setAnnouncementBody(e.target.value)} placeholder="Effective today, call 613-800-9671." required />
+            </label>
+            <div style={S.formActions}>
+              <button style={S.btn(true)} type="submit" disabled={announcementSaving}>
+                {announcementSaving ? "Posting..." : "Post Announcement"}
+              </button>
+            </div>
+          </form>
+          <div style={S.importList}>
+            {(announcements ?? []).map((item) => (
+              <div key={item._id} style={S.importRow}>
+                <div style={S.dayTop}>
+                  <div>
+                    <div style={S.wodTitle}>{item.title}</div>
+                    <div style={S.panelMeta}>
+                      {shortDate(item.startDate)}
+                      {item.endDate ? ` - ${shortDate(item.endDate)}` : ""}
+                      {item.pinned ? " · pinned" : ""}
+                    </div>
+                  </div>
+                  <button style={{ ...S.btn(false), padding: "7px 10px" }} type="button" onClick={() => handleDeleteAnnouncement(item._id)}>
+                    Delete
+                  </button>
+                </div>
+                <div style={S.desc}>{item.body}</div>
+              </div>
+            ))}
+            {announcements?.length === 0 && <div style={S.empty}>No announcements yet.</div>}
+          </div>
+          {announcementError && <p style={S.error}>{announcementError}</p>}
+          {announcementSuccess && <p style={S.success}>{announcementSuccess}</p>}
+        </section>
+      )}
 
       {activeTab === "import" && (
       <section style={S.panel}>
@@ -673,9 +816,21 @@ export default function Workouts() {
           <div style={S.panelHead}>
             <h2 style={S.panelTitle}>{editingId ? "Edit WOD" : "Create WOD"}</h2>
             {editingId && (
-              <button style={{ ...S.btn(false), padding: "7px 10px" }} onClick={resetForm} type="button">
-                New WOD
-              </button>
+              <div style={S.controls}>
+                <button style={{ ...S.btn(false), padding: "7px 10px" }} onClick={resetForm} type="button">
+                  New WOD
+                </button>
+                <button
+                  style={{ ...S.btn(false), padding: "7px 10px", color: "#ff8a80" }}
+                  onClick={() => {
+                    const wod = schedule?.flatMap((item) => item.wod ? [item.wod] : []).find((item) => item._id === editingId);
+                    void handleDeleteWod(wod ?? { _id: editingId, title: title || "this WOD", date });
+                  }}
+                  type="button"
+                >
+                  Delete
+                </button>
+              </div>
             )}
           </div>
           <form onSubmit={handleSubmit}>
@@ -854,6 +1009,9 @@ export default function Workouts() {
                     <div style={S.formActions}>
                       <button style={{ ...S.btn(false), padding: "7px 10px" }} type="button" onClick={() => editWod(wod)}>
                         Edit
+                      </button>
+                      <button style={{ ...S.btn(false), padding: "7px 10px", color: "#ff8a80" }} type="button" onClick={() => handleDeleteWod(wod)}>
+                        Delete
                       </button>
                     </div>
                   </>
