@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -32,6 +32,8 @@ export function AthleteLogTab() {
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedProgram, setSelectedProgram] = useState<WodProgram>(DEFAULT_WOD_PROGRAM);
   const [showProgramModal, setShowProgramModal] = useState(false);
+  const [showLogModal, setShowLogModal] = useState(false);
+  const [selectedPartLabel, setSelectedPartLabel] = useState("");
 
   const wod = useQuery(api.wods.getByDate, { date: selectedDate, program: selectedProgram });
   const wodSchedule = useQuery(api.wods.getSchedule, {
@@ -42,26 +44,40 @@ export function AthleteLogTab() {
   const todayBooking = useQuery(api.bookings.getMyUpcomingBooking, { date: selectedDate });
   const myResult = useQuery(
     api.results.getByWod,
-    wod?._id ? { wodId: wod._id } : "skip"
+    showLogModal && wod?._id ? { wodId: wod._id, ...(selectedPartLabel ? { partLabel: selectedPartLabel } : {}) } : "skip"
   );
   const logResult = useMutation(api.results.log);
 
   const [score, setScore] = useState("");
   const [scale, setScale] = useState<Scale>("Rx");
   const [notes, setNotes] = useState("");
-  const [fullWodExpanded, setFullWodExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    setSelectedPartLabel("");
+    setShowLogModal(false);
     setScore("");
+    setScale("Rx");
     setNotes("");
-    setFullWodExpanded(false);
   }, [wod?._id]);
+
+  const selectedPart = useMemo(
+    () => wod?.parts?.find((part) => part.label === selectedPartLabel) ?? null,
+    [selectedPartLabel, wod?.parts]
+  );
+  const scoreType = selectedPart?.type ?? wod?.type;
 
   const isLoading =
     wod === undefined ||
-    todayBooking === undefined ||
-    (wod !== null && myResult === undefined);
+    todayBooking === undefined;
+
+  const openLogModal = (partLabel = "") => {
+    setSelectedPartLabel(partLabel);
+    setScore("");
+    setScale("Rx");
+    setNotes("");
+    setShowLogModal(true);
+  };
 
   const handleSave = async () => {
     if (!wod) return;
@@ -73,14 +89,16 @@ export function AthleteLogTab() {
     try {
       await logResult({
         wodId: wod._id,
+        ...(selectedPartLabel ? { partLabel: selectedPartLabel } : {}),
         classId: todayBooking?.slot?._id,
         score: score.trim(),
         rx: scale === "Rx" || scale === "Rx+",
         notes: notes.trim() || undefined,
       });
-      dialog.alert("Saved!", "Your result has been logged.");
+      dialog.alert("Saved!", selectedPartLabel ? `Your Part ${selectedPartLabel} result has been logged.` : "Your result has been logged.");
       setScore("");
       setNotes("");
+      setShowLogModal(false);
     } catch (e: any) {
       dialog.alert("Error", e.message);
     } finally {
@@ -135,59 +153,11 @@ export function AthleteLogTab() {
                 <Text style={s.readWodTitle}>{wod.title}</Text>
                 <Text style={[s.readWodMeta, { color: primary }]}>
                   {wod.type.toUpperCase()}
-                  {wod.description ? ` · ${wod.description.toUpperCase()}` : ""}
                 </Text>
-                {wod.parts && wod.parts.length > 0 ? (
-                  <>
-                    {(fullWodExpanded ? wod.parts : wod.parts.slice(0, 1)).map((part, i) => (
-                      <View key={`${part.label}-${i}`} style={s.readPartBlock}>
-                        <Text style={[s.readPartLabel, { color: primary }]}>
-                          PART {part.label}: {part.name}
-                          {part.type ? ` · ${part.type}` : ""}
-                        </Text>
-                        {part.movement ? (
-                          <Text style={s.readPartDetail}>{part.movement}</Text>
-                        ) : null}
-                        {(part.sets || part.reps || part.percentMax || part.timeCap) ? (
-                          <Text style={s.readPartSubtle}>
-                            {[
-                              part.sets ? `${part.sets} sets` : null,
-                              part.reps ? `${part.reps} reps` : null,
-                              part.percentMax ? `${part.percentMax}%` : null,
-                              part.timeCap ? `Cap ${part.timeCap}` : null,
-                            ].filter(Boolean).join(" · ")}
-                          </Text>
-                        ) : null}
-                        {part.description
-                          ? part.description
-                              .split("\n")
-                              .filter(Boolean)
-                              .map((line, j) => {
-                                const { num, label } = parseMovement(line);
-                                return (
-                                  <View key={j} style={s.movementRow}>
-                                    <Text style={[s.movementNum, { color: primary }]}>
-                                      {num ?? "·"}
-                                    </Text>
-                                    <Text style={s.movementLabel}>{label}</Text>
-                                  </View>
-                                );
-                              })
-                          : null}
-                      </View>
-                    ))}
-                    {wod.parts.length > 1 ? (
-                      <Pressable
-                        style={[s.expandWodBtn, { borderColor: primary }]}
-                        onPress={() => setFullWodExpanded((v) => !v)}
-                      >
-                        <Text style={[s.expandWodBtnText, { color: primary }]}>
-                          {fullWodExpanded ? "Show less" : `Show full WOD (${wod.parts.length} parts)`}
-                        </Text>
-                      </Pressable>
-                    ) : null}
-                  </>
-                ) : wod.movements.length > 0 ? (
+                {(!wod.parts || wod.parts.length === 0) && wod.description ? (
+                  <Text style={s.readPartDetail}>{wod.description}</Text>
+                ) : null}
+                {(!wod.parts || wod.parts.length === 0) && wod.movements.length > 0 ? (
                   <View style={{ marginTop: 10, gap: 8 }}>
                     {wod.movements.map((m, i) => {
                       const { num, label } = parseMovement(m);
@@ -200,13 +170,75 @@ export function AthleteLogTab() {
                     })}
                   </View>
                 ) : null}
+                {(!wod.parts || wod.parts.length === 0) ? (
+                  <Pressable
+                    style={s.partLogButton}
+                    onPress={() => openLogModal()}
+                  >
+                    <Ionicons name="trophy-outline" size={18} color={Colors.text} />
+                    <Text style={s.partLogButtonText}>Log result</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+              {wod.parts && wod.parts.length > 0 ? (
+                <View style={s.athletePartList}>
+                  {wod.parts.map((part, i) => (
+                    <View key={`${part.label}-${i}`} style={s.athletePartCard}>
+                      <View style={s.athletePartCardTop}>
+                        <View style={s.athletePartTitleWrap}>
+                          <Text style={s.athletePartTitle}>{part.name}</Text>
+                          <Text style={[s.athletePartMeta, { color: primary }]}>
+                            PART {part.label}
+                            {part.type ? ` · ${part.type}` : ""}
+                          </Text>
+                        </View>
+                        <Pressable
+                          style={s.partLogButton}
+                          onPress={() => openLogModal(part.label)}
+                        >
+                          <Ionicons name="trophy-outline" size={18} color={Colors.text} />
+                          <Text style={s.partLogButtonText}>Log result</Text>
+                        </Pressable>
+                      </View>
+                      {part.movement ? (
+                        <Text style={s.readPartDetail}>{part.movement}</Text>
+                      ) : null}
+                      {(part.sets || part.reps || part.percentMax || part.timeCap) ? (
+                        <Text style={s.readPartSubtle}>
+                          {[
+                            part.sets ? `${part.sets} sets` : null,
+                            part.reps ? `${part.reps} reps` : null,
+                            part.percentMax ? `${part.percentMax}%` : null,
+                            part.timeCap ? `Cap ${part.timeCap}` : null,
+                          ].filter(Boolean).join(" · ")}
+                        </Text>
+                      ) : null}
+                      {part.description
+                        ? part.description
+                            .split("\n")
+                            .filter(Boolean)
+                            .map((line, j) => {
+                              const { num, label } = parseMovement(line);
+                              return (
+                                <View key={j} style={s.movementRow}>
+                                  <Text style={[s.movementNum, { color: primary }]}>
+                                    {num ?? "·"}
+                                  </Text>
+                                  <Text style={s.movementLabel}>{label}</Text>
+                                </View>
+                              );
+                            })
+                        : null}
+                    </View>
+                  ))}
+                </View>
+              ) : null}
                 {wod.scalingNotes ? (
-                  <View style={s.scalingNotesBlock}>
+                  <View style={[s.scalingNotesBlock, s.scalingNotesCard]}>
                     <Text style={[s.readPartLabel, { color: primary }]}>SCALING</Text>
                     <Text style={s.readPartDetail}>{wod.scalingNotes}</Text>
                   </View>
                 ) : null}
-              </View>
             </>
           ) : (
             <View style={s.noWodBanner}>
@@ -216,79 +248,6 @@ export function AthleteLogTab() {
             </View>
           )}
 
-          {wod && (
-            <>
-              <Text style={[s.sectionLabel, { marginTop: 28 }]}>LOG YOUR SCORE</Text>
-              <View style={s.formSection}>
-                <Text style={s.formFieldLabel}>
-                  Score
-                  {wod.type === "AMRAP"
-                    ? " (rounds + reps)"
-                    : wod.type === "ForTime"
-                    ? " (time)"
-                    : ""}
-                </Text>
-                <TextInput
-                  style={s.formInput}
-                  placeholder={
-                    wod.type === "AMRAP"
-                      ? "e.g. 14 + 7"
-                      : wod.type === "ForTime"
-                      ? "e.g. 15:32"
-                      : "Enter your score"
-                  }
-                  placeholderTextColor={Colors.textSecondary}
-                  value={myResult && !score ? myResult.score : score}
-                  onChangeText={setScore}
-                  returnKeyType="done"
-                />
-
-                <Text style={[s.formFieldLabel, { marginTop: 16 }]}>Scale</Text>
-                <View style={s.scaleRow}>
-                  {SCALE_OPTIONS.map((opt) => (
-                    <Pressable
-                      key={opt}
-                      style={[
-                        s.scaleBtn,
-                        scale === opt && [
-                          s.scaleBtnActive,
-                          { backgroundColor: primary, borderColor: primary },
-                        ],
-                      ]}
-                      onPress={() => setScale(opt)}
-                    >
-                      <Text
-                        style={[s.scaleBtnText, scale === opt && s.scaleBtnTextActive]}
-                      >
-                        {opt}
-                      </Text>
-                    </Pressable>
-                  ))}
-                </View>
-
-                <Text style={[s.formFieldLabel, { marginTop: 16 }]}>Notes</Text>
-                <TextInput
-                  style={[s.formInput, { minHeight: 88 }]}
-                  placeholder="Felt strong on pull-ups..."
-                  placeholderTextColor={Colors.textSecondary}
-                  value={notes}
-                  onChangeText={setNotes}
-                  multiline
-                  textAlignVertical="top"
-                />
-              </View>
-
-              <Pressable
-                style={[s.saveBtn, { backgroundColor: primary }, saving && { opacity: 0.6 }]}
-                onPress={handleSave}
-                disabled={saving}
-              >
-                <Text style={s.saveBtnText}>
-                  {saving ? "Saving…" : myResult ? "Update Result" : "Save Result"}
-                </Text>
-              </Pressable>
-            </>
-          )}
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -323,6 +282,85 @@ export function AthleteLogTab() {
                 </Pressable>
               );
             })}
+          </Pressable>
+        </Pressable>
+      </Modal>
+      <Modal transparent animationType="slide" visible={showLogModal}>
+        <Pressable style={s.modalOverlay} onPress={() => setShowLogModal(false)}>
+          <Pressable style={s.accessModalSheet}>
+            <View style={s.modalHandle} />
+            <Text style={s.accessModalTitle}>
+              {selectedPart ? `PART ${selectedPart.label}: ${selectedPart.name}` : "LOG RESULT"}
+            </Text>
+            {myResult === undefined ? (
+              <ActivityIndicator color={primary} size="large" />
+            ) : (
+              <>
+                <Text style={s.formFieldLabel}>
+                  Score
+                  {scoreType === "AMRAP"
+                    ? " (rounds + reps)"
+                    : scoreType === "ForTime"
+                    ? " (time)"
+                    : ""}
+                </Text>
+                <TextInput
+                  style={s.formInput}
+                  placeholder={
+                    scoreType === "AMRAP"
+                      ? "e.g. 14 + 7"
+                      : scoreType === "ForTime"
+                      ? "e.g. 15:32"
+                      : "Enter your score"
+                  }
+                  placeholderTextColor={Colors.textSecondary}
+                  value={myResult && !score ? myResult.score : score}
+                  onChangeText={setScore}
+                  returnKeyType="done"
+                />
+
+                <Text style={[s.formFieldLabel, { marginTop: 16 }]}>Scale</Text>
+                <View style={s.scaleRow}>
+                  {SCALE_OPTIONS.map((opt) => (
+                    <Pressable
+                      key={opt}
+                      style={[
+                        s.scaleBtn,
+                        scale === opt && [
+                          s.scaleBtnActive,
+                          { backgroundColor: primary, borderColor: primary },
+                        ],
+                      ]}
+                      onPress={() => setScale(opt)}
+                    >
+                      <Text style={[s.scaleBtnText, scale === opt && s.scaleBtnTextActive]}>
+                        {opt}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+
+                <Text style={[s.formFieldLabel, { marginTop: 16 }]}>Notes</Text>
+                <TextInput
+                  style={[s.formInput, { minHeight: 88 }]}
+                  placeholder="Felt strong on pull-ups..."
+                  placeholderTextColor={Colors.textSecondary}
+                  value={notes}
+                  onChangeText={setNotes}
+                  multiline
+                  textAlignVertical="top"
+                />
+                <Pressable
+                  style={[s.modalSaveBtn, { backgroundColor: primary }, saving && { opacity: 0.6 }]}
+                  onPress={handleSave}
+                  disabled={saving}
+                >
+                  <Text style={s.modalSaveBtnText}>
+                    {saving ? "Saving..." : myResult ? "Update Result" : "Save Result"}
+                  </Text>
+                </Pressable>
+              </>
+            )}
           </Pressable>
         </Pressable>
       </Modal>

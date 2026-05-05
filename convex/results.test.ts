@@ -40,6 +40,54 @@ describe("results.log", () => {
     expect(result?.rx).toBe(true);
   });
 
+  test("logs separate results for different WOD parts", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId, identity } = await seedGymAndUser(t);
+    const wodId = await insertWod(t, gymId, userId);
+    await t.run((ctx) =>
+      ctx.db.patch(wodId, {
+        parts: [
+          { label: "A", name: "Strength", type: "Strength", description: "Back Squat 5x5 @ 80%" },
+          { label: "B", name: "AMRAP 12", type: "AMRAP", description: "10 Burpees" },
+        ],
+      })
+    );
+
+    const partAId = await t.withIdentity(identity).mutation(api.results.log, {
+      wodId,
+      partLabel: "A",
+      score: "225 lb",
+      rx: true,
+    });
+    const partBId = await t.withIdentity(identity).mutation(api.results.log, {
+      wodId,
+      partLabel: "B",
+      score: "6 + 4",
+      rx: false,
+    });
+
+    expect(partAId).not.toBe(partBId);
+    const partA = await t.withIdentity(identity).query(api.results.getByWod, { wodId, partLabel: "A" });
+    const partB = await t.withIdentity(identity).query(api.results.getByWod, { wodId, partLabel: "B" });
+    expect(partA?.score).toBe("225 lb");
+    expect(partB?.score).toBe("6 + 4");
+  });
+
+  test("rejects logging a result for a missing WOD part", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId, identity } = await seedGymAndUser(t);
+    const wodId = await insertWod(t, gymId, userId);
+
+    await expect(
+      t.withIdentity(identity).mutation(api.results.log, {
+        wodId,
+        partLabel: "A",
+        score: "10:00",
+        rx: true,
+      })
+    ).rejects.toThrow("WOD part not found");
+  });
+
   test("different users in the same gym have separate results for the same WOD", async () => {
     const t = convexTest(schema, modules);
     const { gymId, userId: user1, identity: i1 } = await seedGymAndUser(t);

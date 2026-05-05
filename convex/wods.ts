@@ -162,28 +162,83 @@ function extractScaling(lines: string[]) {
   return lines.slice(index, Math.min(lines.length, index + 4)).join("\n");
 }
 
+function looksLikePartHeading(line: string, index: number, lines: string[]) {
+  const text = line.trim();
+  const next = lines[index + 1]?.trim();
+  if (!next || text.length < 2 || text.length > 60) return false;
+  if (/^(?:part\s*)?[A-D][\).:\-]\s*/i.test(text)) return false;
+  if (/^(general|specific prep|pre[- ]?workout ramp|add loads|increase loads|every rep|barbell|loading|score|notes?|coach|scale|scaling|modifications?|options?)\b/i.test(text)) {
+    return false;
+  }
+  if (/^(?:for quality|for time|amrap|emom|\d+(?::\d{2})?\s+(?:amrap|emom)|\d+\s+(?:sets?|rounds?))\b/i.test(text)) {
+    return false;
+  }
+  if (/^\d/.test(text) || /[.;:]$/.test(text)) return false;
+  if (!/[a-z]/i.test(text)) return false;
+
+  const prev = lines[index - 1]?.trim();
+  const previousLooksLikeContent =
+    !!prev &&
+    !/^(general|specific prep|pre[- ]?workout ramp|for quality|loading|barbell)\b/i.test(prev) &&
+    (/^\d/.test(prev) || /[.!?:]$/.test(prev) || prev.length > 60);
+  return index === 0 || previousLooksLikeContent || text === text.toUpperCase() || /^["'].*["']$/.test(text);
+}
+
+function partFromBoundary(
+  boundary: { index: number; bodyStart: number; label: string; name: string },
+  next: number,
+  lines: string[],
+) {
+  const body = lines.slice(boundary.bodyStart, next);
+  const description = body.join("\n").trim();
+  const text = `${boundary.name}\n${description}`;
+  const timeCap = text.match(/\b(?:time cap|cap)[: ]+([^\n]+)/i)?.[1]?.trim();
+  const movement = extractMovements(text)[0];
+  return {
+    label: boundary.label,
+    name: boundary.name,
+    type: inferType(text),
+    ...(description ? { description } : {}),
+    ...(movement ? { movement } : {}),
+    ...(timeCap ? { timeCap } : {}),
+  };
+}
+
 function parseParts(lines: string[]): ParsedWod["parts"] {
-  const boundaries: Array<{ index: number; label: string; name: string }> = [];
+  const boundaries: Array<{ index: number; bodyStart: number; label: string; name: string }> = [];
   lines.forEach((line, index) => {
     const match = line.match(/^(?:part\s*)?([A-D])[\).:\-]\s*(.*)$/i);
-    if (match) boundaries.push({ index, label: match[1].toUpperCase(), name: match[2].trim() || `Part ${match[1].toUpperCase()}` });
+    if (!match) return;
+    const label = match[1].toUpperCase();
+    const inlineName = match[2].trim();
+    const nextLine = lines[index + 1]?.trim();
+    const nextLooksLikeName =
+      !!nextLine &&
+      !/^(?:part\s*)?[A-D][\).:\-]\s*/i.test(nextLine) &&
+      !/^(scale|scaling|modifications?|options?)\b/i.test(nextLine) &&
+      nextLine.length <= 60;
+    boundaries.push({
+      index,
+      bodyStart: inlineName ? index + 1 : nextLooksLikeName ? index + 2 : index + 1,
+      label,
+      name: inlineName || (nextLooksLikeName ? nextLine : `Part ${label}`),
+    });
   });
+  if (boundaries.length === 0) {
+    lines.forEach((line, index) => {
+      if (!looksLikePartHeading(line, index, lines)) return;
+      boundaries.push({
+        index,
+        bodyStart: index + 1,
+        label: String.fromCharCode(65 + boundaries.length),
+        name: line.trim(),
+      });
+    });
+  }
   if (boundaries.length === 0) return undefined;
   return boundaries.map((boundary, index) => {
     const next = boundaries[index + 1]?.index ?? lines.length;
-    const body = lines.slice(boundary.index + 1, next);
-    const description = body.join("\n").trim();
-    const text = `${boundary.name}\n${description}`;
-    const timeCap = text.match(/\b(?:time cap|cap)[: ]+([^\n]+)/i)?.[1]?.trim();
-    const movement = extractMovements(text)[0];
-    return {
-      label: boundary.label,
-      name: boundary.name,
-      type: inferType(text),
-      ...(description ? { description } : {}),
-      ...(movement ? { movement } : {}),
-      ...(timeCap ? { timeCap } : {}),
-    };
+    return partFromBoundary(boundary, next, lines);
   });
 }
 
@@ -222,9 +277,12 @@ function parseProgrammingHtml(html: string): ProgrammingBlock[] {
     const tag = match[1].toLowerCase();
     const text = cleanHtmlText(match[2]);
     if (!text) continue;
-    blocks.push({
-      text,
-      kind: tag.startsWith("h") ? "heading" : tag === "li" ? "list" : "text",
+    text.split("\n").forEach((line) => {
+      if (!line.trim()) return;
+      blocks.push({
+        text: line,
+        kind: tag.startsWith("h") ? "heading" : tag === "li" ? "list" : "text",
+      });
     });
   }
 
@@ -261,9 +319,12 @@ function parseProgrammingBlocks(blocks: ProgrammingBlock[], startDate: string): 
       if (body.length === 0 && headers.length > 1) return null;
       const fullText = [header.title, ...body].join("\n");
       const type = inferType(fullText);
-      const title = inferTitle(body.length > 0 ? body : [header.title], type);
       const scalingNotes = extractScaling(body);
       const parts = parseParts(body);
+      const title =
+        parts && parts.length > 1
+          ? parts.map((part) => part.name).join(" + ").slice(0, 80)
+          : inferTitle(body.length > 0 ? body : [header.title], type);
       return {
         date: inferDate(header.title, startDate, index),
         title,

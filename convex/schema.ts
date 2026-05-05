@@ -177,6 +177,7 @@ export default defineSchema({
     // Optional during a backfill window; new rows always populate it.
     gymId: v.optional(v.id("gyms")),
     wodId: v.id("wods"),
+    partLabel: v.optional(v.string()),
     userId: v.id("users"),
     classId: v.optional(v.id("classes")),
     score: v.string(), // flexible: "15:32", "185 lbs", "234 reps"
@@ -187,6 +188,7 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_wod", ["wodId"])
     .index("by_user_wod", ["userId", "wodId"])
+    .index("by_user_wod_part", ["userId", "wodId", "partLabel"])
     .index("by_gym_user", ["gymId", "userId"]),
 
   documents: defineTable({

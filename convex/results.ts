@@ -20,14 +20,14 @@ export const getMyResults = query({
 });
 
 export const getByWod = query({
-  args: { wodId: v.id("wods") },
-  handler: async (ctx, { wodId }) => {
+  args: { wodId: v.id("wods"), partLabel: v.optional(v.string()) },
+  handler: async (ctx, { wodId, partLabel }) => {
     const userId = await getAuthUserId(ctx);
     if (!userId) return null;
     return await ctx.db
       .query("results")
-      .withIndex("by_user_wod", (q) =>
-        q.eq("userId", userId).eq("wodId", wodId)
+      .withIndex("by_user_wod_part", (q) =>
+        q.eq("userId", userId).eq("wodId", wodId).eq("partLabel", partLabel)
       )
       .first();
   },
@@ -55,6 +55,7 @@ export const getWodStats = query({
 export const log = mutation({
   args: {
     wodId: v.id("wods"),
+    partLabel: v.optional(v.string()),
     classId: v.optional(v.id("classes")),
     score: v.string(),
     rx: v.boolean(),
@@ -65,6 +66,9 @@ export const log = mutation({
     // Only allow logging results against WODs in the caller's gym.
     const wod = await ctx.db.get(args.wodId);
     if (!wod || wod.gymId !== gymId) throw new Error("WOD not found");
+    if (args.partLabel && !wod.parts?.some((part) => part.label === args.partLabel)) {
+      throw new Error("WOD part not found");
+    }
     if (args.classId) {
       const cls = await ctx.db.get(args.classId);
       if (!cls || cls.gymId !== gymId) throw new Error("Class not found");
@@ -75,8 +79,8 @@ export const log = mutation({
 
     const existing = await ctx.db
       .query("results")
-      .withIndex("by_user_wod", (q) =>
-        q.eq("userId", userId).eq("wodId", args.wodId)
+      .withIndex("by_user_wod_part", (q) =>
+        q.eq("userId", userId).eq("wodId", args.wodId).eq("partLabel", args.partLabel)
       )
       .first();
 
@@ -85,6 +89,7 @@ export const log = mutation({
         score: args.score,
         rx: args.rx,
         notes: args.notes,
+        partLabel: args.partLabel,
         loggedAt: Date.now(),
       });
       return existing._id;

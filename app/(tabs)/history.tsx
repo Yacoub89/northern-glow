@@ -44,7 +44,7 @@ export default function HistoryScreen() {
             <View style={styles.card}>
               <View style={styles.cardHeader}>
                 <Text style={styles.wodName} numberOfLines={1}>
-                  {item.wod?.title ?? "Unknown WOD"}
+                  {item.wod?.title ?? "Unknown WOD"}{item.partLabel ? ` · Part ${item.partLabel}` : ""}
                 </Text>
                 <Text style={styles.cardDate}>{formatTimestamp(item.loggedAt)}</Text>
               </View>
