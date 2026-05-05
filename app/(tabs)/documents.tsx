@@ -181,6 +181,10 @@ type DocumentListItem = Doc<"documents"> & {
   signatureName?: string | null;
 };
 
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Something went wrong";
+}
+
 export default function DocumentsScreen() {
   const { primary } = useGymColors();
   const dialog = useAppDialog();
@@ -264,8 +268,8 @@ export default function DocumentsScreen() {
       }
       resetCreate();
       setCreateVisible(false);
-    } catch (e: any) {
-      dialog.alert("Error", e.message);
+    } catch (e: unknown) {
+      dialog.alert("Error", errorMessage(e));
     } finally {
       setCreating(false);
     }
@@ -283,8 +287,8 @@ export default function DocumentsScreen() {
       setSignDoc(null);
       setSigName("");
       setSigPaths(null);
-    } catch (e: any) {
-      dialog.alert("Error", e.message);
+    } catch (e: unknown) {
+      dialog.alert("Error", errorMessage(e));
     } finally {
       setSigning(false);
     }
@@ -300,8 +304,8 @@ export default function DocumentsScreen() {
     if (!confirmed) return;
     try {
       await removeDoc({ documentId: docId });
-    } catch (e: any) {
-      dialog.alert("Error", e.message);
+    } catch (e: unknown) {
+      dialog.alert("Error", errorMessage(e));
     }
   };
 
@@ -342,15 +346,15 @@ export default function DocumentsScreen() {
           keyExtractor={(item) => item._id}
           contentContainerStyle={s.list}
           renderItem={({ item }) => {
-            const signed = !isCoach && (item as any).signed;
-            const sigCount = isCoach ? (item as any).signatureCount : null;
-            const isPdf = !!(item as any).fileStorageId;
+            const signed = !isCoach && item.signed;
+            const sigCount = isCoach ? item.signatureCount : null;
+            const isPdf = !!item.fileStorageId;
             return (
               <Pressable
                 style={[s.card, signed && s.cardSigned]}
                 onPress={() => {
                   if (isCoach) { setSigsDocId(item._id); }
-                  else if (!signed) { setSignDoc(item as any); setSigName(me?.name ?? ""); setSigPaths(null); }
+                  else if (!signed) { setSignDoc(item); setSigName(me?.name ?? ""); setSigPaths(null); }
                 }}
                 onLongPress={() => isCoach && handleDelete(item._id, item.title)}
               >
@@ -367,7 +371,7 @@ export default function DocumentsScreen() {
                     {isCoach ? (
                       <Text style={s.cardMeta}>{isPdf ? "PDF · " : ""}{sigCount} signed · {formatTimestamp(item.createdAt)}</Text>
                     ) : signed ? (
-                      <Text style={[s.cardMeta, { color: Colors.success }]}>Signed {formatTimestamp((item as any).signedAt)}</Text>
+                      <Text style={[s.cardMeta, { color: Colors.success }]}>Signed {formatTimestamp(item.signedAt ?? Date.now())}</Text>
                     ) : (
                       <Text style={[s.cardMeta, { color: Colors.warning }]}>Tap to read & sign</Text>
                     )}

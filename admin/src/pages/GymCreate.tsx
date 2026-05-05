@@ -3,6 +3,10 @@ import { useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { useNavigate } from "react-router-dom";
 
+function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Failed to create gym";
+}
+
 /**
  * Shown to an authenticated user who has no gymId yet.
  * Allows them to create a new gym and become its first admin.
@@ -54,8 +58,8 @@ export default function GymCreate() {
         timezone: form.timezone,
       });
       navigate("/dashboard");
-    } catch (err: any) {
-      setError(err.message ?? "Failed to create gym");
+    } catch (err: unknown) {
+      setError(errorMessage(err));
     } finally {
       setSaving(false);
     }

@@ -68,6 +68,10 @@ const TIMEZONES = [
   "Australia/Melbourne",
 ];
 
+function errorMessage(error: unknown, fallback = "Failed") {
+  return error instanceof Error ? error.message : fallback;
+}
+
 // ── DNS Records panel ─────────────────────────────────────────────────────────
 
 type DnsRecord = {
@@ -150,8 +154,8 @@ function DnsRecordsPanel({ gym }: { gym: Gym }) {
     try {
       await verify({ gymId: gym._id });
       setVerifyMsg("Verification triggered — refresh in a moment.");
-    } catch (e: any) {
-      setVerifyMsg(e.message ?? "Failed");
+    } catch (e: unknown) {
+      setVerifyMsg(errorMessage(e));
     } finally {
       setVerifying(false);
     }
@@ -309,8 +313,8 @@ function DomainEditor({ gym, onClose }: { gym: Gym; onClose: () => void }) {
       });
       setMsg("Saved.");
       setTimeout(onClose, 800);
-    } catch (e: any) {
-      setMsg(e.message ?? "Failed");
+    } catch (e: unknown) {
+      setMsg(errorMessage(e));
     } finally {
       setSaving(false);
     }
@@ -504,8 +508,8 @@ export default function SuperAdmin() {
         customDomain: "",
         emailDomain: "",
       });
-    } catch (err: any) {
-      setError(err.message ?? "Failed to create gym");
+    } catch (err: unknown) {
+      setError(errorMessage(err, "Failed to create gym"));
     } finally {
       setSaving(false);
     }

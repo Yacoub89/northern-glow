@@ -9,8 +9,30 @@ import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { internal } from "./_generated/api";
 import { requireActiveMembershipForAthlete } from "./helpers";
+import { MutationCtx } from "./_generated/server";
 
 const EVENT_CANCEL_BATCH_SIZE = 100;
+const EVENT_PAYMENT_HOLD_MS = 30 * 60 * 1000;
+
+function isActiveRegistration(reg: {
+  paymentStatus: "free" | "paid" | "pending";
+  registeredAt: number;
+}) {
+  return reg.paymentStatus !== "pending" || reg.registeredAt + EVENT_PAYMENT_HOLD_MS > Date.now();
+}
+
+async function activeRegistrationCount(
+  ctx: MutationCtx,
+  eventId: Id<"events">,
+) {
+  const registrations = await ctx.db
+    .query("eventRegistrations")
+    .withIndex("by_event_status", (q) =>
+      q.eq("eventId", eventId).eq("status", "registered")
+    )
+    .collect();
+  return registrations.filter(isActiveRegistration).length;
+}
 
 // ── Public queries ────────────────────────────────────────────────────────────
 
@@ -83,9 +105,12 @@ export const registerFree = mutation({
     if (event.priceCents > 0) throw new Error("This event requires payment");
     if (event.status !== "upcoming") throw new Error("Event is not available for registration");
 
-    // Enforce capacity
-    if (event.capacity !== undefined && event.registeredCount >= event.capacity) {
-      throw new Error("Event is full");
+    // Enforce capacity, including fresh pending paid checkouts.
+    if (event.capacity !== undefined) {
+      const activeCount = await activeRegistrationCount(ctx, eventId);
+      if (Math.max(event.registeredCount, activeCount) >= event.capacity) {
+        throw new Error("Event is full");
+      }
     }
 
     await requireActiveMembershipForAthlete(ctx, user, "register for events");
@@ -285,8 +310,8 @@ export const insertPendingRegistration = internalMutation({
     stripeSessionId: v.string(),
   },
   handler: async (ctx, args) => {
-    // Re-check capacity inside the mutation to close the oversell race:
-    // count paid + pending registrations against the event's capacity.
+    // Re-check capacity inside the mutation to close the oversell race.
+    // Fresh pending checkouts hold a spot briefly, but abandoned checkouts expire.
     const event = await ctx.db.get(args.eventId);
     if (!event) throw new Error("Event not found");
     if (event.status !== "upcoming") throw new Error("Event is not available");
@@ -298,9 +323,11 @@ export const insertPendingRegistration = internalMutation({
         .withIndex("by_event_status", (q) =>
           q.eq("eventId", args.eventId).eq("status", "registered")
         )
-        .take(event.capacity);
-      const heldByOthers = activeRegs.filter((r) => r.userId !== args.userId).length;
-      if (heldByOthers >= event.capacity) {
+        .collect();
+      const heldByOthers = activeRegs.filter(
+        (r) => r.userId !== args.userId && isActiveRegistration(r)
+      ).length;
+      if (Math.max(event.registeredCount, heldByOthers) >= event.capacity) {
         throw new Error("Event is full");
       }
     }

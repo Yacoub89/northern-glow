@@ -138,6 +138,13 @@ export const remove = mutation({
     const { gymId } = await requireCoachOrAdmin(ctx);
     const doc = await ctx.db.get(documentId);
     if (doc?.gymId !== gymId) throw new Error("Document not found");
+    const signatures = await ctx.db
+      .query("documentSignatures")
+      .withIndex("by_document", (q) => q.eq("documentId", documentId))
+      .collect();
+    for (const signature of signatures) {
+      await ctx.db.delete(signature._id);
+    }
     if (doc.fileStorageId) {
       await ctx.storage.delete(doc.fileStorageId);
     }

@@ -15,10 +15,16 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { api } from "../../convex/_generated/api";
+import { Doc } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
 import { Fonts, FontSizes } from "../../constants/Typography";
 import { useGymColors } from "../../constants/GymConfig";
 import { getTodayDate, formatDate, formatTime } from "../../utils/date";
+
+type HomeClass = Doc<"classes"> & {
+  coachName: string;
+  wodTitle: string | null;
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -211,7 +217,7 @@ export default function HomeScreen() {
     : null;
 
   // Today's classes with my booking status
-  const todayClassList = todayClasses ?? [];
+  const todayClassList = (todayClasses ?? []) as HomeClass[];
 
   return (
     <SafeAreaView style={sc.container} edges={["bottom"]}>
@@ -472,9 +478,9 @@ export default function HomeScreen() {
 
                     <View style={{ flex: 1 }}>
                       <Text style={sc.className}>
-                        {(cls as any).wodTitle?.toUpperCase() ?? "CROSSFIT CLASS"}
+                        {cls.wodTitle?.toUpperCase() ?? "CROSSFIT CLASS"}
                       </Text>
-                      <Text style={sc.classCoach}>{(cls as any).coachName}</Text>
+                      <Text style={sc.classCoach}>{cls.coachName}</Text>
 
                       {/* Status badge */}
                       {myBooking ? (
@@ -558,7 +564,7 @@ export default function HomeScreen() {
                     {/* Coach avatar */}
                     <View style={[sc.classAvatar, { borderColor: primary + "40" }]}>
                       <Text style={[sc.classAvatarText, { color: primary }]}>
-                        {(cls as any).coachName?.[0]?.toUpperCase() ?? "C"}
+                        {cls.coachName?.[0]?.toUpperCase() ?? "C"}
                       </Text>
                     </View>
                   </ScalePress>

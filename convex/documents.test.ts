@@ -61,3 +61,41 @@ describe("documents.sign", () => {
     ).rejects.toThrow("Document not found");
   });
 });
+
+describe("documents.remove", () => {
+  test("deletes signatures with the document", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId, identity } = await seedGymAndUser(t, {
+      role: "admin",
+    });
+    const documentId = await t.run((ctx) =>
+      ctx.db.insert("documents", {
+        gymId,
+        title: "Waiver",
+        content: "Please sign.",
+        createdBy: userId,
+        createdAt: Date.now(),
+      })
+    );
+    await t.run((ctx) =>
+      ctx.db.insert("documentSignatures", {
+        documentId,
+        userId,
+        signatureName: "Admin User",
+        signedAt: Date.now(),
+      })
+    );
+
+    await t.withIdentity(identity).mutation(api.documents.remove, { documentId });
+
+    const [doc, signatures] = await t.run(async (ctx) => {
+      const sigs = await ctx.db
+        .query("documentSignatures")
+        .withIndex("by_document", (q) => q.eq("documentId", documentId))
+        .collect();
+      return [await ctx.db.get(documentId), sigs] as const;
+    });
+    expect(doc).toBeNull();
+    expect(signatures).toHaveLength(0);
+  });
+});

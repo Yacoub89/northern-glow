@@ -3,7 +3,7 @@ import { convexTest } from "convex-test";
 import { describe, expect, test } from "vitest";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
-import { insertEvent, insertMembership, seedGymAndUser } from "./testHelpers";
+import { insertEvent, insertMembership, insertUser, seedGymAndUser } from "./testHelpers";
 import { Id } from "./_generated/dataModel";
 
 const modules = import.meta.glob("./**/*.ts");
@@ -466,6 +466,67 @@ describe("internal.events.insertPendingRegistration", () => {
     const reg = await t.run((ctx) => ctx.db.get(firstId));
     expect(reg?.stripeSessionId).toBe("cs_new2");
     expect(reg?.paymentStatus).toBe("pending");
+  });
+
+  test("fresh pending registrations hold capacity", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId } = await seedGymAndUser(t);
+    const otherUserId = await insertUser(t, gymId, {
+      email: "pending-capacity@test.com",
+    });
+    const eventId = await insertEvent(t, gymId, userId, {
+      priceCents: 500,
+      capacity: 1,
+    });
+
+    await t.mutation(internal.events.insertPendingRegistration, {
+      eventId,
+      userId,
+      gymId,
+      stripeSessionId: "cs_fresh_hold",
+    });
+
+    await expect(
+      t.mutation(internal.events.insertPendingRegistration, {
+        eventId,
+        userId: otherUserId,
+        gymId,
+        stripeSessionId: "cs_blocked",
+      })
+    ).rejects.toThrow("Event is full");
+  });
+
+  test("expired pending registrations do not hold capacity forever", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId } = await seedGymAndUser(t);
+    const otherUserId = await insertUser(t, gymId, {
+      email: "expired-pending@test.com",
+    });
+    const eventId = await insertEvent(t, gymId, userId, {
+      priceCents: 500,
+      capacity: 1,
+    });
+
+    const staleId = await t.mutation(internal.events.insertPendingRegistration, {
+      eventId,
+      userId,
+      gymId,
+      stripeSessionId: "cs_stale_hold",
+    });
+    await t.run((ctx) =>
+      ctx.db.patch(staleId, { registeredAt: Date.now() - 31 * 60 * 1000 })
+    );
+
+    const nextId = await t.mutation(internal.events.insertPendingRegistration, {
+      eventId,
+      userId: otherUserId,
+      gymId,
+      stripeSessionId: "cs_after_expiry",
+    });
+
+    const next = await t.run((ctx) => ctx.db.get(nextId));
+    expect(next?.userId).toBe(otherUserId);
+    expect(next?.paymentStatus).toBe("pending");
   });
 });
 
