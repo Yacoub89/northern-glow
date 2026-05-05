@@ -425,6 +425,40 @@ Run Build Gym App
 Run Submit iOS Build with the same gymId and ascAppId
 ```
 
+### Updating an Existing Gym App
+
+Use an OTA update when the change is JavaScript-only: React screens, copy, styling,
+client-side logic, or backend/API behavior that does not change native iOS code.
+
+```bash
+eas update --branch production --message "Update OCFIT app"
+```
+
+Use a new App Store/TestFlight binary when the change touches native app behavior:
+native dependencies, Expo SDK changes, permissions, app icon/splash, bundle config,
+or anything under `ios/` or `android/`.
+
+```text
+GitHub > Actions > Build Gym App > Run workflow
+gymId: mh732pr7fmq9xr0y1cbnkt2n6185yrrg
+platform: ios
+profile: gym-production
+```
+
+After the build finishes, copy the new EAS build ID and submit it:
+
+```text
+GitHub > Actions > Submit iOS Build > Run workflow
+gymId: mh732pr7fmq9xr0y1cbnkt2n6185yrrg
+buildId: <new EAS build ID>
+ascAppId: 6766571027
+whatToTest: blank
+```
+
+For OCFIT, the App Store app is locked to the iOS bundle ID
+`com.orleanscrossfit.ocfit`. Do not submit older builds made with
+`com.northernglow.ocfit`.
+
 ---
 
 ## 8. OTA Updates (no build required)
