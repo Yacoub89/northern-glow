@@ -150,6 +150,38 @@ describe("wods.update", () => {
     expect(wod?.title).toBe("Annie");
   });
 
+  test("coach can clear optional WOD metadata", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId, identity } = await seedGymAndUser(t, { role: "coach" });
+    const wodId = await insertWod(t, gymId, userId);
+    await t.run((ctx) =>
+      ctx.db.patch(wodId, {
+        scalingNotes: "Use ring rows",
+        accessLevel: "ADVANCED",
+        parts: [
+          {
+            label: "A",
+            name: "METCON",
+            type: "AMRAP",
+            description: "10 burpees",
+          },
+        ],
+      })
+    );
+
+    await t.withIdentity(identity).mutation(api.wods.update, {
+      id: wodId,
+      scalingNotes: null,
+      accessLevel: null,
+      parts: null,
+    });
+
+    const wod = await t.run((ctx) => ctx.db.get(wodId));
+    expect(wod?.scalingNotes).toBeUndefined();
+    expect(wod?.accessLevel).toBeUndefined();
+    expect(wod?.parts).toBeUndefined();
+  });
+
   test("updating to a date that conflicts throws", async () => {
     const t = convexTest(schema, modules);
     const { gymId, userId, identity } = await seedGymAndUser(t, { role: "coach" });

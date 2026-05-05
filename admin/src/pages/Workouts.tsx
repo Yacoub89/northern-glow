@@ -252,15 +252,23 @@ export default function Workouts() {
         description: description.trim(),
         type,
         movements: movementList(movements),
-        ...(scalingNotes.trim() ? { scalingNotes: scalingNotes.trim() } : {}),
-        ...(accessLevel ? { accessLevel } : {}),
-        ...(cleanParts.length > 0 ? { parts: cleanParts } : {}),
       };
       if (!payload.title) throw new Error("Title is required");
       if (editingId) {
-        await updateWod({ id: editingId, ...payload });
+        await updateWod({
+          id: editingId,
+          ...payload,
+          scalingNotes: scalingNotes.trim() || null,
+          accessLevel: accessLevel || null,
+          parts: cleanParts.length > 0 ? cleanParts : null,
+        });
       } else {
-        await createWod(payload);
+        await createWod({
+          ...payload,
+          ...(scalingNotes.trim() ? { scalingNotes: scalingNotes.trim() } : {}),
+          ...(accessLevel ? { accessLevel } : {}),
+          ...(cleanParts.length > 0 ? { parts: cleanParts } : {}),
+        });
       }
       setStartDate(date);
       resetForm();

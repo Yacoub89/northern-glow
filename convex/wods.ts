@@ -116,13 +116,14 @@ export const update = mutation({
     description: v.optional(v.string()),
     type: v.optional(WodType),
     movements: v.optional(v.array(v.string())),
-    scalingNotes: v.optional(v.string()),
+    scalingNotes: v.optional(v.union(v.string(), v.null())),
     accessLevel: v.optional(v.union(
       v.literal("PUBLIC_CLASS"),
       v.literal("MEMBERS_ONLY"),
       v.literal("ADVANCED"),
+      v.null(),
     )),
-    parts: v.optional(v.array(WodPart)),
+    parts: v.optional(v.union(v.array(WodPart), v.null())),
   },
   handler: async (ctx, { id, ...updates }) => {
     const { gymId } = await requireCoachOrAdmin(ctx);
@@ -135,6 +136,12 @@ export const update = mutation({
         .first();
       if (conflict) throw new Error("A WOD already exists for that date");
     }
-    await ctx.db.patch(id, updates);
+    const patch = {
+      ...updates,
+      scalingNotes: updates.scalingNotes === null ? undefined : updates.scalingNotes,
+      accessLevel: updates.accessLevel === null ? undefined : updates.accessLevel,
+      parts: updates.parts === null ? undefined : updates.parts,
+    };
+    await ctx.db.patch(id, patch);
   },
 });
