@@ -185,10 +185,12 @@ fi
 # is applied, then restore after the build.
 
 INFO_PLIST="$ROOT_DIR/ios/NorthernGlow/Info.plist"
+PROJECT_PBX="$ROOT_DIR/ios/NorthernGlow.xcodeproj/project.pbxproj"
 XCASSETS_ICON="$ROOT_DIR/ios/NorthernGlow/Images.xcassets/AppIcon.appiconset/App-Icon-1024x1024@1x.png"
 
 if [[ "$PLATFORM" == "ios" ]] || [[ "$PLATFORM" == "all" ]]; then
   cp "$INFO_PLIST" "$INFO_PLIST.bak"
+  cp "$PROJECT_PBX" "$PROJECT_PBX.bak"
   cp "$XCASSETS_ICON" "$XCASSETS_ICON.bak"
 
   GYM_NAME="$GYM_NAME" INFO_PLIST="$INFO_PLIST" python3 -c "
@@ -201,6 +203,21 @@ plist['CFBundleDisplayName'] = name
 plist['NSFaceIDUsageDescription'] = f'Allow {name} to access Face ID for secure login.'
 with open(path, 'wb') as f:
     plistlib.dump(plist, f)
+"
+
+  BUNDLE_ID="$BUNDLE_ID" PROJECT_PBX="$PROJECT_PBX" python3 -c "
+import os, re
+path = os.environ['PROJECT_PBX']
+bundle_id = os.environ['BUNDLE_ID']
+with open(path, 'r', encoding='utf-8') as f:
+    text = f.read()
+text = re.sub(
+    r'PRODUCT_BUNDLE_IDENTIFIER = [^;]+;',
+    f'PRODUCT_BUNDLE_IDENTIFIER = {bundle_id};',
+    text,
+)
+with open(path, 'w', encoding='utf-8') as f:
+    f.write(text)
 "
 
   if [[ -n "$ICON_URL" ]]; then
@@ -307,6 +324,7 @@ echo "Restored app.config.js"
 
 if [[ -f "$INFO_PLIST.bak" ]]; then
   mv "$INFO_PLIST.bak" "$INFO_PLIST"
+  mv "$PROJECT_PBX.bak" "$PROJECT_PBX"
   mv "$XCASSETS_ICON.bak" "$XCASSETS_ICON"
   echo "Restored iOS native files"
 fi
