@@ -36,9 +36,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install build tools
-        run: sudo apt-get update && sudo apt-get install -y jq dnsutils
-
       - name: Setup EAS
         uses: expo/expo-github-action@v8
         with:

@@ -170,7 +170,10 @@ echo ""
 
 echo "Fetching gym config..."
 CONVEX_HOST=$(echo "$CONVEX_URL" | sed 's|https://||' | cut -d'/' -f1)
-CONVEX_IP=$(dig @8.8.8.8 "$CONVEX_HOST" +short | grep -E '^[0-9]+\.' | head -1)
+CONVEX_IP=""
+if command -v dig >/dev/null 2>&1; then
+  CONVEX_IP=$(dig @8.8.8.8 "$CONVEX_HOST" +short | grep -E '^[0-9]+\.' | head -1)
+fi
 RESOLVE_FLAG=""
 if [[ -n "$CONVEX_IP" ]]; then
   RESOLVE_FLAG="--resolve ${CONVEX_HOST}:443:${CONVEX_IP}"
