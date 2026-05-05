@@ -41,13 +41,26 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Install EAS CLI
-        run: npm install -g eas-cli
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Install build tools
+        run: sudo apt-get update && sudo apt-get install -y jq dnsutils
+
+      - name: Check required secrets
+        env:
+          BUILD_SECRET: ${{ secrets.NORTHERNGLOW_BUILD_SECRET }}
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: |
+          test -n "$BUILD_SECRET" || (echo "Missing NORTHERNGLOW_BUILD_SECRET repo secret" && exit 1)
+          test -n "$EXPO_TOKEN" || (echo "Missing EXPO_TOKEN repo secret" && exit 1)
 
       - name: Build gym app
         env:
           BUILD_SECRET: ${{ secrets.NORTHERNGLOW_BUILD_SECRET }}
-          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
         run: |
           chmod +x ./scripts/build-gym.sh
           ./scripts/build-gym.sh "${{ inputs.gymId }}" \
