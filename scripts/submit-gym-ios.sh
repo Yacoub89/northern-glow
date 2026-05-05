@@ -11,7 +11,7 @@
 #   --asc-api-key-path <path>    Path to App Store Connect API key .p8 file
 #   --asc-api-key-id <id>        App Store Connect API key ID
 #   --asc-api-key-issuer-id <id> App Store Connect API key issuer ID
-#   --what-to-test <text>        TestFlight "What to Test" text
+#   --what-to-test <text>        Deprecated: ignored because EAS submits it as an Enterprise-only changelog
 #   --env local|preview|prod     Which Convex deployment to hit (default: prod)
 #   --interactive                Allow EAS prompts for first-time submit setup
 #   --help                      Show this help
@@ -77,7 +77,7 @@ usage() {
   echo "  --asc-api-key-path <path>    App Store Connect API key .p8 file"
   echo "  --asc-api-key-id <id>        App Store Connect API key ID"
   echo "  --asc-api-key-issuer-id <id> App Store Connect API key issuer ID"
-  echo "  --what-to-test <text>        TestFlight 'What to Test' text"
+  echo "  --what-to-test <text>        Deprecated: ignored by submit"
   echo "  --env local|preview|prod     Convex deployment (default: prod)"
   echo "  --interactive                Allow EAS prompts for first-time submit setup"
   echo "  --help                      Show this help"
@@ -343,7 +343,7 @@ else
   args+=(--latest)
 fi
 if [[ -n "$WHAT_TO_TEST" ]]; then
-  args+=(--what-to-test "$WHAT_TO_TEST")
+  echo "Warning: ignoring --what-to-test because EAS submits it as an Enterprise-only changelog."
 fi
 
 eas submit "${args[@]}"

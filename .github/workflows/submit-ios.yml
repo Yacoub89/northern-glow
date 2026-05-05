@@ -16,7 +16,7 @@ on:
         required: false
         type: string
       whatToTest:
-        description: "Optional TestFlight 'What to Test' text"
+        description: "Deprecated: ignored because EAS treats it as an Enterprise-only changelog"
         required: false
         type: string
 
@@ -91,7 +91,7 @@ jobs:
           args+=(--asc-api-key-issuer-id "$ASC_API_KEY_ISSUER_ID")
 
           if [ -n "$WHAT_TO_TEST" ]; then
-            args+=(--what-to-test "$WHAT_TO_TEST")
+            echo "Ignoring whatToTest because EAS treats it as an Enterprise-only changelog."
           fi
 
           chmod +x ./scripts/submit-gym-ios.sh

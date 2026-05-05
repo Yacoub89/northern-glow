@@ -393,6 +393,7 @@ whatToTest: optional TestFlight notes
 ```
 
 Use `buildId` instead of "latest" for white-label apps so the workflow cannot accidentally submit another gym's build.
+Leave `whatToTest` blank. EAS currently sends it as a `changelog` field, which Expo only allows on Enterprise plans.
 
 ### TestFlight Sharing
 
