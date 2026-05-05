@@ -1,0 +1,55 @@
+name: Submit iOS Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      buildId:
+        description: "Optional EAS build ID. Leave blank to submit the latest iOS build."
+        required: false
+        type: string
+      whatToTest:
+        description: "Optional TestFlight 'What to Test' text"
+        required: false
+        type: string
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4.2.2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4.3.0
+        with:
+          node-version: "22"
+
+      - name: Setup EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Check required secrets
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+        run: test -n "$EXPO_TOKEN" || (echo "Missing EXPO_TOKEN repo secret" && exit 1)
+
+      - name: Submit iOS build
+        env:
+          BUILD_ID: ${{ inputs.buildId }}
+          WHAT_TO_TEST: ${{ inputs.whatToTest }}
+        run: |
+          args=(--platform ios --non-interactive)
+
+          if [ -n "$BUILD_ID" ]; then
+            args+=(--id "$BUILD_ID")
+          else
+            args+=(--latest)
+          fi
+
+          if [ -n "$WHAT_TO_TEST" ]; then
+            args+=(--what-to-test "$WHAT_TO_TEST")
+          fi
+
+          eas submit "${args[@]}"
