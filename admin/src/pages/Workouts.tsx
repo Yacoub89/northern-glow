@@ -3,235 +3,12 @@ import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Id } from "@convex/_generated/dataModel";
 import { useMediaQuery } from "../components/useMediaQuery";
-
-type WodType = "AMRAP" | "ForTime" | "EMOM" | "Strength" | "Other";
-type AccessLevel = "PUBLIC_CLASS" | "MEMBERS_ONLY" | "ADVANCED";
-type WodProgram =
-  | "Challenge of the Month"
-  | "OC-60"
-  | "OC-Flex"
-  | "OC-Home"
-  | "OC-Hyrox"
-  | "OC-Lift"
-  | "OC-Teens";
-type WorkoutsTab = "week" | "create" | "import" | "announcements";
-type PartDraft = {
-  label: string;
-  name: string;
-  type: "" | WodType;
-  movement: string;
-  sets: string;
-  reps: string;
-  percentMax: string;
-  timeCap: string;
-  description: string;
-  coachNotes: string;
-};
-type ImportedWod = {
-  date: string;
-  program?: string;
-  title: string;
-  description: string;
-  type: WodType;
-  movements: string[];
-  scalingNotes?: string;
-  accessLevel?: AccessLevel;
-  parts?: Array<{
-    label: string;
-    name: string;
-    type?: WodType;
-    movement?: string;
-    sets?: string;
-    reps?: string;
-    percentMax?: string;
-    timeCap?: string;
-    description?: string;
-    coachNotes?: string;
-  }>;
-};
-type Announcement = {
-  _id: Id<"announcements">;
-  title: string;
-  body: string;
-  startDate: string;
-  endDate?: string;
-  pinned: boolean;
-};
-
-const WOD_TYPES: Array<{ value: WodType; label: string }> = [
-  { value: "AMRAP", label: "AMRAP" },
-  { value: "ForTime", label: "For Time" },
-  { value: "EMOM", label: "EMOM" },
-  { value: "Strength", label: "Strength" },
-  { value: "Other", label: "Other" },
-];
-
-const ACCESS_LEVELS: Array<{ value: ""; label: string } | { value: AccessLevel; label: string }> = [
-  { value: "", label: "Default access" },
-  { value: "PUBLIC_CLASS", label: "Public class" },
-  { value: "MEMBERS_ONLY", label: "Members only" },
-  { value: "ADVANCED", label: "Advanced" },
-];
-
-const WOD_PROGRAMS: Array<{ value: WodProgram; label: string }> = [
-  { value: "Challenge of the Month", label: "Challenge of the Month" },
-  { value: "OC-60", label: "OC-60" },
-  { value: "OC-Flex", label: "OC-Flex" },
-  { value: "OC-Home", label: "OC-Home" },
-  { value: "OC-Hyrox", label: "OC-Hyrox" },
-  { value: "OC-Lift", label: "OC-Lift" },
-  { value: "OC-Teens", label: "OC-Teens" },
-];
-
-const DEFAULT_WOD_PROGRAM: WodProgram = "OC-60";
-
-const S = {
-  page: { maxWidth: 1240 },
-  header: { display: "flex", justifyContent: "space-between", gap: 24, alignItems: "flex-start", marginBottom: 24 },
-  h1: { fontSize: 28, fontWeight: 750, margin: "0 0 8px", color: "#fff" },
-  sub: { color: "#888", fontSize: 14, margin: 0, maxWidth: 560, lineHeight: 1.5 },
-  controls: { display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" as const },
-  panel: { background: "#141414", border: "1px solid #252525", borderRadius: 8, padding: 18, marginBottom: 24 },
-  panelHead: { display: "flex", justifyContent: "space-between", gap: 16, alignItems: "baseline", marginBottom: 16 },
-  panelTitle: { fontSize: 15, color: "#fff", fontWeight: 750, margin: 0 },
-  panelMeta: { fontSize: 13, color: "#666" },
-  importGrid: { display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "end" },
-  importList: { display: "grid", gap: 12, marginTop: 14 },
-  importRow: { background: "#101010", border: "1px solid #242424", borderRadius: 8, padding: 12 },
-  importTop: { display: "grid", gridTemplateColumns: "auto 150px 1fr 150px 150px", gap: 10, alignItems: "center", marginBottom: 10 },
-  check: { width: 18, height: 18, accentColor: "#1BBFBF" },
-  formGrid: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginBottom: 12 },
-  field: { display: "flex", flexDirection: "column" as const, gap: 6 },
-  label: { fontSize: 12, color: "#777", fontWeight: 650 },
-  input: {
-    background: "#1e1e1e",
-    border: "1px solid #333",
-    borderRadius: 7,
-    padding: "10px 11px",
-    color: "#fff",
-    fontSize: 14,
-    outline: "none",
-    width: "100%",
-    boxSizing: "border-box" as const,
-  },
-  select: {
-    background: "#1e1e1e",
-    border: "1px solid #333",
-    borderRadius: 7,
-    padding: "10px 11px",
-    color: "#fff",
-    fontSize: 14,
-    outline: "none",
-    width: "100%",
-    boxSizing: "border-box" as const,
-  },
-  textarea: {
-    background: "#1e1e1e",
-    border: "1px solid #333",
-    borderRadius: 7,
-    padding: "10px 11px",
-    color: "#fff",
-    fontSize: 14,
-    outline: "none",
-    width: "100%",
-    minHeight: 92,
-    resize: "vertical" as const,
-    boxSizing: "border-box" as const,
-  },
-  btn: (primary: boolean) => ({
-    padding: "10px 14px",
-    borderRadius: 7,
-    fontWeight: 700,
-    fontSize: 13,
-    cursor: "pointer",
-    border: primary ? "none" : "1px solid #333",
-    background: primary ? "#1BBFBF" : "#1e1e1e",
-    color: primary ? "#001313" : "#aaa",
-    whiteSpace: "nowrap" as const,
-  }),
-  tabs: { display: "flex", gap: 8, flexWrap: "wrap" as const, marginBottom: 18 },
-  tabBtn: (active: boolean) => ({
-    padding: "10px 14px",
-    borderRadius: 7,
-    fontWeight: 750,
-    fontSize: 13,
-    cursor: "pointer",
-    border: `1px solid ${active ? "#1BBFBF" : "#333"}`,
-    background: active ? "#1BBFBF" : "#141414",
-    color: active ? "#001313" : "#aaa",
-  }),
-  stats: { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, marginBottom: 24 },
-  stat: { background: "#101010", border: "1px solid #242424", borderRadius: 8, padding: 16 },
-  statValue: { fontSize: 26, color: "#1BBFBF", fontWeight: 800 },
-  statLabel: { fontSize: 12, color: "#777", marginTop: 3 },
-  split: { display: "grid", gridTemplateColumns: "minmax(360px, 460px) 1fr", gap: 16 },
-  schedule: { display: "grid", gap: 10 },
-  dayCard: { background: "#141414", border: "1px solid #252525", borderRadius: 8, padding: 14 },
-  dayTop: { display: "flex", justifyContent: "space-between", gap: 12, alignItems: "baseline", marginBottom: 12 },
-  dayTitle: { color: "#fff", fontSize: 14, fontWeight: 800 },
-  dayDate: { color: "#777", fontSize: 12 },
-  wodTitle: { color: "#fff", fontSize: 16, fontWeight: 800, marginBottom: 5, overflowWrap: "anywhere" as const },
-  wodMeta: { color: "#1BBFBF", fontSize: 12, fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase" as const },
-  desc: { color: "#aaa", fontSize: 13, lineHeight: 1.5, marginTop: 10, whiteSpace: "pre-wrap" as const },
-  chips: { display: "flex", gap: 6, flexWrap: "wrap" as const, marginTop: 12 },
-  chip: { color: "#ddd", background: "#1e1e1e", border: "1px solid #303030", borderRadius: 4, padding: "4px 8px", fontSize: 12 },
-  scaling: { color: "#888", fontSize: 13, fontStyle: "italic", marginTop: 10, lineHeight: 1.4 },
-  empty: { color: "#666", fontSize: 13, padding: "10px 0" },
-  partGrid: { display: "grid", gap: 10, marginTop: 12 },
-  partCard: { background: "#101010", border: "1px solid #242424", borderRadius: 8, padding: 12 },
-  partFields: { display: "grid", gridTemplateColumns: "80px 1fr 130px", gap: 10, marginBottom: 10 },
-  formActions: { display: "flex", gap: 10, justifyContent: "flex-end", borderTop: "1px solid #252525", paddingTop: 14, marginTop: 16 },
-  error: { color: "#ff453a", fontSize: 13, margin: "12px 0 0" },
-  success: { color: "#34C759", fontSize: 13, margin: "12px 0 0" },
-};
-
-function todayString() {
-  return toDateInputValue(new Date());
-}
-
-function toDateInputValue(date: Date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-}
-
-function addDays(dateString: string, days: number) {
-  const [year, month, day] = dateString.split("-").map(Number);
-  return toDateInputValue(new Date(year, month - 1, day + days));
-}
-
-function asDate(dateString: string) {
-  const [year, month, day] = dateString.split("-").map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function shortDay(dateString: string) {
-  return asDate(dateString).toLocaleDateString(undefined, { weekday: "short" });
-}
-
-function shortDate(dateString: string) {
-  return asDate(dateString).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
-
-function movementList(value: string) {
-  return value
-    .split(/\n|,/)
-    .map((item) => item.trim())
-    .filter(Boolean);
-}
-
-function newPart(index: number): PartDraft {
-  return {
-    label: String.fromCharCode(65 + index),
-    name: "",
-    type: "",
-    movement: "",
-    sets: "",
-    reps: "",
-    percentMax: "",
-    timeCap: "",
-    description: "",
-    coachNotes: "",
-  };
-}
+import { ACCESS_LEVELS, DEFAULT_WOD_PROGRAM, WOD_PROGRAMS, WOD_TYPES } from "./workouts/constants";
+import { addDays, movementList, newPart, shortDate, shortDay, todayString } from "./workouts/helpers";
+import { S } from "./workouts/styles";
+import { AccessLevel, Announcement, ImportedWod, PartDraft, WodProgram, WodType, WorkoutsTab } from "./workouts/types";
+import { AnnouncementsPanel } from "./workouts/AnnouncementsPanel";
+import { WeekPreview } from "./workouts/WeekPreview";
 
 export default function Workouts() {
   const isMobile = useMediaQuery("(max-width: 980px)");
@@ -576,66 +353,25 @@ export default function Workouts() {
       </div>
 
       {activeTab === "announcements" && (
-        <section style={S.panel}>
-          <div style={S.panelHead}>
-            <div>
-              <h2 style={S.panelTitle}>Announcements</h2>
-              <p style={{ ...S.sub, marginTop: 6 }}>Post short gym notices that athletes see above the WOD.</p>
-            </div>
-          </div>
-          <form onSubmit={handleCreateAnnouncement}>
-            <div style={{ ...S.formGrid, gridTemplateColumns: isMobile ? "1fr" : S.formGrid.gridTemplateColumns }}>
-              <label style={S.field}>
-                <span style={S.label}>Title</span>
-                <input style={S.input} value={announcementTitle} onChange={(e) => setAnnouncementTitle(e.target.value)} placeholder="New gym number" required />
-              </label>
-              <label style={S.field}>
-                <span style={S.label}>Start date</span>
-                <input style={S.input} type="date" value={announcementStartDate} onChange={(e) => setAnnouncementStartDate(e.target.value)} required />
-              </label>
-              <label style={S.field}>
-                <span style={S.label}>End date</span>
-                <input style={S.input} type="date" value={announcementEndDate} onChange={(e) => setAnnouncementEndDate(e.target.value)} />
-              </label>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#aaa", fontSize: 13, paddingTop: 25 }}>
-                <input style={S.check} type="checkbox" checked={announcementPinned} onChange={(e) => setAnnouncementPinned(e.target.checked)} />
-                Pin to top
-              </label>
-            </div>
-            <label style={{ ...S.field, marginBottom: 12 }}>
-              <span style={S.label}>Message</span>
-              <textarea style={S.textarea} value={announcementBody} onChange={(e) => setAnnouncementBody(e.target.value)} placeholder="Effective today, call 613-800-9671." required />
-            </label>
-            <div style={S.formActions}>
-              <button style={S.btn(true)} type="submit" disabled={announcementSaving}>
-                {announcementSaving ? "Posting..." : "Post Announcement"}
-              </button>
-            </div>
-          </form>
-          <div style={S.importList}>
-            {(announcements ?? []).map((item) => (
-              <div key={item._id} style={S.importRow}>
-                <div style={S.dayTop}>
-                  <div>
-                    <div style={S.wodTitle}>{item.title}</div>
-                    <div style={S.panelMeta}>
-                      {shortDate(item.startDate)}
-                      {item.endDate ? ` - ${shortDate(item.endDate)}` : ""}
-                      {item.pinned ? " · pinned" : ""}
-                    </div>
-                  </div>
-                  <button style={{ ...S.btn(false), padding: "7px 10px" }} type="button" onClick={() => handleDeleteAnnouncement(item._id)}>
-                    Delete
-                  </button>
-                </div>
-                <div style={S.desc}>{item.body}</div>
-              </div>
-            ))}
-            {announcements?.length === 0 && <div style={S.empty}>No announcements yet.</div>}
-          </div>
-          {announcementError && <p style={S.error}>{announcementError}</p>}
-          {announcementSuccess && <p style={S.success}>{announcementSuccess}</p>}
-        </section>
+        <AnnouncementsPanel
+          announcements={announcements}
+          announcementBody={announcementBody}
+          announcementEndDate={announcementEndDate}
+          announcementError={announcementError}
+          announcementPinned={announcementPinned}
+          announcementSaving={announcementSaving}
+          announcementStartDate={announcementStartDate}
+          announcementSuccess={announcementSuccess}
+          announcementTitle={announcementTitle}
+          isMobile={isMobile}
+          onCreateAnnouncement={handleCreateAnnouncement}
+          onDeleteAnnouncement={handleDeleteAnnouncement}
+          setAnnouncementBody={setAnnouncementBody}
+          setAnnouncementEndDate={setAnnouncementEndDate}
+          setAnnouncementPinned={setAnnouncementPinned}
+          setAnnouncementStartDate={setAnnouncementStartDate}
+          setAnnouncementTitle={setAnnouncementTitle}
+        />
       )}
 
       {activeTab === "import" && (
@@ -977,60 +713,15 @@ export default function Workouts() {
       )}
 
       {activeTab === "week" && (
-        <section style={S.panel}>
-          <div style={S.panelHead}>
-            <h2 style={S.panelTitle}>Week Preview</h2>
-            <span style={S.panelMeta}>
-              {viewProgram} · {shortDate(startDate)} - {shortDate(addDays(startDate, 6))}
-            </span>
-          </div>
-          <div style={S.schedule}>
-            {(schedule ?? days.map((day) => ({ date: day, wod: null }))).map(({ date: wodDate, wod }) => (
-              <article key={wodDate} style={S.dayCard}>
-                <div style={S.dayTop}>
-                  <div style={S.dayTitle}>{shortDay(wodDate)}</div>
-                  <div style={S.dayDate}>{shortDate(wodDate)}</div>
-                </div>
-                {wod ? (
-                  <>
-                    <div style={S.wodMeta}>{wod.program ?? DEFAULT_WOD_PROGRAM} · {wod.type}</div>
-                    <div style={S.wodTitle}>{wod.title}</div>
-                    <div style={S.desc}>{wod.description}</div>
-                    {wod.movements.length > 0 && (
-                      <div style={S.chips}>
-                        {wod.movements.map((movement) => (
-                          <span key={movement} style={S.chip}>
-                            {movement}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    {wod.scalingNotes && <div style={S.scaling}>Scaling: {wod.scalingNotes}</div>}
-                    <div style={S.formActions}>
-                      <button style={{ ...S.btn(false), padding: "7px 10px" }} type="button" onClick={() => editWod(wod)}>
-                        Edit
-                      </button>
-                      <button style={{ ...S.btn(false), padding: "7px 10px", color: "#ff8a80" }} type="button" onClick={() => handleDeleteWod(wod)}>
-                        Delete
-                      </button>
-                    </div>
-                  </>
-                ) : (
-                  <div>
-                    <div style={S.empty}>No WOD posted.</div>
-                    <button
-                      style={{ ...S.btn(false), padding: "7px 10px" }}
-                      type="button"
-                      onClick={() => createWodForDate(wodDate)}
-                    >
-                      Create
-                    </button>
-                  </div>
-                )}
-              </article>
-            ))}
-          </div>
-        </section>
+        <WeekPreview
+          days={days}
+          schedule={schedule}
+          startDate={startDate}
+          viewProgram={viewProgram}
+          onCreate={createWodForDate}
+          onDelete={handleDeleteWod}
+          onEdit={editWod}
+        />
       )}
     </div>
   );
