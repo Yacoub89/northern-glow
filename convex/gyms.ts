@@ -15,6 +15,10 @@ const androidPackageSegment = (slug: string) => {
   return /^[a-z]/.test(segment) ? segment : `g_${segment}`;
 };
 
+const legacyIosBundleIds: Record<string, string> = {
+  ocfit: "com.orleanscrossfit.ocfit",
+};
+
 // ── Public queries ────────────────────────────────────────────────────────────
 
 /** Returns the gym config for the currently authenticated user. */
@@ -235,6 +239,9 @@ export const getGymForBuild = internalQuery({
 
     const slug = gymSlug(gym.name);
     const androidSegment = androidPackageSegment(slug);
+    const iosBundleId =
+      gym.iosBundleId ?? legacyIosBundleIds[slug] ?? `com.northernglow.${slug}`;
+    const androidPackage = gym.androidPackage ?? `com.northernglow.${androidSegment}`;
 
     return {
       name: gym.name,
@@ -242,8 +249,8 @@ export const getGymForBuild = internalQuery({
       primaryColor: gym.primaryColor,
       timezone: gym.timezone,
       slug,
-      bundleId: `com.northernglow.${slug}`,
-      androidPackage: `com.northernglow.${androidSegment}`,
+      bundleId: iosBundleId,
+      androidPackage,
       logoUrl,
       appIconUrl,
       splashUrl,

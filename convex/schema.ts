@@ -24,6 +24,9 @@ export default defineSchema({
     customDomain: v.optional(v.string()),
     // Per-gym email sending domain (e.g. "theirgym.com") — verified via Resend
     emailDomain: v.optional(v.string()),
+    // Native app identifiers for white-label store builds.
+    iosBundleId: v.optional(v.string()),
+    androidPackage: v.optional(v.string()),
     resendDomainId: v.optional(v.string()),
     emailDomainStatus: v.optional(
       v.union(v.literal("pending"), v.literal("verified"), v.literal("failed"))
