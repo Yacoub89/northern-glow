@@ -271,7 +271,27 @@ eas submit --platform android
 Use the build script to generate a fully branded app for a specific gym.
 The script fetches branding from Convex, swaps assets, runs the EAS build, then restores defaults.
 
-`NORTHERNGLOW_BUILD_SECRET` is stored in `.env.local` — source it before running any gym build.
+`NORTHERNGLOW_BUILD_SECRET` must match the Convex deployment environment variable.
+For local commands, store it in `.env.local`; for GitHub Actions, store it as a repository secret.
+
+### Important IDs
+
+| ID | Example | Where it comes from | Notes |
+|---|---|---|---|
+| `gymId` | `mh732pr7fmq9xr0y1cbnkt2n6185yrrg` | Convex `gyms` document ID | The input to build/submit workflows |
+| iOS bundle ID | `com.northernglow.ocfit` | Generated from gym build config | One unique bundle ID per white-label app |
+| Android package | `com.northernglow.ocfit` | Generated from gym build config | One unique package per white-label app |
+| `ascAppId` | `1234567890` | App Store Connect app URL | Needed for non-interactive GitHub submit |
+
+For white-labeling, each gym app is a separate Apple app:
+
+```text
+NorthernGlow default app  -> com.northernglow.app
+OCFIT                     -> com.northernglow.ocfit
+Next Gym                  -> com.northernglow.nextgym
+```
+
+The app display name can be `OCFIT`; the bundle ID is the technical Apple identifier and must be unique.
 
 ```bash
 # Build for both platforms (default)
@@ -289,6 +309,107 @@ source .env.local && BUILD_SECRET=$NORTHERNGLOW_BUILD_SECRET ./scripts/build-gym
 ```
 
 The `gymId` is the Convex document ID for the gym in your database.
+
+### First-Time iOS/TestFlight Setup for a New Gym
+
+Apple requires one-time setup for every new white-label iOS app.
+After this first setup, future builds/submits for the same gym can run through GitHub Actions.
+
+1. Run one local interactive build to create Apple signing credentials:
+
+```bash
+source .env.local
+BUILD_SECRET=$NORTHERNGLOW_BUILD_SECRET ./scripts/build-gym.sh <gymId> --platform ios --profile gym-production --interactive
+```
+
+When prompted by EAS/Apple:
+
+```text
+Log in to Apple account: yes
+Register the gym bundle ID: yes
+Reuse an existing distribution certificate: yes, if offered
+Generate a provisioning profile: yes
+```
+
+2. Create the app in App Store Connect:
+
+```text
+App Store Connect > Apps > + > New App
+Platform: iOS
+Name: gym display name, e.g. OCFIT
+Bundle ID: gym bundle ID, e.g. com.northernglow.ocfit
+SKU: use the bundle ID, e.g. com.northernglow.ocfit
+```
+
+3. Copy the `ascAppId` from the App Store Connect URL:
+
+```text
+https://appstoreconnect.apple.com/apps/1234567890/...
+                                      ^ ascAppId
+```
+
+### GitHub Actions Build
+
+Use this for normal white-label builds:
+
+```text
+GitHub > Actions > Build Gym App > Run workflow
+gymId: <Convex gym ID>
+platform: ios
+profile: gym-production
+```
+
+For internal, non-TestFlight QA builds, use `profile: gym-preview`.
+
+### GitHub Actions Submit to TestFlight
+
+After the `gym-production` build succeeds, copy the EAS build ID from the build URL:
+
+```text
+https://expo.dev/accounts/yacoub89/projects/northernglow/builds/<buildId>
+```
+
+Then run:
+
+```text
+GitHub > Actions > Submit iOS Build > Run workflow
+gymId: <Convex gym ID>
+buildId: <EAS build ID>
+ascAppId: <App Store Connect numeric app ID>
+whatToTest: optional TestFlight notes
+```
+
+Use `buildId` instead of "latest" for white-label apps so the workflow cannot accidentally submit another gym's build.
+
+### TestFlight Sharing
+
+After submit succeeds:
+
+```text
+App Store Connect > Apps > gym app > TestFlight
+```
+
+Wait for Apple to process the build.
+For internal testers, add App Store Connect users to the build.
+For external testers, create an external tester group, add the build, submit for Beta App Review, then invite testers or enable a public TestFlight link.
+
+### First-Time vs Updates
+
+First release for each new gym is semi-manual:
+
+```text
+Interactive EAS credential setup
+Create App Store Connect app
+Copy ascAppId
+Submit first build
+```
+
+Future updates for that same gym are mostly automated:
+
+```text
+Run Build Gym App
+Run Submit iOS Build with the same gymId and ascAppId
+```
 
 ---
 
