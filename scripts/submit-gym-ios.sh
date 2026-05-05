@@ -8,8 +8,12 @@
 #   --build-id <id>              EAS build ID to submit (recommended)
 #   --latest                    Submit the latest iOS build
 #   --asc-app-id <id>            App Store Connect numeric app ID
+#   --asc-api-key-path <path>    Path to App Store Connect API key .p8 file
+#   --asc-api-key-id <id>        App Store Connect API key ID
+#   --asc-api-key-issuer-id <id> App Store Connect API key issuer ID
 #   --what-to-test <text>        TestFlight "What to Test" text
 #   --env local|preview|prod     Which Convex deployment to hit (default: prod)
+#   --interactive                Allow EAS prompts for first-time submit setup
 #   --help                      Show this help
 #
 # Required env vars:
@@ -24,8 +28,12 @@ GYM_ID=""
 BUILD_ID=""
 USE_LATEST="false"
 ASC_APP_ID=""
+ASC_API_KEY_PATH="${ASC_API_KEY_PATH:-}"
+ASC_API_KEY_ID="${ASC_API_KEY_ID:-}"
+ASC_API_KEY_ISSUER_ID="${ASC_API_KEY_ISSUER_ID:-}"
 WHAT_TO_TEST=""
 ENV="prod"
+INTERACTIVE="false"
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 INFO_PLIST="$ROOT_DIR/ios/NorthernGlow/Info.plist"
@@ -66,8 +74,12 @@ usage() {
   echo "  --build-id <id>              EAS build ID to submit (recommended)"
   echo "  --latest                    Submit the latest iOS build"
   echo "  --asc-app-id <id>            App Store Connect numeric app ID"
+  echo "  --asc-api-key-path <path>    App Store Connect API key .p8 file"
+  echo "  --asc-api-key-id <id>        App Store Connect API key ID"
+  echo "  --asc-api-key-issuer-id <id> App Store Connect API key issuer ID"
   echo "  --what-to-test <text>        TestFlight 'What to Test' text"
   echo "  --env local|preview|prod     Convex deployment (default: prod)"
+  echo "  --interactive                Allow EAS prompts for first-time submit setup"
   echo "  --help                      Show this help"
   echo ""
 }
@@ -94,6 +106,18 @@ while [[ $# -gt 0 ]]; do
       ASC_APP_ID="${2:?--asc-app-id requires an App Store Connect app ID}"
       shift 2
       ;;
+    --asc-api-key-path)
+      ASC_API_KEY_PATH="${2:?--asc-api-key-path requires a .p8 file path}"
+      shift 2
+      ;;
+    --asc-api-key-id)
+      ASC_API_KEY_ID="${2:?--asc-api-key-id requires an App Store Connect API key ID}"
+      shift 2
+      ;;
+    --asc-api-key-issuer-id)
+      ASC_API_KEY_ISSUER_ID="${2:?--asc-api-key-issuer-id requires an App Store Connect API key issuer ID}"
+      shift 2
+      ;;
     --what-to-test)
       WHAT_TO_TEST="${2:?--what-to-test requires text}"
       shift 2
@@ -101,6 +125,10 @@ while [[ $# -gt 0 ]]; do
     --env)
       ENV="${2:?--env requires local, preview, or prod}"
       shift 2
+      ;;
+    --interactive)
+      INTERACTIVE="true"
+      shift
       ;;
     --help)
       usage
@@ -137,6 +165,7 @@ echo "  gym:    $GYM_ID"
 echo "  env:    $ENV -> $CONVEX_URL"
 echo "  submit: $([[ -n "$BUILD_ID" ]] && echo "$BUILD_ID" || echo "latest iOS build")"
 echo "  asc:    ${ASC_APP_ID:-not set}"
+echo "  mode:   $([[ "$INTERACTIVE" == "true" ]] && echo "interactive" || echo "non-interactive")"
 echo ""
 
 echo "Fetching gym config..."
@@ -253,23 +282,61 @@ export default {
 };
 JSEOF
 
-if [[ -n "$ASC_APP_ID" ]]; then
-  EAS_PROFILE="gym-production"
-  EAS_JSON="$EAS_JSON" EAS_PROFILE="$EAS_PROFILE" ASC_APP_ID="$ASC_APP_ID" node -e "
+EAS_PROFILE="gym-production"
+
+if [[ "$INTERACTIVE" != "true" ]]; then
+  missing_submit_creds=()
+  if [[ -z "$ASC_API_KEY_PATH" ]]; then
+    missing_submit_creds+=("ASC_API_KEY_PATH or --asc-api-key-path")
+  elif [[ ! -f "$ASC_API_KEY_PATH" ]]; then
+    echo "Error: App Store Connect API key file not found: $ASC_API_KEY_PATH"
+    exit 1
+  fi
+  if [[ -z "$ASC_API_KEY_ID" ]]; then
+    missing_submit_creds+=("ASC_API_KEY_ID or --asc-api-key-id")
+  fi
+  if [[ -z "$ASC_API_KEY_ISSUER_ID" ]]; then
+    missing_submit_creds+=("ASC_API_KEY_ISSUER_ID or --asc-api-key-issuer-id")
+  fi
+
+  if [[ ${#missing_submit_creds[@]} -gt 0 ]]; then
+    echo "Error: non-interactive iOS submit requires App Store Connect API key credentials."
+    printf 'Missing: %s\n' "${missing_submit_creds[@]}"
+    echo ""
+    echo "Set GitHub secrets ASC_API_KEY_P8, ASC_API_KEY_ID, and ASC_API_KEY_ISSUER_ID, or run locally with --interactive once."
+    exit 1
+  fi
+fi
+
+EAS_JSON="$EAS_JSON" \
+EAS_PROFILE="$EAS_PROFILE" \
+ASC_APP_ID="$ASC_APP_ID" \
+ASC_API_KEY_PATH="$ASC_API_KEY_PATH" \
+ASC_API_KEY_ID="$ASC_API_KEY_ID" \
+ASC_API_KEY_ISSUER_ID="$ASC_API_KEY_ISSUER_ID" \
+node -e "
 const fs = require('fs');
 const path = process.env.EAS_JSON;
 const profile = process.env.EAS_PROFILE;
 const ascAppId = process.env.ASC_APP_ID;
+const ascApiKeyPath = process.env.ASC_API_KEY_PATH;
+const ascApiKeyId = process.env.ASC_API_KEY_ID;
+const ascApiKeyIssuerId = process.env.ASC_API_KEY_ISSUER_ID;
 const json = JSON.parse(fs.readFileSync(path, 'utf8'));
 json.submit = json.submit || {};
 json.submit[profile] = json.submit[profile] || {};
 json.submit[profile].ios = json.submit[profile].ios || {};
-json.submit[profile].ios.ascAppId = ascAppId;
+if (ascAppId) json.submit[profile].ios.ascAppId = ascAppId;
+if (ascApiKeyPath) json.submit[profile].ios.ascApiKeyPath = ascApiKeyPath;
+if (ascApiKeyId) json.submit[profile].ios.ascApiKeyId = ascApiKeyId;
+if (ascApiKeyIssuerId) json.submit[profile].ios.ascApiKeyIssuerId = ascApiKeyIssuerId;
 fs.writeFileSync(path, JSON.stringify(json, null, 2) + '\n');
 "
-fi
 
-args=(--platform ios --non-interactive)
+args=(--platform ios --profile "$EAS_PROFILE")
+if [[ "$INTERACTIVE" != "true" ]]; then
+  args+=(--non-interactive)
+fi
 if [[ -n "$BUILD_ID" ]]; then
   args+=(--id "$BUILD_ID")
 else

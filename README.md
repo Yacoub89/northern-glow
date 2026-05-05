@@ -282,6 +282,9 @@ For local commands, store it in `.env.local`; for GitHub Actions, store it as a 
 | iOS bundle ID | `com.northernglow.ocfit` | Generated from gym build config | One unique bundle ID per white-label app |
 | Android package | `com.northernglow.ocfit` | Generated from gym build config | One unique package per white-label app |
 | `ascAppId` | `1234567890` | App Store Connect app URL | Needed for non-interactive GitHub submit |
+| `ASC_API_KEY_ID` | `ABCD123456` | App Store Connect API key page | GitHub secret for EAS Submit |
+| `ASC_API_KEY_ISSUER_ID` | `00000000-0000-0000-0000-000000000000` | App Store Connect Users and Access > Integrations | GitHub secret for EAS Submit |
+| `ASC_API_KEY_P8` | `-----BEGIN PRIVATE KEY-----...` | Downloaded App Store Connect API key file | GitHub secret containing the full `.p8` contents |
 
 For white-labeling, each gym app is a separate Apple app:
 
@@ -362,6 +365,16 @@ profile: gym-production
 For internal, non-TestFlight QA builds, use `profile: gym-preview`.
 
 ### GitHub Actions Submit to TestFlight
+
+The submit workflow needs these repository secrets:
+
+```text
+EXPO_TOKEN
+NORTHERNGLOW_BUILD_SECRET
+ASC_API_KEY_P8
+ASC_API_KEY_ID
+ASC_API_KEY_ISSUER_ID
+```
 
 After the `gym-production` build succeeds, copy the EAS build ID from the build URL:
 
