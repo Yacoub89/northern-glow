@@ -11,8 +11,11 @@ const ALL_TIMEZONES: string[] = (Intl as any).supportedValuesOf
       "America/Toronto","America/Vancouver","Europe/London","Europe/Paris","Australia/Sydney",
     ];
 
+type SettingsTab = "profile" | "mobile" | "payments";
+
 const S = {
-  h1: { fontSize: 24, fontWeight: 700, marginBottom: 28 },
+  h1: { fontSize: 24, fontWeight: 700, margin: "0 0 8px" },
+  sub: { color: "#777", fontSize: 14, margin: "0 0 22px", lineHeight: 1.5 },
   form: { maxWidth: 560, width: "100%" },
   group: { marginBottom: 20 },
   label: { display: "block", fontSize: 13, color: "#aaa", marginBottom: 6 },
@@ -64,7 +67,18 @@ const S = {
     cursor: "pointer", border: "none", background: "#1BBFBF", color: "#000",
   },
   saved: { color: "#34C759", fontSize: 13, marginLeft: 12 },
-  section: { marginTop: 40, paddingTop: 32, borderTop: "1px solid #252525" },
+  tabs: { display: "flex", gap: 8, flexWrap: "wrap" as const, marginBottom: 22 },
+  tabBtn: (active: boolean) => ({
+    padding: "10px 14px",
+    borderRadius: 7,
+    fontWeight: 750,
+    fontSize: 13,
+    cursor: "pointer",
+    border: `1px solid ${active ? "#1BBFBF" : "#333"}`,
+    background: active ? "#1BBFBF" : "#141414",
+    color: active ? "#001313" : "#aaa",
+  }),
+  section: { marginTop: 0 },
   sectionTitle: { fontSize: 16, fontWeight: 600, marginBottom: 6 },
   sectionSub: { fontSize: 13, color: "#666", marginBottom: 20 },
 };
@@ -98,6 +112,7 @@ export default function GymSettings() {
   const splashInputRef = useRef<HTMLInputElement>(null);
   const [tzSearch, setTzSearch] = useState("");
   const [tzOpen, setTzOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
   const tzRef = useRef<HTMLDivElement>(null);
 
   const logoUrl = useQuery(
@@ -229,152 +244,185 @@ export default function GymSettings() {
   return (
     <div>
       <h1 style={S.h1}>Gym Settings</h1>
+      <p style={S.sub}>Manage your gym profile, mobile app branding, and payment configuration.</p>
+      <div style={S.tabs} role="tablist" aria-label="Gym settings sections">
+        <button
+          style={S.tabBtn(activeTab === "profile")}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "profile"}
+          onClick={() => setActiveTab("profile")}
+        >
+          Profile
+        </button>
+        <button
+          style={S.tabBtn(activeTab === "mobile")}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "mobile"}
+          onClick={() => setActiveTab("mobile")}
+        >
+          Mobile App
+        </button>
+        <button
+          style={S.tabBtn(activeTab === "payments")}
+          type="button"
+          role="tab"
+          aria-selected={activeTab === "payments"}
+          onClick={() => setActiveTab("payments")}
+        >
+          Payments
+        </button>
+      </div>
       <form style={S.form} onSubmit={handleSubmit}>
-        {/* Branding */}
-        <div style={S.group}>
-          <label style={S.label}>Logo</label>
-          <div style={{ ...S.logoArea, alignItems: isMobile ? "flex-start" : "center" }}>
-            {logoUrl
-              ? <img src={logoUrl} alt="Gym logo" style={S.logoPreview} />
-              : <div style={S.logoPlaceholder}>No logo</div>
-            }
-            <div>
-              <button type="button" style={S.uploadBtn} disabled={uploading} onClick={() => fileInputRef.current?.click()}>
-                {uploading ? "Uploading…" : logoUrl ? "Replace" : "Upload logo"}
-              </button>
-              <div style={S.uploadHint}>PNG or SVG · max 1 MB</div>
+        {activeTab === "profile" && (
+          <section style={S.section} role="tabpanel">
+            <div style={S.group}>
+              <label style={S.label}>Logo</label>
+              <div style={{ ...S.logoArea, alignItems: isMobile ? "flex-start" : "center" }}>
+                {logoUrl
+                  ? <img src={logoUrl} alt="Gym logo" style={S.logoPreview} />
+                  : <div style={S.logoPlaceholder}>No logo</div>
+                }
+                <div>
+                  <button type="button" style={S.uploadBtn} disabled={uploading} onClick={() => fileInputRef.current?.click()}>
+                    {uploading ? "Uploading…" : logoUrl ? "Replace" : "Upload logo"}
+                  </button>
+                  <div style={S.uploadHint}>PNG or SVG · max 1 MB</div>
+                </div>
+                <input ref={fileInputRef} type="file" accept="image/png,image/svg+xml,image/jpeg" style={{ display: "none" }} onChange={handleLogoChange} />
+              </div>
             </div>
-            <input ref={fileInputRef} type="file" accept="image/png,image/svg+xml,image/jpeg" style={{ display: "none" }} onChange={handleLogoChange} />
-          </div>
-        </div>
-        <div style={S.group}>
-          <label style={S.label}>Gym name</label>
-          <input style={S.input} value={form.name} onChange={set("name")} required />
-        </div>
-        <div style={S.group}>
-          <label style={S.label}>Tagline</label>
-          <input style={S.input} value={form.tagline} onChange={set("tagline")} placeholder="Powered by NorthernGlow" />
-        </div>
-        <div style={S.group}>
-          <label style={S.label}>Primary colour</label>
-          <div style={S.colorRow}>
-            <div style={S.colorSwatch(form.primaryColor)} title="Pick a colour">
-              <input
-                type="color"
-                style={S.colorNativeInput}
-                value={form.primaryColor}
-                onChange={(e) => setForm((f) => ({ ...f, primaryColor: e.target.value }))}
-              />
+            <div style={S.group}>
+              <label style={S.label}>Gym name</label>
+              <input style={S.input} value={form.name} onChange={set("name")} required />
             </div>
-            <input
-              style={S.input}
-              value={form.primaryColor}
-              onChange={set("primaryColor")}
-              placeholder="#1BBFBF"
-              maxLength={7}
-            />
-          </div>
-        </div>
-        <div style={S.group}>
-          <label style={S.label}>Timezone</label>
-          <div style={S.tzWrapper} ref={tzRef}>
-            <input
-              style={S.input}
-              value={tzSearch}
-              placeholder="Search timezone…"
-              onFocus={() => setTzOpen(true)}
-              onChange={(e) => {
-                setTzSearch(e.target.value);
-                setTzOpen(true);
-              }}
-            />
-            {tzOpen && filteredTz.length > 0 && (
-              <div style={S.tzDropdown}>
-                {filteredTz.map((tz) => (
-                  <div
-                    key={tz}
-                    style={S.tzOption(tz === form.timezone)}
-                    onMouseDown={() => {
-                      setForm((f) => ({ ...f, timezone: tz }));
-                      setTzSearch(tz);
-                      setTzOpen(false);
-                    }}
-                  >
-                    {tz}
+            <div style={S.group}>
+              <label style={S.label}>Tagline</label>
+              <input style={S.input} value={form.tagline} onChange={set("tagline")} placeholder="Powered by NorthernGlow" />
+            </div>
+            <div style={S.group}>
+              <label style={S.label}>Primary colour</label>
+              <div style={S.colorRow}>
+                <div style={S.colorSwatch(form.primaryColor)} title="Pick a colour">
+                  <input
+                    type="color"
+                    style={S.colorNativeInput}
+                    value={form.primaryColor}
+                    onChange={(e) => setForm((f) => ({ ...f, primaryColor: e.target.value }))}
+                  />
+                </div>
+                <input
+                  style={S.input}
+                  value={form.primaryColor}
+                  onChange={set("primaryColor")}
+                  placeholder="#1BBFBF"
+                  maxLength={7}
+                />
+              </div>
+            </div>
+            <div style={S.group}>
+              <label style={S.label}>Timezone</label>
+              <div style={S.tzWrapper} ref={tzRef}>
+                <input
+                  style={S.input}
+                  value={tzSearch}
+                  placeholder="Search timezone…"
+                  onFocus={() => setTzOpen(true)}
+                  onChange={(e) => {
+                    setTzSearch(e.target.value);
+                    setTzOpen(true);
+                  }}
+                />
+                {tzOpen && filteredTz.length > 0 && (
+                  <div style={S.tzDropdown}>
+                    {filteredTz.map((tz) => (
+                      <div
+                        key={tz}
+                        style={S.tzOption(tz === form.timezone)}
+                        onMouseDown={() => {
+                          setForm((f) => ({ ...f, timezone: tz }));
+                          setTzSearch(tz);
+                          setTzOpen(false);
+                        }}
+                      >
+                        {tz}
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </div>
-        </div>
+            </div>
+          </section>
+        )}
 
-        {/* Mobile App Images */}
-        <div style={S.section}>
-          <div style={S.sectionTitle}>Mobile app images</div>
-          <div style={S.sectionSub}>
-            Used to brand the iOS and Android apps. Icon should be 1024×1024 PNG. Splash should be 2048×2048 PNG.
-          </div>
-          <div style={{ display: "flex", gap: isMobile ? 22 : 32, flexDirection: isMobile ? "column" : "row", flexWrap: "wrap" as const }}>
-            {/* App Icon */}
-            <div>
-              <div style={{ ...S.label, marginBottom: 10 }}>App icon</div>
-              <div style={{ ...S.logoArea, alignItems: isMobile ? "flex-start" : "center" }}>
-                {appIconUrl
-                  ? <img src={appIconUrl} alt="App icon" style={{ ...S.logoPreview, borderRadius: 16 }} />
-                  : <div style={S.logoPlaceholder}>No icon</div>
-                }
-                <div>
-                  <button type="button" style={S.uploadBtn} disabled={uploadingIcon} onClick={() => appIconInputRef.current?.click()}>
-                    {uploadingIcon ? "Uploading…" : appIconUrl ? "Replace" : "Upload icon"}
-                  </button>
-                  <div style={S.uploadHint}>PNG · 1024×1024 · max 2 MB</div>
+        {activeTab === "mobile" && (
+          <section style={S.section} role="tabpanel">
+            <div style={S.sectionTitle}>Mobile app images</div>
+            <div style={S.sectionSub}>
+              Used to brand the iOS and Android apps. Icon should be 1024×1024 PNG. Splash should be 2048×2048 PNG.
+            </div>
+            <div style={{ display: "flex", gap: isMobile ? 22 : 32, flexDirection: isMobile ? "column" : "row", flexWrap: "wrap" as const }}>
+              <div>
+                <div style={{ ...S.label, marginBottom: 10 }}>App icon</div>
+                <div style={{ ...S.logoArea, alignItems: isMobile ? "flex-start" : "center" }}>
+                  {appIconUrl
+                    ? <img src={appIconUrl} alt="App icon" style={{ ...S.logoPreview, borderRadius: 16 }} />
+                    : <div style={S.logoPlaceholder}>No icon</div>
+                  }
+                  <div>
+                    <button type="button" style={S.uploadBtn} disabled={uploadingIcon} onClick={() => appIconInputRef.current?.click()}>
+                      {uploadingIcon ? "Uploading…" : appIconUrl ? "Replace" : "Upload icon"}
+                    </button>
+                    <div style={S.uploadHint}>PNG · 1024×1024 · max 2 MB</div>
+                  </div>
+                  <input ref={appIconInputRef} type="file" accept="image/png" style={{ display: "none" }} onChange={handleAppIconChange} />
                 </div>
-                <input ref={appIconInputRef} type="file" accept="image/png" style={{ display: "none" }} onChange={handleAppIconChange} />
+              </div>
+              <div>
+                <div style={{ ...S.label, marginBottom: 10 }}>Splash screen</div>
+                <div style={{ ...S.logoArea, alignItems: isMobile ? "flex-start" : "center" }}>
+                  {splashUrl
+                    ? <img src={splashUrl} alt="Splash screen" style={{ ...S.logoPreview, width: 120, height: 72, borderRadius: 6 }} />
+                    : <div style={{ ...S.logoPlaceholder, width: 120, height: 72, borderRadius: 6 }}>No splash</div>
+                  }
+                  <div>
+                    <button type="button" style={S.uploadBtn} disabled={uploadingSplash} onClick={() => splashInputRef.current?.click()}>
+                      {uploadingSplash ? "Uploading…" : splashUrl ? "Replace" : "Upload splash"}
+                    </button>
+                    <div style={S.uploadHint}>PNG · 2048×2048 · max 5 MB</div>
+                  </div>
+                  <input ref={splashInputRef} type="file" accept="image/png" style={{ display: "none" }} onChange={handleSplashChange} />
+                </div>
               </div>
             </div>
-            {/* Splash */}
-            <div>
-              <div style={{ ...S.label, marginBottom: 10 }}>Splash screen</div>
-              <div style={{ ...S.logoArea, alignItems: isMobile ? "flex-start" : "center" }}>
-                {splashUrl
-                  ? <img src={splashUrl} alt="Splash screen" style={{ ...S.logoPreview, width: 120, height: 72, borderRadius: 6 }} />
-                  : <div style={{ ...S.logoPlaceholder, width: 120, height: 72, borderRadius: 6 }}>No splash</div>
-                }
-                <div>
-                  <button type="button" style={S.uploadBtn} disabled={uploadingSplash} onClick={() => splashInputRef.current?.click()}>
-                    {uploadingSplash ? "Uploading…" : splashUrl ? "Replace" : "Upload splash"}
-                  </button>
-                  <div style={S.uploadHint}>PNG · 2048×2048 · max 5 MB</div>
-                </div>
-                <input ref={splashInputRef} type="file" accept="image/png" style={{ display: "none" }} onChange={handleSplashChange} />
-              </div>
-            </div>
-          </div>
-        </div>
+          </section>
+        )}
 
-        {/* Stripe */}
-        <div style={S.section}>
-          <div style={S.sectionTitle}>Stripe price IDs</div>
-          <div style={S.sectionSub}>
-            Leave blank to use the platform defaults. Create products in your Stripe dashboard and paste the price IDs here.
-          </div>
-          {[
-            ["stripeUnlimitedMonthlyPriceId", "Unlimited — Monthly"],
-            ["stripeUnlimitedAnnualPriceId", "Unlimited — Annual"],
-            ["stripeTwiceWeeklyMonthlyPriceId", "Twice Weekly — Monthly"],
-            ["stripeTwiceWeeklyAnnualPriceId", "Twice Weekly — Annual"],
-          ].map(([field, label]) => (
-            <div key={field} style={S.group}>
-              <label style={S.label}>{label}</label>
-              <input
-                style={S.input}
-                value={form[field as keyof typeof form]}
-                onChange={set(field as keyof typeof form)}
-                placeholder="price_..."
-              />
+        {activeTab === "payments" && (
+          <section style={S.section} role="tabpanel">
+            <div style={S.sectionTitle}>Stripe price IDs</div>
+            <div style={S.sectionSub}>
+              Leave blank to use the platform defaults. Create products in your Stripe dashboard and paste the price IDs here.
             </div>
-          ))}
-        </div>
+            {[
+              ["stripeUnlimitedMonthlyPriceId", "Unlimited — Monthly"],
+              ["stripeUnlimitedAnnualPriceId", "Unlimited — Annual"],
+              ["stripeTwiceWeeklyMonthlyPriceId", "Twice Weekly — Monthly"],
+              ["stripeTwiceWeeklyAnnualPriceId", "Twice Weekly — Annual"],
+            ].map(([field, label]) => (
+              <div key={field} style={S.group}>
+                <label style={S.label}>{label}</label>
+                <input
+                  style={S.input}
+                  value={form[field as keyof typeof form]}
+                  onChange={set(field as keyof typeof form)}
+                  placeholder="price_..."
+                />
+              </div>
+            ))}
+          </section>
+        )}
 
         <div style={{ display: "flex", alignItems: "center", marginTop: 8 }}>
           <button style={S.btn} type="submit" disabled={saving}>

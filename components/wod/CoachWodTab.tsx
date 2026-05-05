@@ -19,7 +19,7 @@ import { Colors } from "../../constants/Colors";
 import { Fonts } from "../../constants/Typography";
 import { useGymColors, useGymConfig } from "../../constants/GymConfig";
 import { getTodayDate } from "../../utils/date";
-import type { WodType } from "../../constants/wod";
+import { DEFAULT_WOD_PROGRAM, WOD_PROGRAMS, type WodProgram, type WodType } from "../../constants/wod";
 import { wodStyles as s } from "./styles";
 import { PartCard } from "./PartCard";
 import { WodScheduleStrip } from "./WodScheduleStrip";
@@ -42,9 +42,15 @@ export function CoachWodTab() {
   const today = getTodayDate();
 
   const [selectedDate, setSelectedDate] = useState(today);
+  const [selectedProgram, setSelectedProgram] = useState<WodProgram>(DEFAULT_WOD_PROGRAM);
+  const [showProgramModal, setShowProgramModal] = useState(false);
 
-  const wod = useQuery(api.wods.getByDate, { date: selectedDate });
-  const wodSchedule = useQuery(api.wods.getSchedule, { startDate: today, days: 7 });
+  const wod = useQuery(api.wods.getByDate, { date: selectedDate, program: selectedProgram });
+  const wodSchedule = useQuery(api.wods.getSchedule, {
+    startDate: today,
+    days: 7,
+    program: selectedProgram,
+  });
   const createWod = useMutation(api.wods.create);
   const updateWod = useMutation(api.wods.update);
 
@@ -134,6 +140,7 @@ export function CoachWodTab() {
 
     const wodPayload = {
       date,
+      program: selectedProgram,
       title: title.trim(),
       description: primaryDescription,
       type: primaryType,
@@ -192,6 +199,11 @@ export function CoachWodTab() {
     return (
       <SafeAreaView style={s.container} edges={[]}>
         <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+          <Pressable style={s.programSelect} onPress={() => setShowProgramModal(true)}>
+            <Ionicons name="clipboard-outline" size={24} color={Colors.text} />
+            <Text style={s.programSelectText}>{selectedProgram}</Text>
+            <Ionicons name="chevron-down" size={20} color={Colors.text} />
+          </Pressable>
           <WodScheduleStrip
             schedule={wodSchedule ?? []}
             selectedDate={selectedDate}
@@ -283,6 +295,11 @@ export function CoachWodTab() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
+          <Pressable style={[s.programSelect, { marginHorizontal: 0, marginTop: 0 }]} onPress={() => setShowProgramModal(true)}>
+            <Ionicons name="clipboard-outline" size={24} color={Colors.text} />
+            <Text style={s.programSelectText}>{selectedProgram}</Text>
+            <Ionicons name="chevron-down" size={20} color={Colors.text} />
+          </Pressable>
           <WodScheduleStrip
             schedule={wodSchedule ?? []}
             selectedDate={selectedDate}
@@ -442,6 +459,40 @@ export function CoachWodTab() {
           }}
         />
       )}
+      <Modal transparent animationType="slide" visible={showProgramModal}>
+        <Pressable style={s.modalOverlay} onPress={() => setShowProgramModal(false)}>
+          <Pressable style={s.accessModalSheet}>
+            <View style={s.modalHandle} />
+            <Text style={s.accessModalTitle}>SELECT WORKOUT</Text>
+            {WOD_PROGRAMS.map((program) => {
+              const selected = program === selectedProgram;
+              return (
+                <Pressable
+                  key={program}
+                  style={[
+                    s.accessOption,
+                    selected && { backgroundColor: Colors.surfaceContainerHighest },
+                  ]}
+                  onPress={() => {
+                    setSelectedProgram(program);
+                    setShowProgramModal(false);
+                  }}
+                >
+                  <View style={s.programOptionLeft}>
+                    <Ionicons name="clipboard-outline" size={22} color={Colors.text} />
+                    <Text style={s.accessOptionText}>{program}</Text>
+                  </View>
+                  <Ionicons
+                    name={selected ? "radio-button-on" : "radio-button-off"}
+                    size={28}
+                    color={selected ? primary : Colors.text}
+                  />
+                </Pressable>
+              );
+            })}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <Modal transparent animationType="fade" visible={showAccessModal}>
         <Pressable style={s.modalOverlay} onPress={() => setShowAccessModal(false)}>

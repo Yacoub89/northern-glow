@@ -1,8 +1,9 @@
 import { useMutation, useQuery } from "convex/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -11,13 +12,16 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../convex/_generated/api";
 import { Colors } from "../../constants/Colors";
 import { useGymColors, useGymConfig } from "../../constants/GymConfig";
+import { DEFAULT_WOD_PROGRAM, WOD_PROGRAMS, type WodProgram } from "../../constants/wod";
 import { getTodayDate } from "../../utils/date";
 import { wodStyles as s } from "./styles";
-import { SCALE_OPTIONS, parseMovement, type Scale } from "./types";
+import { formatNavDateShort, SCALE_OPTIONS, parseMovement, type Scale } from "./types";
 import { useAppDialog } from "../AppDialog";
+import { WodScheduleStrip } from "./WodScheduleStrip";
 
 export function AthleteLogTab() {
   const gym = useGymConfig();
@@ -25,8 +29,17 @@ export function AthleteLogTab() {
   const dialog = useAppDialog();
   const today = getTodayDate();
 
-  const wod = useQuery(api.wods.getByDate, { date: today });
-  const todayBooking = useQuery(api.bookings.getMyUpcomingBooking, { date: today });
+  const [selectedDate, setSelectedDate] = useState(today);
+  const [selectedProgram, setSelectedProgram] = useState<WodProgram>(DEFAULT_WOD_PROGRAM);
+  const [showProgramModal, setShowProgramModal] = useState(false);
+
+  const wod = useQuery(api.wods.getByDate, { date: selectedDate, program: selectedProgram });
+  const wodSchedule = useQuery(api.wods.getSchedule, {
+    startDate: today,
+    days: 7,
+    program: selectedProgram,
+  });
+  const todayBooking = useQuery(api.bookings.getMyUpcomingBooking, { date: selectedDate });
   const myResult = useQuery(
     api.results.getByWod,
     wod?._id ? { wodId: wod._id } : "skip"
@@ -38,6 +51,12 @@ export function AthleteLogTab() {
   const [notes, setNotes] = useState("");
   const [fullWodExpanded, setFullWodExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    setScore("");
+    setNotes("");
+    setFullWodExpanded(false);
+  }, [wod?._id]);
 
   const isLoading =
     wod === undefined ||
@@ -84,16 +103,34 @@ export function AthleteLogTab() {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
         <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+          <Pressable style={s.programSelect} onPress={() => setShowProgramModal(true)}>
+            <Ionicons name="clipboard-outline" size={24} color={Colors.text} />
+            <Text style={s.programSelectText}>{selectedProgram}</Text>
+            <Ionicons name="chevron-down" size={20} color={Colors.text} />
+          </Pressable>
+
+          <WodScheduleStrip
+            schedule={wodSchedule ?? []}
+            selectedDate={selectedDate}
+            today={today}
+            primary={primary}
+            onSelect={setSelectedDate}
+          />
+
           <View style={s.readHeader}>
             <View>
               <Text style={[s.readGymName, { color: primary }]}>{gym.name.toUpperCase()}</Text>
-              <Text style={s.readTitle}>Log Result</Text>
+              <Text style={s.readTitle}>
+                {selectedDate === today ? "Log Result" : formatNavDateShort(selectedDate)}
+              </Text>
             </View>
           </View>
 
           {wod ? (
             <>
-              <Text style={s.sectionLabel}>TODAY'S WOD</Text>
+              <Text style={s.sectionLabel}>
+                {selectedDate === today ? "TODAY'S WOD" : `${selectedProgram} WOD`}
+              </Text>
               <View style={s.readCard}>
                 <Text style={s.readWodTitle}>{wod.title}</Text>
                 <Text style={[s.readWodMeta, { color: primary }]}>
@@ -173,7 +210,9 @@ export function AthleteLogTab() {
             </>
           ) : (
             <View style={s.noWodBanner}>
-              <Text style={s.noWodText}>No WOD posted for today</Text>
+              <Text style={s.noWodText}>
+                No WOD posted for {selectedDate === today ? "today" : formatNavDateShort(selectedDate)}
+              </Text>
             </View>
           )}
 
@@ -252,6 +291,41 @@ export function AthleteLogTab() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <Modal transparent animationType="slide" visible={showProgramModal}>
+        <Pressable style={s.modalOverlay} onPress={() => setShowProgramModal(false)}>
+          <Pressable style={s.accessModalSheet}>
+            <View style={s.modalHandle} />
+            <Text style={s.accessModalTitle}>SELECT WORKOUT</Text>
+            {WOD_PROGRAMS.map((program) => {
+              const selected = program === selectedProgram;
+              return (
+                <Pressable
+                  key={program}
+                  style={[
+                    s.accessOption,
+                    selected && { backgroundColor: Colors.surfaceContainerHighest },
+                  ]}
+                  onPress={() => {
+                    setSelectedProgram(program);
+                    setShowProgramModal(false);
+                  }}
+                >
+                  <View style={s.programOptionLeft}>
+                    <Ionicons name="clipboard-outline" size={22} color={Colors.text} />
+                    <Text style={s.accessOptionText}>{program}</Text>
+                  </View>
+                  <Ionicons
+                    name={selected ? "radio-button-on" : "radio-button-off"}
+                    size={28}
+                    color={selected ? primary : Colors.text}
+                  />
+                </Pressable>
+              );
+            })}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }

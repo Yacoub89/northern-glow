@@ -6,6 +6,15 @@ import { useMediaQuery } from "../components/useMediaQuery";
 
 type WodType = "AMRAP" | "ForTime" | "EMOM" | "Strength" | "Other";
 type AccessLevel = "PUBLIC_CLASS" | "MEMBERS_ONLY" | "ADVANCED";
+type WodProgram =
+  | "Challenge of the Month"
+  | "OC-60"
+  | "OC-Flex"
+  | "OC-Home"
+  | "OC-Hyrox"
+  | "OC-Lift"
+  | "OC-Teens";
+type WorkoutsTab = "week" | "create" | "import";
 type PartDraft = {
   label: string;
   name: string;
@@ -20,6 +29,7 @@ type PartDraft = {
 };
 type ImportedWod = {
   date: string;
+  program?: string;
   title: string;
   description: string;
   type: WodType;
@@ -55,6 +65,18 @@ const ACCESS_LEVELS: Array<{ value: ""; label: string } | { value: AccessLevel; 
   { value: "ADVANCED", label: "Advanced" },
 ];
 
+const WOD_PROGRAMS: Array<{ value: WodProgram; label: string }> = [
+  { value: "Challenge of the Month", label: "Challenge of the Month" },
+  { value: "OC-60", label: "OC-60" },
+  { value: "OC-Flex", label: "OC-Flex" },
+  { value: "OC-Home", label: "OC-Home" },
+  { value: "OC-Hyrox", label: "OC-Hyrox" },
+  { value: "OC-Lift", label: "OC-Lift" },
+  { value: "OC-Teens", label: "OC-Teens" },
+];
+
+const DEFAULT_WOD_PROGRAM: WodProgram = "OC-60";
+
 const S = {
   page: { maxWidth: 1240 },
   header: { display: "flex", justifyContent: "space-between", gap: 24, alignItems: "flex-start", marginBottom: 24 },
@@ -68,7 +90,7 @@ const S = {
   importGrid: { display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "end" },
   importList: { display: "grid", gap: 12, marginTop: 14 },
   importRow: { background: "#101010", border: "1px solid #242424", borderRadius: 8, padding: 12 },
-  importTop: { display: "grid", gridTemplateColumns: "auto 150px 1fr 150px", gap: 10, alignItems: "center", marginBottom: 10 },
+  importTop: { display: "grid", gridTemplateColumns: "auto 150px 1fr 150px 150px", gap: 10, alignItems: "center", marginBottom: 10 },
   check: { width: 18, height: 18, accentColor: "#1BBFBF" },
   formGrid: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginBottom: 12 },
   field: { display: "flex", flexDirection: "column" as const, gap: 6 },
@@ -118,6 +140,17 @@ const S = {
     background: primary ? "#1BBFBF" : "#1e1e1e",
     color: primary ? "#001313" : "#aaa",
     whiteSpace: "nowrap" as const,
+  }),
+  tabs: { display: "flex", gap: 8, flexWrap: "wrap" as const, marginBottom: 18 },
+  tabBtn: (active: boolean) => ({
+    padding: "10px 14px",
+    borderRadius: 7,
+    fontWeight: 750,
+    fontSize: 13,
+    cursor: "pointer",
+    border: `1px solid ${active ? "#1BBFBF" : "#333"}`,
+    background: active ? "#1BBFBF" : "#141414",
+    color: active ? "#001313" : "#aaa",
   }),
   stats: { display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12, marginBottom: 24 },
   stat: { background: "#101010", border: "1px solid #242424", borderRadius: 8, padding: 16 },
@@ -194,9 +227,12 @@ function newPart(index: number): PartDraft {
 
 export default function Workouts() {
   const isMobile = useMediaQuery("(max-width: 980px)");
+  const [activeTab, setActiveTab] = useState<WorkoutsTab>("week");
   const [startDate, setStartDate] = useState(todayString());
+  const [viewProgram, setViewProgram] = useState<WodProgram>(DEFAULT_WOD_PROGRAM);
   const [editingId, setEditingId] = useState<Id<"wods"> | null>(null);
   const [date, setDate] = useState(todayString());
+  const [formProgram, setFormProgram] = useState<WodProgram>(DEFAULT_WOD_PROGRAM);
   const [title, setTitle] = useState("");
   const [type, setType] = useState<WodType>("AMRAP");
   const [accessLevel, setAccessLevel] = useState<"" | AccessLevel>("");
@@ -215,7 +251,7 @@ export default function Workouts() {
   const [importError, setImportError] = useState("");
   const [importSuccess, setImportSuccess] = useState("");
 
-  const schedule = useQuery(api.wods.getSchedule, { startDate, days: 7 });
+  const schedule = useQuery(api.wods.getSchedule, { startDate, days: 7, program: viewProgram });
   const createWod = useMutation(api.wods.create);
   const updateWod = useMutation(api.wods.update);
   const previewGoogleDoc = useAction(api.wods.previewGoogleDoc);
@@ -228,6 +264,7 @@ export default function Workouts() {
   const resetForm = () => {
     setEditingId(null);
     setDate(todayString());
+    setFormProgram(DEFAULT_WOD_PROGRAM);
     setTitle("");
     setType("AMRAP");
     setAccessLevel("");
@@ -241,6 +278,7 @@ export default function Workouts() {
   const editWod = (wod: NonNullable<NonNullable<typeof schedule>[number]["wod"]>) => {
     setEditingId(wod._id);
     setDate(wod.date);
+    setFormProgram((wod.program as WodProgram | undefined) ?? DEFAULT_WOD_PROGRAM);
     setTitle(wod.title);
     setType(wod.type);
     setAccessLevel(wod.accessLevel ?? "");
@@ -262,6 +300,22 @@ export default function Workouts() {
       }))
     );
     setError("");
+    setActiveTab("create");
+  };
+
+  const createWodForDate = (wodDate: string) => {
+    setEditingId(null);
+    setDate(wodDate);
+    setFormProgram(viewProgram);
+    setTitle("");
+    setType("AMRAP");
+    setAccessLevel("");
+    setDescription("");
+    setMovements("");
+    setScalingNotes("");
+    setParts([]);
+    setError("");
+    setActiveTab("create");
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -285,12 +339,14 @@ export default function Workouts() {
         }));
       const payload = {
         date,
+        program: formProgram,
         title: title.trim(),
         description: description.trim(),
         type,
         movements: movementList(movements),
       };
       if (!payload.title) throw new Error("Title is required");
+      const savedProgram = formProgram;
       if (editingId) {
         await updateWod({
           id: editingId,
@@ -308,7 +364,9 @@ export default function Workouts() {
         });
       }
       setStartDate(date);
+      setViewProgram(savedProgram);
       resetForm();
+      setActiveTab("week");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Failed to save WOD");
     } finally {
@@ -347,6 +405,7 @@ export default function Workouts() {
       .filter((item) => selectedImports.has(item.date))
       .map((item) => ({
         date: item.date,
+        program: item.program ?? viewProgram,
         title: item.title.trim(),
         description: item.description.trim(),
         type: item.type,
@@ -369,6 +428,8 @@ export default function Workouts() {
     try {
       const result = await importMany({ wods, overwrite: overwriteImports });
       setStartDate(wods[0].date);
+      setViewProgram((wods[0].program as WodProgram | undefined) ?? viewProgram);
+      setActiveTab("week");
       setImportSuccess(
         `${result.created} created, ${result.updated} updated, ${result.skipped} skipped.`
       );
@@ -397,6 +458,13 @@ export default function Workouts() {
           <button style={S.btn(false)} onClick={() => setStartDate(addDays(startDate, 7))}>
             Next
           </button>
+          <select style={{ ...S.select, width: 190 }} value={viewProgram} onChange={(e) => setViewProgram(e.target.value as WodProgram)}>
+            {WOD_PROGRAMS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -415,6 +483,19 @@ export default function Workouts() {
         </div>
       </div>
 
+      <div style={S.tabs} role="tablist" aria-label="Workout sections">
+        <button style={S.tabBtn(activeTab === "week")} type="button" onClick={() => setActiveTab("week")}>
+          Week Preview
+        </button>
+        <button style={S.tabBtn(activeTab === "create")} type="button" onClick={() => setActiveTab("create")}>
+          {editingId ? "Edit WOD" : "Create WOD"}
+        </button>
+        <button style={S.tabBtn(activeTab === "import")} type="button" onClick={() => setActiveTab("import")}>
+          Import
+        </button>
+      </div>
+
+      {activeTab === "import" && (
       <section style={S.panel}>
         <div style={S.panelHead}>
           <div>
@@ -512,6 +593,20 @@ export default function Workouts() {
                         ))}
                       </select>
                     </label>
+                    <label style={S.field}>
+                      <span style={S.label}>Program</span>
+                      <select
+                        style={S.select}
+                        value={(item.program as WodProgram | undefined) ?? viewProgram}
+                        onChange={(e) => updateImportedWod(item.date, (current) => ({ ...current, program: e.target.value }))}
+                      >
+                        {WOD_PROGRAMS.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
                   </div>
                   <div style={{ ...S.formGrid, gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr" }}>
                     <label style={S.field}>
@@ -571,8 +666,9 @@ export default function Workouts() {
         {importError && <p style={S.error}>{importError}</p>}
         {importSuccess && <p style={S.success}>{importSuccess}</p>}
       </section>
+      )}
 
-      <div style={{ ...S.split, gridTemplateColumns: isMobile ? "1fr" : S.split.gridTemplateColumns }}>
+      {activeTab === "create" && (
         <section style={S.panel}>
           <div style={S.panelHead}>
             <h2 style={S.panelTitle}>{editingId ? "Edit WOD" : "Create WOD"}</h2>
@@ -587,6 +683,16 @@ export default function Workouts() {
               <label style={S.field}>
                 <span style={S.label}>Date</span>
                 <input style={S.input} type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+              </label>
+              <label style={S.field}>
+                <span style={S.label}>Program</span>
+                <select style={S.select} value={formProgram} onChange={(e) => setFormProgram(e.target.value as WodProgram)}>
+                  {WOD_PROGRAMS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
               </label>
               <label style={S.field}>
                 <span style={S.label}>Title</span>
@@ -713,12 +819,14 @@ export default function Workouts() {
             {error && <p style={S.error}>{error}</p>}
           </form>
         </section>
+      )}
 
-        <section>
+      {activeTab === "week" && (
+        <section style={S.panel}>
           <div style={S.panelHead}>
             <h2 style={S.panelTitle}>Week Preview</h2>
             <span style={S.panelMeta}>
-              {shortDate(startDate)} - {shortDate(addDays(startDate, 6))}
+              {viewProgram} · {shortDate(startDate)} - {shortDate(addDays(startDate, 6))}
             </span>
           </div>
           <div style={S.schedule}>
@@ -730,7 +838,7 @@ export default function Workouts() {
                 </div>
                 {wod ? (
                   <>
-                    <div style={S.wodMeta}>{wod.type}</div>
+                    <div style={S.wodMeta}>{wod.program ?? DEFAULT_WOD_PROGRAM} · {wod.type}</div>
                     <div style={S.wodTitle}>{wod.title}</div>
                     <div style={S.desc}>{wod.description}</div>
                     {wod.movements.length > 0 && (
@@ -750,13 +858,22 @@ export default function Workouts() {
                     </div>
                   </>
                 ) : (
-                  <div style={S.empty}>No WOD posted.</div>
+                  <div>
+                    <div style={S.empty}>No WOD posted.</div>
+                    <button
+                      style={{ ...S.btn(false), padding: "7px 10px" }}
+                      type="button"
+                      onClick={() => createWodForDate(wodDate)}
+                    >
+                      Create
+                    </button>
+                  </div>
                 )}
               </article>
             ))}
           </div>
         </section>
-      </div>
+      )}
     </div>
   );
 }

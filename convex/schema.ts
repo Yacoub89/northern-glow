@@ -92,6 +92,7 @@ export default defineSchema({
   wods: defineTable({
     gymId: v.id("gyms"),
     date: v.string(), // YYYY-MM-DD
+    program: v.optional(v.string()),
     title: v.string(),
     description: v.string(),
     type: v.union(
@@ -129,7 +130,8 @@ export default defineSchema({
     }))),
   })
     .index("by_date", ["date"])
-    .index("by_gym_date", ["gymId", "date"]),
+    .index("by_gym_date", ["gymId", "date"])
+    .index("by_gym_date_program", ["gymId", "date", "program"]),
 
   classes: defineTable({
     gymId: v.id("gyms"),

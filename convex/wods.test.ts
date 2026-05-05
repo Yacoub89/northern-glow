@@ -71,6 +71,33 @@ describe("wods.create", () => {
       })
     ).rejects.toThrow("A WOD already exists for this date");
   });
+
+  test("coach can create separate programs on the same date", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId, identity } = await seedGymAndUser(t, { role: "coach" });
+    await insertWod(t, gymId, userId, "2099-07-11");
+
+    await t.withIdentity(identity).mutation(api.wods.create, {
+      date: "2099-07-11",
+      program: "OC-Flex",
+      title: "Flex Day",
+      description: "Bodyweight conditioning",
+      type: "AMRAP",
+      movements: ["Burpee"],
+    });
+
+    const defaultWod = await t.withIdentity(identity).query(api.wods.getByDate, {
+      date: "2099-07-11",
+      program: "OC-60",
+    });
+    const flexWod = await t.withIdentity(identity).query(api.wods.getByDate, {
+      date: "2099-07-11",
+      program: "OC-Flex",
+    });
+
+    expect(defaultWod?.title).toBe("Fran");
+    expect(flexWod?.title).toBe("Flex Day");
+  });
 });
 
 // ── wods.getByDate ────────────────────────────────────────────────────────────

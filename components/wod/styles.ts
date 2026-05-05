@@ -12,6 +12,28 @@ export const wodStyles = StyleSheet.create({
   },
   scroll: { paddingBottom: 60 },
 
+  programSelect: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    marginHorizontal: 20,
+    marginTop: 14,
+    marginBottom: 2,
+    paddingHorizontal: 16,
+    paddingVertical: 15,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.outlineVariant,
+    backgroundColor: Colors.surfaceContainerLow,
+  },
+  programSelectText: {
+    flex: 1,
+    fontFamily: Fonts.bodyExtra,
+    fontSize: FontSizes.labelLg,
+    color: Colors.text,
+    letterSpacing: 0.3,
+  },
+
   // Page header (create/edit form)
   pageHeader: {
     flexDirection: "row",
@@ -478,5 +500,11 @@ export const wodStyles = StyleSheet.create({
     fontSize: FontSizes.labelLg,
     color: Colors.text,
     letterSpacing: 0.5,
+  },
+  programOptionLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 14,
+    flex: 1,
   },
 });
