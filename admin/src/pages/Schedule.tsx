@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Id } from "@convex/_generated/dataModel";
@@ -113,13 +113,13 @@ export default function Schedule() {
 
   const classes = useQuery(api.classes.getUpcoming, { startDate, days: 7 });
   const staff = useQuery(api.staff.list);
-  const wods = useQuery(api.wods.getSchedule, { startDate, days: 7 });
+  const selectedDateWod = useQuery(api.wods.getByDate, { date });
   const createClass = useMutation(api.classes.create);
   const removeClass = useMutation(api.classes.remove);
 
   const days = useMemo(() => Array.from({ length: 7 }, (_, index) => addDays(startDate, index)), [startDate]);
   const activeCoaches = staff?.filter((member) => member.canCoach && member.staffStatus !== "inactive") ?? [];
-  const wodOptions = wods?.filter((item) => item.wod !== null) ?? [];
+  const wodOptions = selectedDateWod ? [selectedDateWod] : [];
   const totalClasses = classes?.length ?? 0;
   const totalBooked = classes?.reduce((sum, cls) => sum + cls.bookedCount, 0) ?? 0;
 
@@ -129,6 +129,18 @@ export default function Schedule() {
     for (const cls of classes ?? []) grouped.set(cls.date, [...(grouped.get(cls.date) ?? []), cls]);
     return grouped;
   }, [classes, days]);
+
+  useEffect(() => {
+    if (selectedDateWod === undefined) return;
+    if (wodId && (!selectedDateWod || selectedDateWod._id !== wodId)) {
+      setWodId("");
+    }
+  }, [selectedDateWod, wodId]);
+
+  const handleDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setDate(event.target.value);
+    if (event.target.value) event.currentTarget.blur();
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -163,7 +175,15 @@ export default function Schedule() {
           <button style={S.btn(false)} onClick={() => setStartDate(addDays(startDate, -7))}>
             Previous
           </button>
-          <input style={{ ...S.input, width: 160 }} type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+          <input
+            style={{ ...S.input, width: 160 }}
+            type="date"
+            value={startDate}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              if (e.target.value) e.currentTarget.blur();
+            }}
+          />
           <button style={S.btn(false)} onClick={() => setStartDate(todayString())}>
             Today
           </button>
@@ -196,7 +216,7 @@ export default function Schedule() {
         <form style={{ ...S.form, gridTemplateColumns: isMobile ? "1fr" : S.form.gridTemplateColumns }} onSubmit={handleSubmit}>
           <label style={S.field}>
             <span style={S.label}>Date</span>
-            <input style={S.input} type="date" value={date} onChange={(e) => setDate(e.target.value)} required />
+            <input style={S.input} type="date" value={date} onChange={handleDateChange} required />
           </label>
           <label style={S.field}>
             <span style={S.label}>Start time</span>
@@ -221,9 +241,9 @@ export default function Schedule() {
             <span style={S.label}>WOD</span>
             <select style={S.select} value={wodId} onChange={(e) => setWodId(e.target.value)}>
               <option value="">No WOD</option>
-              {wodOptions.map(({ date: wodDate, wod }) => (
-                <option key={wod!._id} value={wod!._id}>
-                  {shortDate(wodDate)} - {wod!.title}
+              {wodOptions.map((wod) => (
+                <option key={wod._id} value={wod._id}>
+                  {wod.title}
                 </option>
               ))}
             </select>
