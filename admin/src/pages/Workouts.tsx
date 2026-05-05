@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Id } from "@convex/_generated/dataModel";
 import { useMediaQuery } from "../components/useMediaQuery";
@@ -17,6 +17,27 @@ type PartDraft = {
   timeCap: string;
   description: string;
   coachNotes: string;
+};
+type ImportedWod = {
+  date: string;
+  title: string;
+  description: string;
+  type: WodType;
+  movements: string[];
+  scalingNotes?: string;
+  accessLevel?: AccessLevel;
+  parts?: Array<{
+    label: string;
+    name: string;
+    type?: WodType;
+    movement?: string;
+    sets?: string;
+    reps?: string;
+    percentMax?: string;
+    timeCap?: string;
+    description?: string;
+    coachNotes?: string;
+  }>;
 };
 
 const WOD_TYPES: Array<{ value: WodType; label: string }> = [
@@ -44,6 +65,11 @@ const S = {
   panelHead: { display: "flex", justifyContent: "space-between", gap: 16, alignItems: "baseline", marginBottom: 16 },
   panelTitle: { fontSize: 15, color: "#fff", fontWeight: 750, margin: 0 },
   panelMeta: { fontSize: 13, color: "#666" },
+  importGrid: { display: "grid", gridTemplateColumns: "1fr auto", gap: 10, alignItems: "end" },
+  importList: { display: "grid", gap: 12, marginTop: 14 },
+  importRow: { background: "#101010", border: "1px solid #242424", borderRadius: 8, padding: 12 },
+  importTop: { display: "grid", gridTemplateColumns: "auto 150px 1fr 150px", gap: 10, alignItems: "center", marginBottom: 10 },
+  check: { width: 18, height: 18, accentColor: "#1BBFBF" },
   formGrid: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 12, marginBottom: 12 },
   field: { display: "flex", flexDirection: "column" as const, gap: 6 },
   label: { fontSize: 12, color: "#777", fontWeight: 650 },
@@ -115,6 +141,7 @@ const S = {
   partFields: { display: "grid", gridTemplateColumns: "80px 1fr 130px", gap: 10, marginBottom: 10 },
   formActions: { display: "flex", gap: 10, justifyContent: "flex-end", borderTop: "1px solid #252525", paddingTop: 14, marginTop: 16 },
   error: { color: "#ff453a", fontSize: 13, margin: "12px 0 0" },
+  success: { color: "#34C759", fontSize: 13, margin: "12px 0 0" },
 };
 
 function todayString() {
@@ -179,10 +206,20 @@ export default function Workouts() {
   const [parts, setParts] = useState<PartDraft[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [docUrl, setDocUrl] = useState("");
+  const [importPreview, setImportPreview] = useState<ImportedWod[]>([]);
+  const [selectedImports, setSelectedImports] = useState<Set<string>>(new Set());
+  const [overwriteImports, setOverwriteImports] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importError, setImportError] = useState("");
+  const [importSuccess, setImportSuccess] = useState("");
 
   const schedule = useQuery(api.wods.getSchedule, { startDate, days: 7 });
   const createWod = useMutation(api.wods.create);
   const updateWod = useMutation(api.wods.update);
+  const previewGoogleDoc = useAction(api.wods.previewGoogleDoc);
+  const importMany = useMutation(api.wods.importMany);
 
   const programmed = schedule?.filter((item) => item.wod !== null) ?? [];
   const movementCount = programmed.reduce((sum, item) => sum + (item.wod?.movements.length ?? 0), 0);
@@ -279,6 +316,69 @@ export default function Workouts() {
     }
   };
 
+  const handlePreviewImport = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setPreviewing(true);
+    setImportError("");
+    setImportSuccess("");
+    try {
+      const result = await previewGoogleDoc({ url: docUrl.trim(), startDate });
+      const items = result.items as ImportedWod[];
+      setImportPreview(items);
+      setSelectedImports(new Set(items.map((item) => item.date)));
+      if (items.length === 0) {
+        setImportError("No WOD sections were found in that doc.");
+      }
+    } catch (err: unknown) {
+      setImportPreview([]);
+      setSelectedImports(new Set());
+      setImportError(err instanceof Error ? err.message : "Failed to preview Google Doc");
+    } finally {
+      setPreviewing(false);
+    }
+  };
+
+  const updateImportedWod = (dateKey: string, updater: (item: ImportedWod) => ImportedWod) => {
+    setImportPreview((prev) => prev.map((item) => (item.date === dateKey ? updater(item) : item)));
+  };
+
+  const handleImportSelected = async () => {
+    const wods = importPreview
+      .filter((item) => selectedImports.has(item.date))
+      .map((item) => ({
+        date: item.date,
+        title: item.title.trim(),
+        description: item.description.trim(),
+        type: item.type,
+        movements: item.movements.map((movement) => movement.trim()).filter(Boolean),
+        ...(item.accessLevel ? { accessLevel: item.accessLevel } : {}),
+        ...(item.scalingNotes?.trim() ? { scalingNotes: item.scalingNotes.trim() } : {}),
+        ...(item.parts && item.parts.length > 0 ? { parts: item.parts } : {}),
+      }));
+    if (wods.length === 0) {
+      setImportError("Select at least one WOD to import.");
+      return;
+    }
+    if (wods.some((item) => !item.date || !item.title || !item.description)) {
+      setImportError("Every selected WOD needs a date, title, and description.");
+      return;
+    }
+    setImporting(true);
+    setImportError("");
+    setImportSuccess("");
+    try {
+      const result = await importMany({ wods, overwrite: overwriteImports });
+      setStartDate(wods[0].date);
+      setImportSuccess(
+        `${result.created} created, ${result.updated} updated, ${result.skipped} skipped.`
+      );
+    } catch (err: unknown) {
+      setImportError(err instanceof Error ? err.message : "Failed to import WODs");
+    } finally {
+      setImporting(false);
+    }
+  };
+
   return (
     <div style={S.page}>
       <div style={{ ...S.header, flexDirection: isMobile ? "column" : "row" }}>
@@ -314,6 +414,163 @@ export default function Workouts() {
           <div style={S.statLabel}>Days in view</div>
         </div>
       </div>
+
+      <section style={S.panel}>
+        <div style={S.panelHead}>
+          <div>
+            <h2 style={S.panelTitle}>Import From Google Docs</h2>
+            <p style={{ ...S.sub, marginTop: 6 }}>
+              Paste a shareable or published Google Doc link. NorthernGlow reads the HTML export, then lets you edit the draft WODs before anything is saved.
+            </p>
+          </div>
+        </div>
+        <form onSubmit={handlePreviewImport}>
+          <div style={{ ...S.importGrid, gridTemplateColumns: isMobile ? "1fr" : S.importGrid.gridTemplateColumns }}>
+            <label style={S.field}>
+              <span style={S.label}>Google Doc URL</span>
+              <input
+                style={S.input}
+                value={docUrl}
+                onChange={(e) => setDocUrl(e.target.value)}
+                placeholder="https://docs.google.com/document/d/..."
+                required
+              />
+            </label>
+            <button style={S.btn(true)} type="submit" disabled={previewing}>
+              {previewing ? "Reading..." : "Preview Import"}
+            </button>
+          </div>
+        </form>
+
+        {importPreview.length > 0 && (
+          <>
+            <div style={S.importList}>
+              {importPreview.map((item) => (
+                <div
+                  key={item.date}
+                  style={S.importRow}
+                >
+                  <div
+                    style={{
+                      ...S.importTop,
+                      gridTemplateColumns: isMobile ? "auto 1fr" : S.importTop.gridTemplateColumns,
+                    }}
+                  >
+                    <input
+                      style={S.check}
+                      type="checkbox"
+                      aria-label={`Select ${item.title}`}
+                      checked={selectedImports.has(item.date)}
+                      onChange={(e) => {
+                        setSelectedImports((prev) => {
+                          const next = new Set(prev);
+                          if (e.target.checked) next.add(item.date);
+                          else next.delete(item.date);
+                          return next;
+                        });
+                      }}
+                    />
+                    <label style={S.field}>
+                      <span style={S.label}>Date</span>
+                      <input
+                        style={S.input}
+                        type="date"
+                        value={item.date}
+                        onChange={(e) => {
+                          const nextDate = e.target.value;
+                          setSelectedImports((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(item.date)) {
+                              next.delete(item.date);
+                              next.add(nextDate);
+                            }
+                            return next;
+                          });
+                          updateImportedWod(item.date, (current) => ({ ...current, date: nextDate }));
+                        }}
+                      />
+                    </label>
+                    <label style={S.field}>
+                      <span style={S.label}>Title</span>
+                      <input
+                        style={S.input}
+                        value={item.title}
+                        onChange={(e) => updateImportedWod(item.date, (current) => ({ ...current, title: e.target.value }))}
+                      />
+                    </label>
+                    <label style={S.field}>
+                      <span style={S.label}>Type</span>
+                      <select
+                        style={S.select}
+                        value={item.type}
+                        onChange={(e) => updateImportedWod(item.date, (current) => ({ ...current, type: e.target.value as WodType }))}
+                      >
+                        {WOD_TYPES.map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                  <div style={{ ...S.formGrid, gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr" }}>
+                    <label style={S.field}>
+                      <span style={S.label}>Description</span>
+                      <textarea
+                        style={{ ...S.textarea, minHeight: 110 }}
+                        value={item.description}
+                        onChange={(e) => updateImportedWod(item.date, (current) => ({ ...current, description: e.target.value }))}
+                      />
+                    </label>
+                    <label style={S.field}>
+                      <span style={S.label}>Movements</span>
+                      <textarea
+                        style={{ ...S.textarea, minHeight: 110 }}
+                        value={item.movements.join("\n")}
+                        onChange={(e) =>
+                          updateImportedWod(item.date, (current) => ({
+                            ...current,
+                            movements: movementList(e.target.value),
+                          }))
+                        }
+                      />
+                    </label>
+                  </div>
+                  <label style={S.field}>
+                    <span style={S.label}>Scaling notes</span>
+                    <textarea
+                      style={{ ...S.textarea, minHeight: 62 }}
+                      value={item.scalingNotes ?? ""}
+                      onChange={(e) =>
+                        updateImportedWod(item.date, (current) => ({
+                          ...current,
+                          scalingNotes: e.target.value,
+                        }))
+                      }
+                    />
+                  </label>
+                </div>
+              ))}
+            </div>
+            <div style={{ ...S.formActions, justifyContent: "space-between" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#aaa", fontSize: 13 }}>
+                <input
+                  style={S.check}
+                  type="checkbox"
+                  checked={overwriteImports}
+                  onChange={(e) => setOverwriteImports(e.target.checked)}
+                />
+                Overwrite WODs on matching dates
+              </label>
+              <button style={S.btn(true)} type="button" disabled={importing} onClick={handleImportSelected}>
+                {importing ? "Importing..." : "Import Selected"}
+              </button>
+            </div>
+          </>
+        )}
+        {importError && <p style={S.error}>{importError}</p>}
+        {importSuccess && <p style={S.success}>{importSuccess}</p>}
+      </section>
 
       <div style={{ ...S.split, gridTemplateColumns: isMobile ? "1fr" : S.split.gridTemplateColumns }}>
         <section style={S.panel}>

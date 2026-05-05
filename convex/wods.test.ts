@@ -205,3 +205,80 @@ describe("wods.update", () => {
     ).rejects.toThrow("Unauthorized");
   });
 });
+
+// ── wods.importMany ───────────────────────────────────────────────────────────
+
+describe("wods.importMany", () => {
+  test("coach can import WODs and skips existing dates by default", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId, identity } = await seedGymAndUser(t, { role: "coach" });
+    await insertWod(t, gymId, userId, "2099-11-01");
+
+    const result = await t.withIdentity(identity).mutation(api.wods.importMany, {
+      wods: [
+        {
+          date: "2099-11-01",
+          title: "Imported Duplicate",
+          description: "Should skip",
+          type: "Other",
+          movements: [],
+        },
+        {
+          date: "2099-11-02",
+          title: "Imported New",
+          description: "10 min AMRAP",
+          type: "AMRAP",
+          movements: ["Burpee"],
+        },
+      ],
+    });
+
+    expect(result).toEqual({ created: 1, updated: 0, skipped: 1 });
+
+    const newWod = await t.withIdentity(identity).query(api.wods.getByDate, { date: "2099-11-02" });
+    expect(newWod?.title).toBe("Imported New");
+  });
+
+  test("admin can overwrite existing imported dates", async () => {
+    const t = convexTest(schema, modules);
+    const { gymId, userId, identity } = await seedGymAndUser(t, { role: "admin" });
+    await insertWod(t, gymId, userId, "2099-11-03");
+
+    const result = await t.withIdentity(identity).mutation(api.wods.importMany, {
+      overwrite: true,
+      wods: [
+        {
+          date: "2099-11-03",
+          title: "Replacement",
+          description: "For time",
+          type: "ForTime",
+          movements: ["Run"],
+        },
+      ],
+    });
+
+    expect(result).toEqual({ created: 0, updated: 1, skipped: 0 });
+
+    const wod = await t.withIdentity(identity).query(api.wods.getByDate, { date: "2099-11-03" });
+    expect(wod?.title).toBe("Replacement");
+  });
+
+  test("athlete cannot import WODs", async () => {
+    const t = convexTest(schema, modules);
+    const { identity } = await seedGymAndUser(t, { role: "athlete" });
+
+    await expect(
+      t.withIdentity(identity).mutation(api.wods.importMany, {
+        wods: [
+          {
+            date: "2099-11-04",
+            title: "Nope",
+            description: "Nope",
+            type: "Other",
+            movements: [],
+          },
+        ],
+      })
+    ).rejects.toThrow("Unauthorized");
+  });
+});

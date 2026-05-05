@@ -264,7 +264,7 @@ function Stats() {
   const items = [
     { num: "100%", label: "CrossFit-focused" },
     { num: "< 5 min", label: "Gym onboarding time" },
-    { num: "PRVN", label: "Programming integrated" },
+    { num: "Docs", label: "Programming import" },
     { num: "Stripe", label: "Billing built-in" },
   ];
   return (
@@ -324,14 +324,14 @@ function PrvnSpotlight() {
               <span style={{ color: TEAL }}>straight from Google Docs.</span>
             </h2>
             <p style={{ fontSize: 16, color: MUTED, lineHeight: 1.7, marginBottom: 28, marginTop: 8 }}>
-              Whether you run PRVN, CompTrain, Misfit Athletics, or write your
-              own programming, NorthernGlow reads your Google Doc directly —
+              Whether you follow PRVN-style programming, CompTrain, Misfit
+              Athletics, or write your own programming, NorthernGlow reads your Google Doc directly —
               parsing each WOD, labeling it by type, and publishing it to your
               athletes automatically.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {[
-                "Works with PRVN, CompTrain, Misfit, or any Google Doc",
+                "Works with PRVN-style, CompTrain-style, Misfit-style, or custom docs",
                 "Paste a Google Doc URL — nothing to install",
                 "WODs parsed by type: AMRAP, ForTime, EMOM, Strength",
                 "Athletes see tomorrow's workout the moment you publish",
@@ -349,7 +349,7 @@ function PrvnSpotlight() {
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${BORDER}` }}>
               <div style={{ width: 28, height: 28, borderRadius: 4, background: "#4285F422", border: "1px solid #4285F440", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>📄</div>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>PRVN Week 14 Programming</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>Week 14 Programming</div>
                 <div style={{ fontSize: 13, color: "#aaa" }}>docs.google.com/document/d/…</div>
               </div>
             </div>
