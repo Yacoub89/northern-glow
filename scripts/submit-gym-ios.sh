@@ -7,6 +7,7 @@
 # Flags:
 #   --build-id <id>              EAS build ID to submit (recommended)
 #   --latest                    Submit the latest iOS build
+#   --asc-app-id <id>            App Store Connect numeric app ID
 #   --what-to-test <text>        TestFlight "What to Test" text
 #   --env local|preview|prod     Which Convex deployment to hit (default: prod)
 #   --help                      Show this help
@@ -22,6 +23,7 @@ CONVEX_LOCAL="http://localhost:3211"
 GYM_ID=""
 BUILD_ID=""
 USE_LATEST="false"
+ASC_APP_ID=""
 WHAT_TO_TEST=""
 ENV="prod"
 
@@ -30,6 +32,8 @@ INFO_PLIST="$ROOT_DIR/ios/NorthernGlow/Info.plist"
 PROJECT_PBX="$ROOT_DIR/ios/NorthernGlow.xcodeproj/project.pbxproj"
 APP_CONFIG="$ROOT_DIR/app.config.js"
 APP_CONFIG_BAK="$ROOT_DIR/app.config.js.bak"
+EAS_JSON="$ROOT_DIR/eas.json"
+EAS_JSON_BAK="$ROOT_DIR/eas.json.bak"
 CLEANED_UP="false"
 
 cleanup() {
@@ -40,6 +44,9 @@ cleanup() {
 
   if [[ -f "$APP_CONFIG_BAK" ]]; then
     mv "$APP_CONFIG_BAK" "$APP_CONFIG"
+  fi
+  if [[ -f "$EAS_JSON_BAK" ]]; then
+    mv "$EAS_JSON_BAK" "$EAS_JSON"
   fi
   if [[ -f "$INFO_PLIST.bak" ]]; then
     mv "$INFO_PLIST.bak" "$INFO_PLIST"
@@ -58,6 +65,7 @@ usage() {
   echo "Flags:"
   echo "  --build-id <id>              EAS build ID to submit (recommended)"
   echo "  --latest                    Submit the latest iOS build"
+  echo "  --asc-app-id <id>            App Store Connect numeric app ID"
   echo "  --what-to-test <text>        TestFlight 'What to Test' text"
   echo "  --env local|preview|prod     Convex deployment (default: prod)"
   echo "  --help                      Show this help"
@@ -81,6 +89,10 @@ while [[ $# -gt 0 ]]; do
     --latest)
       USE_LATEST="true"
       shift
+      ;;
+    --asc-app-id)
+      ASC_APP_ID="${2:?--asc-app-id requires an App Store Connect app ID}"
+      shift 2
       ;;
     --what-to-test)
       WHAT_TO_TEST="${2:?--what-to-test requires text}"
@@ -124,6 +136,7 @@ echo ""
 echo "  gym:    $GYM_ID"
 echo "  env:    $ENV -> $CONVEX_URL"
 echo "  submit: $([[ -n "$BUILD_ID" ]] && echo "$BUILD_ID" || echo "latest iOS build")"
+echo "  asc:    ${ASC_APP_ID:-not set}"
 echo ""
 
 echo "Fetching gym config..."
@@ -150,6 +163,7 @@ echo "Submitting for: $GYM_NAME ($GYM_SLUG) — bundle: $BUNDLE_ID"
 cp "$INFO_PLIST" "$INFO_PLIST.bak"
 cp "$PROJECT_PBX" "$PROJECT_PBX.bak"
 cp "$APP_CONFIG" "$APP_CONFIG_BAK"
+cp "$EAS_JSON" "$EAS_JSON_BAK"
 
 GYM_NAME="$GYM_NAME" INFO_PLIST="$INFO_PLIST" python3 -c "
 import plistlib, os
@@ -238,6 +252,22 @@ export default {
   },
 };
 JSEOF
+
+if [[ -n "$ASC_APP_ID" ]]; then
+  EAS_PROFILE="gym-production"
+  EAS_JSON="$EAS_JSON" EAS_PROFILE="$EAS_PROFILE" ASC_APP_ID="$ASC_APP_ID" node -e "
+const fs = require('fs');
+const path = process.env.EAS_JSON;
+const profile = process.env.EAS_PROFILE;
+const ascAppId = process.env.ASC_APP_ID;
+const json = JSON.parse(fs.readFileSync(path, 'utf8'));
+json.submit = json.submit || {};
+json.submit[profile] = json.submit[profile] || {};
+json.submit[profile].ios = json.submit[profile].ios || {};
+json.submit[profile].ios.ascAppId = ascAppId;
+fs.writeFileSync(path, JSON.stringify(json, null, 2) + '\n');
+"
+fi
 
 args=(--platform ios --non-interactive)
 if [[ -n "$BUILD_ID" ]]; then

@@ -11,6 +11,10 @@ on:
         description: "EAS build ID to submit. Recommended for white-label apps."
         required: false
         type: string
+      ascAppId:
+        description: "App Store Connect numeric app ID for this gym app"
+        required: false
+        type: string
       whatToTest:
         description: "Optional TestFlight 'What to Test' text"
         required: false
@@ -54,6 +58,7 @@ jobs:
           BUILD_SECRET: ${{ secrets.NORTHERNGLOW_BUILD_SECRET }}
           GYM_ID: ${{ inputs.gymId }}
           BUILD_ID: ${{ inputs.buildId }}
+          ASC_APP_ID: ${{ inputs.ascAppId }}
           WHAT_TO_TEST: ${{ inputs.whatToTest }}
         run: |
           args=("$GYM_ID" --env prod)
@@ -62,6 +67,10 @@ jobs:
             args+=(--build-id "$BUILD_ID")
           else
             args+=(--latest)
+          fi
+
+          if [ -n "$ASC_APP_ID" ]; then
+            args+=(--asc-app-id "$ASC_APP_ID")
           fi
 
           if [ -n "$WHAT_TO_TEST" ]; then
