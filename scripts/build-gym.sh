@@ -8,6 +8,7 @@
 #   --platform ios|android|all   Which platform to build (default: all)
 #   --env local|preview|prod     Which Convex deployment to hit (default: prod)
 #   --profile <name>             EAS build profile override (default: gym-production)
+#   --interactive                Allow EAS to prompt for Apple credentials
 #   --help                       Show this help
 #
 # Required env vars:
@@ -26,6 +27,45 @@ GYM_ID=""
 PLATFORM="all"
 ENV="prod"
 EAS_PROFILE="gym-production"
+INTERACTIVE="false"
+
+ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
+ASSETS_DIR="$ROOT_DIR/assets"
+INFO_PLIST="$ROOT_DIR/ios/NorthernGlow/Info.plist"
+PROJECT_PBX="$ROOT_DIR/ios/NorthernGlow.xcodeproj/project.pbxproj"
+XCASSETS_ICON="$ROOT_DIR/ios/NorthernGlow/Images.xcassets/AppIcon.appiconset/App-Icon-1024x1024@1x.png"
+APP_CONFIG="$ROOT_DIR/app.config.js"
+APP_CONFIG_BAK="$ROOT_DIR/app.config.js.bak"
+CLEANED_UP="false"
+
+cleanup() {
+  if [[ "$CLEANED_UP" == "true" ]]; then
+    return
+  fi
+  CLEANED_UP="true"
+
+  if [[ -f "$ASSETS_DIR/icon.orig.png" ]]; then
+    cp "$ASSETS_DIR/icon.orig.png" "$ASSETS_DIR/icon.png"
+    cp "$ASSETS_DIR/adaptive-icon.orig.png" "$ASSETS_DIR/adaptive-icon.png"
+    cp "$ASSETS_DIR/splash.orig.png" "$ASSETS_DIR/splash.png"
+  fi
+
+  if [[ -f "$APP_CONFIG_BAK" ]]; then
+    mv "$APP_CONFIG_BAK" "$APP_CONFIG"
+  fi
+
+  if [[ -f "$INFO_PLIST.bak" ]]; then
+    mv "$INFO_PLIST.bak" "$INFO_PLIST"
+  fi
+  if [[ -f "$PROJECT_PBX.bak" ]]; then
+    mv "$PROJECT_PBX.bak" "$PROJECT_PBX"
+  fi
+  if [[ -f "$XCASSETS_ICON.bak" ]]; then
+    mv "$XCASSETS_ICON.bak" "$XCASSETS_ICON"
+  fi
+}
+
+trap cleanup EXIT
 
 # ── Argument parsing ──────────────────────────────────────────────────────────
 
@@ -37,6 +77,7 @@ usage() {
   echo "  --platform ios|android|all   Platform to build (default: all)"
   echo "  --env local|preview|prod     Convex deployment (default: prod)"
   echo "  --profile <name>             EAS build profile (default: gym-production)"
+  echo "  --interactive                Allow EAS prompts for first-time iOS credentials"
   echo "  --help                       Show this help"
   echo ""
   echo "Required env vars:"
@@ -68,6 +109,10 @@ while [[ $# -gt 0 ]]; do
     --profile)
       EAS_PROFILE="${2:?--profile requires a profile name}"
       shift 2
+      ;;
+    --interactive)
+      INTERACTIVE="true"
+      shift
       ;;
     --help)
       usage
@@ -114,6 +159,7 @@ echo "  gym:      $GYM_ID"
 echo "  env:      $ENV → $CONVEX_URL"
 echo "  platform: $PLATFORM"
 echo "  profile:  $EAS_PROFILE"
+echo "  mode:     $([[ "$INTERACTIVE" == "true" ]] && echo "interactive" || echo "non-interactive")"
 echo ""
 
 # ── 1. Fetch gym config from Convex ──────────────────────────────────────────
@@ -153,9 +199,6 @@ echo "Building for: $GYM_NAME ($GYM_SLUG) — bundle: $BUNDLE_ID — android: $A
 
 # ── 2. Download gym assets ────────────────────────────────────────────────────
 
-ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
-ASSETS_DIR="$ROOT_DIR/assets"
-
 # Back up originals once so we can always restore
 if [[ ! -f "$ASSETS_DIR/icon.orig.png" ]]; then
   cp "$ASSETS_DIR/icon.png"          "$ASSETS_DIR/icon.orig.png"
@@ -183,10 +226,6 @@ fi
 # The ios/ directory is committed so EAS uses it directly (ignoring app.config.js
 # for bundle ID). We patch Info.plist and the app icon in-place so gym branding
 # is applied, then restore after the build.
-
-INFO_PLIST="$ROOT_DIR/ios/NorthernGlow/Info.plist"
-PROJECT_PBX="$ROOT_DIR/ios/NorthernGlow.xcodeproj/project.pbxproj"
-XCASSETS_ICON="$ROOT_DIR/ios/NorthernGlow/Images.xcassets/AppIcon.appiconset/App-Icon-1024x1024@1x.png"
 
 if [[ "$PLATFORM" == "ios" ]] || [[ "$PLATFORM" == "all" ]]; then
   cp "$INFO_PLIST" "$INFO_PLIST.bak"
@@ -231,9 +270,6 @@ fi
 # EAS evaluates app.config.js on its build servers where local env vars are
 # not available. We swap in a static config with all values hardcoded, then
 # restore the original after the build completes.
-
-APP_CONFIG="$ROOT_DIR/app.config.js"
-APP_CONFIG_BAK="$ROOT_DIR/app.config.js.bak"
 
 cp "$APP_CONFIG" "$APP_CONFIG_BAK"
 
@@ -305,29 +341,31 @@ echo "Baked gym config into app.config.js"
 echo "Starting EAS build (platform: $PLATFORM, profile: $EAS_PROFILE)..."
 
 if [[ "$PLATFORM" == "ios" ]]; then
-  eas build --platform ios --profile "$EAS_PROFILE" --non-interactive
+  if [[ "$INTERACTIVE" == "true" ]]; then
+    eas build --platform ios --profile "$EAS_PROFILE"
+  else
+    eas build --platform ios --profile "$EAS_PROFILE" --non-interactive
+  fi
 elif [[ "$PLATFORM" == "android" ]]; then
-  eas build --platform android --profile "$EAS_PROFILE" --non-interactive
+  if [[ "$INTERACTIVE" == "true" ]]; then
+    eas build --platform android --profile "$EAS_PROFILE"
+  else
+    eas build --platform android --profile "$EAS_PROFILE" --non-interactive
+  fi
 else
-  eas build --platform all --profile "$EAS_PROFILE" --non-interactive
+  if [[ "$INTERACTIVE" == "true" ]]; then
+    eas build --platform all --profile "$EAS_PROFILE"
+  else
+    eas build --platform all --profile "$EAS_PROFILE" --non-interactive
+  fi
 fi
 
 # ── 6. Restore default assets, app.config.js, and iOS native files ───────────
 
 echo "Restoring default assets..."
-cp "$ASSETS_DIR/icon.orig.png"          "$ASSETS_DIR/icon.png"
-cp "$ASSETS_DIR/adaptive-icon.orig.png" "$ASSETS_DIR/adaptive-icon.png"
-cp "$ASSETS_DIR/splash.orig.png"        "$ASSETS_DIR/splash.png"
-
-mv "$APP_CONFIG_BAK" "$APP_CONFIG"
+cleanup
 echo "Restored app.config.js"
-
-if [[ -f "$INFO_PLIST.bak" ]]; then
-  mv "$INFO_PLIST.bak" "$INFO_PLIST"
-  mv "$PROJECT_PBX.bak" "$PROJECT_PBX"
-  mv "$XCASSETS_ICON.bak" "$XCASSETS_ICON"
-  echo "Restored iOS native files"
-fi
+echo "Restored iOS native files"
 
 echo ""
 echo "Done. Build submitted for $GYM_NAME."
