@@ -25,34 +25,34 @@ This is a placeholder agreement. Full legal terms will be provided before launch
 
 const S = {
   page: { display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: 18, boxSizing: "border-box" as const } as const,
-  card: { background: "#141414", border: "1px solid #252525", borderRadius: 12, padding: 40, width: "100%", maxWidth: 480, boxSizing: "border-box" as const },
+  card: { background: "var(--admin-surface)", border: "1px solid var(--admin-border)", borderRadius: 12, padding: 40, width: "100%", maxWidth: 480, boxSizing: "border-box" as const },
   h1: { fontSize: 22, fontWeight: 700, marginBottom: 8 },
-  sub: { color: "#888", fontSize: 14, marginBottom: 28 },
+  sub: { color: "var(--admin-text-subtle)", fontSize: 14, marginBottom: 28 },
   gymBox: {
-    background: "#1e1e1e", border: "1px solid #2a2a2a", borderRadius: 8,
+    background: "var(--admin-bg)", border: "1px solid var(--admin-surface-active)", borderRadius: 8,
     padding: "16px 20px", marginBottom: 24,
   },
-  gymName: { fontSize: 20, fontWeight: 700, color: "#fff" },
-  gymLabel: { fontSize: 13, color: "#666", marginTop: 4, lineHeight: 1.5 },
+  gymName: { fontSize: 20, fontWeight: 700, color: "var(--admin-text)" },
+  gymLabel: { fontSize: 13, color: "var(--admin-text-subtle)", marginTop: 4, lineHeight: 1.5 },
   termsBox: {
-    background: "#0e0e0e", border: "1px solid #252525", borderRadius: 8,
+    background: "var(--admin-bg)", border: "1px solid var(--admin-border)", borderRadius: 8,
     padding: 16, height: 200, overflowY: "auto" as const,
-    fontSize: 12, color: "#aaa", lineHeight: 1.7, marginBottom: 16,
+    fontSize: 12, color: "var(--admin-text-muted)", lineHeight: 1.7, marginBottom: 16,
     whiteSpace: "pre-wrap" as const,
   },
   checkRow: { display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 24 },
-  checkbox: { marginTop: 2, accentColor: "#1BBFBF", width: 16, height: 16, flexShrink: 0, cursor: "pointer" },
-  checkLabel: { fontSize: 13, color: "#ccc", lineHeight: 1.5, cursor: "pointer" },
+  checkbox: { marginTop: 2, accentColor: "var(--admin-primary)", width: 16, height: 16, flexShrink: 0, cursor: "pointer" },
+  checkLabel: { fontSize: 13, color: "var(--admin-text-muted)", lineHeight: 1.5, cursor: "pointer" },
   btn: (disabled: boolean) => ({
     width: "100%", padding: "12px 0", borderRadius: 8, fontWeight: 600, fontSize: 14,
     cursor: disabled ? "not-allowed" : "pointer", border: "none",
-    background: disabled ? "#333" : "#1BBFBF",
-    color: disabled ? "#666" : "#000",
+    background: disabled ? "var(--admin-border-strong)" : "var(--admin-primary)",
+    color: disabled ? "var(--admin-text-subtle)" : "var(--admin-on-primary)",
     transition: "background 0.15s",
   }),
-  error: { color: "#ff453a", fontSize: 13, marginTop: 12 },
-  loading: { color: "#666", fontSize: 14, textAlign: "center" as const },
-  noInvite: { color: "#888", fontSize: 14, lineHeight: 1.6 },
+  error: { color: "var(--admin-error)", fontSize: 13, marginTop: 12 },
+  loading: { color: "var(--admin-text-subtle)", fontSize: 14, textAlign: "center" as const },
+  noInvite: { color: "var(--admin-text-subtle)", fontSize: 14, lineHeight: 1.6 },
 };
 
 export default function AcceptInvite() {

@@ -527,7 +527,7 @@ export default function Workouts() {
               ))}
             </div>
             <div style={{ ...S.formActions, justifyContent: "space-between" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#aaa", fontSize: 13 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--admin-text-muted)", fontSize: 13 }}>
                 <input
                   style={S.check}
                   type="checkbox"
@@ -557,7 +557,7 @@ export default function Workouts() {
                   New WOD
                 </button>
                 <button
-                  style={{ ...S.btn(false), padding: "7px 10px", color: "#ff8a80" }}
+                  style={{ ...S.btn(false), padding: "7px 10px", color: "var(--admin-danger-text)" }}
                   onClick={() => {
                     const wod = schedule?.flatMap((item) => item.wod ? [item.wod] : []).find((item) => item._id === editingId);
                     void handleDeleteWod(wod ?? { _id: editingId, title: title || "this WOD", date });

@@ -7,17 +7,17 @@ import "./Landing.css";
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 
-const TEAL = "#1CD6F0";
-const TEAL_DIM = "#1CD6F015";
-const TEAL_BORDER = "#1CD6F038";
-const BG = "#0B1525";
-const SURFACE = "#0F1E36";
-const CARD = "#131F33";
-const BORDER = "#1C2D45";
-const BORDER_BRIGHT = "#243650";
-const TEXT = "#ffffff";
-const MUTED = "#7A99BB";
-const DIM = "#3A5270";
+const TEAL = "var(--admin-primary-bright)";
+const TEAL_DIM = "var(--admin-primary-bright-soft)";
+const TEAL_BORDER = "var(--admin-primary-bright-border)";
+const BG = "var(--admin-bg)";
+const SURFACE = "var(--admin-surface)";
+const CARD = "var(--admin-surface)";
+const BORDER = "var(--admin-border)";
+const BORDER_BRIGHT = "var(--admin-border-strong)";
+const TEXT = "var(--admin-text)";
+const MUTED = "var(--admin-text-muted)";
+const DIM = "var(--admin-text-subtle)";
 
 // ── Shared inline tokens (colors only — layout lives in Landing.css) ──────────
 
@@ -29,7 +29,7 @@ const T = {
   } as const,
   btnPrimary: {
     padding: "14px 28px", borderRadius: 10, border: "none",
-    background: TEAL, color: "#000", fontSize: 16, fontWeight: 700,
+    background: TEAL, color: "var(--admin-on-primary)", fontSize: 16, fontWeight: 700,
     cursor: "pointer",
   } as const,
   btnGhostLg: {
@@ -70,12 +70,12 @@ const T = {
 const M = {
   overlay: {
     position: "fixed" as const, inset: 0,
-    background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)",
+    background: "var(--admin-overlay)", backdropFilter: "blur(4px)",
     display: "flex", alignItems: "center", justifyContent: "center",
     zIndex: 1000, padding: 16,
   },
   box: {
-    background: "#0F1E36", border: `1px solid ${BORDER_BRIGHT}`,
+    background: "var(--admin-surface)", border: `1px solid ${BORDER_BRIGHT}`,
     borderRadius: 16, padding: "32px 28px", width: "100%", maxWidth: 480,
   },
   title: { fontSize: 22, fontWeight: 800, marginBottom: 8, color: TEXT } as const,
@@ -83,12 +83,12 @@ const M = {
   group: { marginBottom: 16 } as const,
   label: { display: "block", fontSize: 13, color: MUTED, marginBottom: 6, fontWeight: 500 } as const,
   input: {
-    width: "100%", background: "#0B1525", border: `1px solid ${BORDER_BRIGHT}`,
+    width: "100%", background: "var(--admin-bg)", border: `1px solid ${BORDER_BRIGHT}`,
     borderRadius: 8, padding: "11px 14px", color: TEXT, fontSize: 14,
     outline: "none", boxSizing: "border-box" as const,
   },
   textarea: {
-    width: "100%", background: "#0B1525", border: `1px solid ${BORDER_BRIGHT}`,
+    width: "100%", background: "var(--admin-bg)", border: `1px solid ${BORDER_BRIGHT}`,
     borderRadius: 8, padding: "11px 14px", color: TEXT, fontSize: 14,
     outline: "none", boxSizing: "border-box" as const,
     resize: "vertical" as const, minHeight: 90, fontFamily: "inherit",
@@ -96,14 +96,14 @@ const M = {
   actions: { display: "flex", gap: 10, marginTop: 24 } as const,
   btnSubmit: {
     flex: 1, padding: "12px 0", borderRadius: 8, border: "none",
-    background: TEAL, color: "#000", fontSize: 14, fontWeight: 700, cursor: "pointer",
+    background: TEAL, color: "var(--admin-on-primary)", fontSize: 14, fontWeight: 700, cursor: "pointer",
   } as const,
   btnCancel: {
     padding: "12px 20px", borderRadius: 8, border: `1px solid ${BORDER_BRIGHT}`,
     background: "transparent", color: MUTED, fontSize: 14, cursor: "pointer",
   } as const,
-  success: { color: "#34C759", fontSize: 13, marginTop: 14, textAlign: "center" as const } as const,
-  error: { color: "#ff453a", fontSize: 13, marginTop: 14 } as const,
+  success: { color: "var(--admin-success)", fontSize: 13, marginTop: 14, textAlign: "center" as const } as const,
+  error: { color: "var(--admin-error)", fontSize: 13, marginTop: 14 } as const,
 };
 
 function LearnMoreModal({ onClose }: { onClose: () => void }) {
@@ -338,7 +338,7 @@ function PrvnSpotlight() {
               ].map((point) => (
                 <div key={point} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                   <span style={{ color: TEAL, marginTop: 2, flexShrink: 0 }}>✓</span>
-                  <span style={{ fontSize: 15, color: "#ccc" }}>{point}</span>
+                  <span style={{ fontSize: 15, color: "var(--admin-text-muted)" }}>{point}</span>
                 </div>
               ))}
             </div>
@@ -346,23 +346,23 @@ function PrvnSpotlight() {
 
           <div style={{ background: CARD, border: `1px solid ${BORDER_BRIGHT}`, borderRadius: 16, padding: 28, fontFamily: "monospace" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20, paddingBottom: 16, borderBottom: `1px solid ${BORDER}` }}>
-              <div style={{ width: 28, height: 28, borderRadius: 4, background: "#4285F422", border: "1px solid #4285F440", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>📄</div>
+              <div style={{ width: 28, height: 28, borderRadius: 4, background: "var(--admin-info-soft)", border: "1px solid var(--admin-info-border)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>📄</div>
               <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#fff" }}>Week 14 Programming</div>
-                <div style={{ fontSize: 13, color: "#aaa" }}>docs.google.com/document/d/…</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "var(--admin-text)" }}>Week 14 Programming</div>
+                <div style={{ fontSize: 13, color: "var(--admin-text-muted)" }}>docs.google.com/document/d/…</div>
               </div>
             </div>
 
             <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: TEAL, letterSpacing: 1, textTransform: "uppercase" }}>Monday · AMRAP 20</div>
-              <div style={{ fontSize: 13, color: "#ccc", lineHeight: 1.5, marginTop: 4 }}>
+              <div style={{ fontSize: 13, color: "var(--admin-text-muted)", lineHeight: 1.5, marginTop: 4 }}>
                 5 Pull-ups<br />10 Push-ups<br />15 Air Squats
               </div>
             </div>
 
             <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: TEAL, letterSpacing: 1, textTransform: "uppercase" }}>Tuesday · Strength</div>
-              <div style={{ fontSize: 13, color: "#ccc", lineHeight: 1.5, marginTop: 4 }}>
+              <div style={{ fontSize: 13, color: "var(--admin-text-muted)", lineHeight: 1.5, marginTop: 4 }}>
                 Back Squat — 5×5<br />@ 80% 1RM
               </div>
             </div>
@@ -370,7 +370,7 @@ function PrvnSpotlight() {
             <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "14px 0", borderTop: `1px solid ${BORDER}`, borderBottom: `1px solid ${BORDER}`, margin: "16px 0" }}>
               <span style={{ fontSize: 12, color: DIM }}>Importing via NorthernGlow</span>
               <span style={{ color: TEAL, fontSize: 16 }}>→</span>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 9px", borderRadius: 5, background: "#34C75920", border: "1px solid #34C75940", color: "#34C759", fontSize: 11, fontWeight: 600 }}>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "3px 9px", borderRadius: 5, background: "var(--admin-success-soft)", border: "1px solid var(--admin-success-soft)", color: "var(--admin-success)", fontSize: 11, fontWeight: 600 }}>
                 <span>✓</span> 5 WODs imported
               </div>
             </div>

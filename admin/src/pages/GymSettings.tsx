@@ -15,21 +15,21 @@ type SettingsTab = "profile" | "mobile" | "payments";
 
 const S = {
   h1: { fontSize: 24, fontWeight: 700, margin: "0 0 8px" },
-  sub: { color: "#777", fontSize: 14, margin: "0 0 22px", lineHeight: 1.5 },
+  sub: { color: "var(--admin-text-subtle)", fontSize: 14, margin: "0 0 22px", lineHeight: 1.5 },
   form: { maxWidth: 560, width: "100%" },
   group: { marginBottom: 20 },
-  label: { display: "block", fontSize: 13, color: "#aaa", marginBottom: 6 },
+  label: { display: "block", fontSize: 13, color: "var(--admin-text-muted)", marginBottom: 6 },
   input: {
-    width: "100%", background: "#1e1e1e", border: "1px solid #333", borderRadius: 8,
-    padding: "10px 12px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" as const,
+    width: "100%", background: "var(--admin-bg)", border: "1px solid var(--admin-border-strong)", borderRadius: 8,
+    padding: "10px 12px", color: "var(--admin-text)", fontSize: 14, outline: "none", boxSizing: "border-box" as const,
   },
   select: {
-    width: "100%", background: "#1e1e1e", border: "1px solid #333", borderRadius: 8,
-    padding: "10px 12px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" as const,
+    width: "100%", background: "var(--admin-bg)", border: "1px solid var(--admin-border-strong)", borderRadius: 8,
+    padding: "10px 12px", color: "var(--admin-text)", fontSize: 14, outline: "none", boxSizing: "border-box" as const,
   },
   colorRow: { display: "flex", alignItems: "center", gap: 12 },
   colorSwatch: (color: string) => ({
-    width: 36, height: 36, borderRadius: 6, background: color, border: "2px solid #333",
+    width: 36, height: 36, borderRadius: 6, background: color, border: "2px solid var(--admin-border-strong)",
     flexShrink: 0, cursor: "pointer", position: "relative" as const, overflow: "hidden",
   }),
   colorNativeInput: {
@@ -38,35 +38,35 @@ const S = {
   tzWrapper: { position: "relative" as const },
   tzDropdown: {
     position: "absolute" as const, top: "100%", left: 0, right: 0, zIndex: 100,
-    background: "#1e1e1e", border: "1px solid #444", borderRadius: 8, marginTop: 4,
-    maxHeight: 220, overflowY: "auto" as const, boxShadow: "0 8px 24px rgba(0,0,0,0.5)",
+    background: "var(--admin-bg)", border: "1px solid var(--admin-border-strong)", borderRadius: 8, marginTop: 4,
+    maxHeight: 220, overflowY: "auto" as const, boxShadow: "var(--admin-shadow-lg)",
   },
   tzOption: (active: boolean) => ({
     padding: "9px 12px", fontSize: 13, cursor: "pointer",
-    background: active ? "#2a2a2a" : "transparent", color: active ? "#fff" : "#ccc",
+    background: active ? "var(--admin-surface-active)" : "transparent", color: active ? "var(--admin-text)" : "var(--admin-text-muted)",
   }),
   logoArea: {
     display: "flex", alignItems: "center", gap: 16,
   },
   logoPreview: {
-    width: 72, height: 72, borderRadius: 10, border: "1px solid #333",
-    objectFit: "contain" as const, background: "#1e1e1e",
+    width: 72, height: 72, borderRadius: 10, border: "1px solid var(--admin-border-strong)",
+    objectFit: "contain" as const, background: "var(--admin-bg)",
   },
   logoPlaceholder: {
-    width: 72, height: 72, borderRadius: 10, border: "1px dashed #444",
-    background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center",
-    color: "#555", fontSize: 11,
+    width: 72, height: 72, borderRadius: 10, border: "1px dashed var(--admin-border-strong)",
+    background: "var(--admin-bg)", display: "flex", alignItems: "center", justifyContent: "center",
+    color: "var(--admin-text-faint)", fontSize: 11,
   },
   uploadBtn: {
     padding: "8px 16px", borderRadius: 8, fontSize: 13, fontWeight: 500,
-    cursor: "pointer", border: "1px solid #444", background: "#1e1e1e", color: "#ccc",
+    cursor: "pointer", border: "1px solid var(--admin-border-strong)", background: "var(--admin-bg)", color: "var(--admin-text-muted)",
   },
-  uploadHint: { fontSize: 11, color: "#555", marginTop: 4 },
+  uploadHint: { fontSize: 11, color: "var(--admin-text-faint)", marginTop: 4 },
   btn: {
     padding: "11px 24px", borderRadius: 8, fontWeight: 600, fontSize: 14,
-    cursor: "pointer", border: "none", background: "#1BBFBF", color: "#000",
+    cursor: "pointer", border: "none", background: "var(--admin-primary)", color: "var(--admin-on-primary)",
   },
-  saved: { color: "#34C759", fontSize: 13, marginLeft: 12 },
+  saved: { color: "var(--admin-success)", fontSize: 13, marginLeft: 12 },
   tabs: { display: "flex", gap: 8, flexWrap: "wrap" as const, marginBottom: 22 },
   tabBtn: (active: boolean) => ({
     padding: "10px 14px",
@@ -74,13 +74,13 @@ const S = {
     fontWeight: 750,
     fontSize: 13,
     cursor: "pointer",
-    border: `1px solid ${active ? "#1BBFBF" : "#333"}`,
-    background: active ? "#1BBFBF" : "#141414",
-    color: active ? "#001313" : "#aaa",
+    border: `1px solid ${active ? "var(--admin-primary)" : "var(--admin-border-strong)"}`,
+    background: active ? "var(--admin-primary)" : "var(--admin-surface)",
+    color: active ? "var(--admin-on-primary)" : "var(--admin-text-muted)",
   }),
   section: { marginTop: 0 },
   sectionTitle: { fontSize: 16, fontWeight: 600, marginBottom: 6 },
-  sectionSub: { fontSize: 13, color: "#666", marginBottom: 20 },
+  sectionSub: { fontSize: 13, color: "var(--admin-text-subtle)", marginBottom: 20 },
 };
 
 export default function GymSettings() {
@@ -94,7 +94,7 @@ export default function GymSettings() {
   const [form, setForm] = useState({
     name: "",
     tagline: "",
-    primaryColor: "#1BBFBF",
+    primaryColor: "var(--admin-primary)",
     timezone: "America/New_York",
     logoStorageId: undefined as Id<"_storage"> | undefined,
     appIconStorageId: undefined as Id<"_storage"> | undefined,
@@ -326,7 +326,7 @@ export default function GymSettings() {
                   style={S.input}
                   value={form.primaryColor}
                   onChange={set("primaryColor")}
-                  placeholder="#1BBFBF"
+                  placeholder="var(--admin-primary)"
                   maxLength={7}
                 />
               </div>

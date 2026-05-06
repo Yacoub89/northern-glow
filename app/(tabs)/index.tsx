@@ -19,7 +19,7 @@ import { Doc } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
 import { Fonts, FontSizes } from "../../constants/Typography";
 import { useGymColors } from "../../constants/GymConfig";
-import { getTodayDate, formatDate, formatTime } from "../../utils/date";
+import { getTodayDate } from "../../utils/date";
 
 type HomeClass = Doc<"classes"> & {
   coachName: string;
@@ -52,39 +52,6 @@ function getWodSubtitle(wod: { type: string; description: string }): string {
   if (wod.type === "EMOM") return mins ? `EMOM ${mins} MINUTES` : "EMOM";
   if (wod.type === "Strength") return "STRENGTH WORK";
   return "WORKOUT";
-}
-
-function computeStreak(history: Array<{ date: string }>): number {
-  if (!history?.length) return 0;
-  const dateSet = new Set(history.map((h) => h.date));
-  const today = new Date();
-  let streak = 0;
-  for (let i = 0; i < 90; i++) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const s = d.toISOString().split("T")[0];
-    if (dateSet.has(s)) {
-      streak++;
-    } else if (i === 0) {
-      continue;
-    } else {
-      break;
-    }
-  }
-  return streak;
-}
-
-/** Returns an array of booleans for the last 7 days (index 0 = 6 days ago, index 6 = today) */
-function getLast7DaysActivity(history: Array<{ date: string }>): boolean[] {
-  const dateSet = new Set(history?.map((h) => h.date) ?? []);
-  const days: boolean[] = [];
-  const today = new Date();
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    days.push(dateSet.has(d.toISOString().split("T")[0]));
-  }
-  return days;
 }
 
 function splitFormattedTime(time: string): { hour: string; period: string } {
@@ -182,24 +149,13 @@ export default function HomeScreen() {
   const hasGym = !!me?.gymId;
 
   const wod = useQuery(api.wods.getByDate, hasGym ? { date: today } : "skip");
-  const todayBooking = useQuery(api.bookings.getMyUpcomingBooking, hasGym ? { date: today } : "skip");
   const upcomingBookings = useQuery(api.bookings.getMyUpcoming, hasGym ? {} : "skip");
 
   const isCoach = me?.role === "coach" || me?.role === "admin";
 
-  const attendanceStats = useQuery(
-    api.bookings.getMyAttendanceStats,
-    !hasGym || isCoach || me === undefined ? "skip" : undefined
-  );
-
-  const myPRs = useQuery(
-    api.personalRecords.getMyPRs,
-    !hasGym || isCoach || me === undefined ? "skip" : undefined
-  );
-
   const todayClasses = useQuery(api.classes.getUpcoming, hasGym ? { startDate: today, days: 1 } : "skip");
 
-  if (me === undefined || !hasGym || (hasGym && (wod === undefined || todayBooking === undefined))) {
+  if (me === undefined || !hasGym || (hasGym && wod === undefined)) {
     return (
       <View style={sc.centered}>
         <ActivityIndicator color={primary} size="large" />
@@ -207,14 +163,7 @@ export default function HomeScreen() {
     );
   }
 
-  const streak = attendanceStats ? computeStreak(attendanceStats.checkInHistory) : 0;
-  const last7 = attendanceStats ? getLast7DaysActivity(attendanceStats.checkInHistory) : Array(7).fill(false);
   const firstName = me?.name?.split(" ")[0] ?? "Athlete";
-
-  // Most recent PR (sorted by setAt descending)
-  const recentPR = myPRs
-    ? [...myPRs].sort((a, b) => b.setAt - a.setAt)[0]
-    : null;
 
   // Today's classes with my booking status
   const todayClassList = (todayClasses ?? []) as HomeClass[];
@@ -243,7 +192,7 @@ export default function HomeScreen() {
             <View style={[sc.wodAccentBar, { backgroundColor: primary }]} />
             <View style={sc.wodContent}>
               <View style={sc.wodHeroHeader}>
-                <View style={{ flex: 1 }}>
+                <View style={{ flex: 1, minWidth: 0 }}>
                   {wod ? (
                     <>
                       <Text style={[sc.wodSubtitle, { color: primary }]}>{getWodSubtitle(wod)}</Text>
@@ -291,153 +240,27 @@ export default function HomeScreen() {
 
               {wod && wod.movements.length > 0 && (
                 <View style={sc.movementList}>
-                  {wod.movements.map((m, i) => (
+                  {wod.movements.slice(0, 4).map((m, i) => (
                     <View key={i} style={sc.movementRow}>
                       <View style={[sc.movementBullet, { backgroundColor: primary }]} />
                       <Text style={sc.movementItem}>{m}</Text>
                     </View>
                   ))}
+                  {wod.movements.length > 4 && (
+                    <Text style={[sc.moreMovements, { color: primary }]}>
+                      +{wod.movements.length - 4} more
+                    </Text>
+                  )}
                 </View>
               )}
             </View>
           </ScalePress>
         </FadeIn>
 
-        {/* ── Stat cards ── */}
-        {!isCoach && (
-          <FadeIn style={[sc.statsRow, { paddingHorizontal: hPad }]} delay={160}>
-            {/* Recent PR */}
-            <ScalePress style={sc.statCard}>
-              <LinearGradient
-                colors={[Colors.surfaceContainerLow, Colors.surface]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={sc.statCardGradient}
-              >
-                <View style={sc.statCardHeader}>
-                  <Ionicons name="trophy" size={14} color={primary} />
-                  <Text style={sc.statLabel}>RECENT PR</Text>
-                </View>
-                {recentPR ? (
-                  <>
-                    <Text style={sc.prMovement}>
-                      {recentPR.movement.toUpperCase()}
-                    </Text>
-                    <Text style={[sc.prValue, { color: Colors.text }]}>
-                      {recentPR.score}
-                    </Text>
-                  </>
-                ) : (
-                  <Text style={[sc.prValue, { color: Colors.textMuted }]}>--</Text>
-                )}
-              </LinearGradient>
-            </ScalePress>
-
-            {/* Streak */}
-            <ScalePress style={sc.statCard}>
-              <LinearGradient
-                colors={[Colors.surfaceContainerLow, Colors.surface]}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={sc.statCardGradient}
-              >
-                <View style={sc.statCardHeader}>
-                  <Ionicons name="flame" size={14} color={primary} />
-                  <Text style={sc.statLabel}>STREAK</Text>
-                </View>
-                <Text style={sc.streakNum}>{String(streak).padStart(2, "0")}</Text>
-                <Text style={sc.streakUnit}>DAYS</Text>
-                <View style={sc.activityDots}>
-                  {last7.map((active, i) => (
-                    <View
-                      key={i}
-                      style={[
-                        sc.activityDot,
-                        { backgroundColor: active ? primary : Colors.surfaceContainerHighest },
-                      ]}
-                    />
-                  ))}
-                </View>
-              </LinearGradient>
-            </ScalePress>
-          </FadeIn>
-        )}
-
-        {/* ── My Upcoming Bookings ── */}
-        {!isCoach && upcomingBookings && upcomingBookings.length > 0 && (
-          <FadeIn style={sc.section} delay={200}>
-            <View style={[sc.sectionRow, { paddingHorizontal: hPad }]}>
-              <Text style={sc.sectionTitle}>MY BOOKINGS</Text>
-              <Pressable onPress={() => router.push("/(tabs)/schedule")}>
-                <Text style={[sc.sectionAction, { color: primary }]}>VIEW ALL</Text>
-              </Pressable>
-            </View>
-
-            {upcomingBookings.map((item, idx) => {
-              const dateLabel = formatDate(item.cls.date, { relative: true, weekday: "short" });
-              const { hour, period } = splitFormattedTime(item.cls.startTime);
-              const isWaitlist = item.booking.status === "waitlist";
-
-              return (
-                <FadeIn key={item.booking._id} delay={240 + idx * 50}>
-                  <ScalePress style={[sc.bookingCard, { marginHorizontal: hPad }]}>
-                    <View style={[sc.bookingDateCol, { backgroundColor: primary }]}>
-                      <Text style={sc.bookingDateText}>{dateLabel.toUpperCase()}</Text>
-                    </View>
-                    <View style={sc.bookingTimeCol}>
-                      <Text style={[sc.bookingHour, { color: primary }]}>{hour}</Text>
-                      <Text style={sc.bookingPeriod}>{period}</Text>
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={sc.bookingClassName}>
-                        {formatTime(item.cls.startTime)} CLASS
-                      </Text>
-                      <Text style={sc.bookingCoach}>{item.coachName}</Text>
-                    </View>
-                    <View
-                      style={[
-                        sc.bookingBadge,
-                        {
-                          backgroundColor: isWaitlist
-                            ? Colors.warning + "20"
-                            : Colors.success + "20",
-                        },
-                      ]}
-                    >
-                      <View
-                        style={[
-                          sc.statusDot,
-                          {
-                            backgroundColor: isWaitlist
-                              ? Colors.warning
-                              : Colors.success,
-                          },
-                        ]}
-                      />
-                      <Text
-                        style={[
-                          sc.bookingBadgeText,
-                          {
-                            color: isWaitlist ? Colors.warning : Colors.success,
-                          },
-                        ]}
-                      >
-                        {isWaitlist
-                          ? `WAITLIST #${item.booking.waitlistPosition}`
-                          : "BOOKED"}
-                      </Text>
-                    </View>
-                  </ScalePress>
-                </FadeIn>
-              );
-            })}
-          </FadeIn>
-        )}
-
         {/* ── Today's Classes ── */}
-        <FadeIn style={sc.section} delay={240}>
+        <FadeIn style={sc.section} delay={160}>
           <View style={[sc.sectionRow, { paddingHorizontal: hPad }]}>
-            <Text style={sc.sectionTitle}>CLASSES</Text>
+            <Text style={sc.sectionTitle}>TODAY'S CLASSES</Text>
             {isCoach ? (
               <Pressable
                 style={[sc.addClassBtn, { backgroundColor: primary }]}
@@ -468,7 +291,7 @@ export default function HomeScreen() {
               const { hour, period } = splitFormattedTime(cls.startTime);
 
               return (
-                <FadeIn key={cls._id} delay={280 + idx * 60}>
+                <FadeIn key={cls._id} delay={200 + idx * 60}>
                   <ScalePress style={[sc.classCard, { marginHorizontal: hPad }]}>
                     <View style={[sc.classLeftBorder, { backgroundColor: primary }]} />
                     <View style={sc.classTimeCol}>
@@ -650,6 +473,7 @@ const sc = StyleSheet.create({
   logBtn: {
     flexDirection: "row",
     alignItems: "center",
+    flexShrink: 0,
     gap: 5,
     paddingHorizontal: 14,
     paddingVertical: 9,
@@ -680,68 +504,10 @@ const sc = StyleSheet.create({
     color: Colors.text,
     lineHeight: 22,
   },
-
-  // Stat cards
-  statsRow: {
-    flexDirection: "row",
-    gap: 12,
-    marginBottom: 28,
-  },
-  statCard: {
-    flex: 1,
-    borderRadius: 16,
-    overflow: "hidden",
-  },
-  statCardGradient: {
-    padding: 16,
-    borderRadius: 16,
-  },
-  statCardHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginBottom: 10,
-  },
-  statLabel: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: FontSizes.labelSm,
-    color: Colors.textSecondary,
-    letterSpacing: 0.8,
-  },
-  prMovement: {
+  moreMovements: {
     fontFamily: Fonts.bodyBold,
     fontSize: FontSizes.labelMd,
-    color: Colors.textSecondary,
-    letterSpacing: 0.5,
-    marginBottom: 2,
-    textTransform: "uppercase",
-  },
-  prValue: {
-    fontFamily: Fonts.display,
-    fontSize: FontSizes.headlineMd,
-  },
-  streakNum: {
-    fontFamily: Fonts.display,
-    fontSize: 40,
-    color: Colors.text,
-    lineHeight: 48,
-  },
-  streakUnit: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: FontSizes.labelSm,
-    color: Colors.textSecondary,
-    letterSpacing: 1,
-    marginTop: -4,
-  },
-  activityDots: {
-    flexDirection: "row",
-    gap: 5,
-    marginTop: 12,
-  },
-  activityDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    marginTop: 2,
   },
 
   // Section
@@ -773,7 +539,7 @@ const sc = StyleSheet.create({
   addClassBtnText: {
     fontFamily: Fonts.bodyBold,
     fontSize: FontSizes.labelSm,
-    color: "#fff",
+    color: Colors.onPrimary,
     letterSpacing: 0.8,
   },
 
@@ -878,68 +644,4 @@ const sc = StyleSheet.create({
     color: Colors.textSecondary,
   },
 
-  // Booking cards
-  bookingCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.surfaceContainerLow,
-    borderRadius: 14,
-    paddingRight: 12,
-    paddingVertical: 12,
-    marginBottom: 8,
-    gap: 12,
-    overflow: "hidden",
-  },
-  bookingDateCol: {
-    paddingHorizontal: 10,
-    paddingVertical: 14,
-    alignItems: "center",
-    justifyContent: "center",
-    borderTopRightRadius: 8,
-    borderBottomRightRadius: 8,
-  },
-  bookingDateText: {
-    fontFamily: Fonts.bodyExtra,
-    fontSize: FontSizes.labelSm,
-    color: Colors.onPrimary,
-    letterSpacing: 0.8,
-  },
-  bookingTimeCol: {
-    alignItems: "flex-end",
-    minWidth: 40,
-  },
-  bookingHour: {
-    fontFamily: Fonts.display,
-    fontSize: FontSizes.headlineSm,
-    lineHeight: 24,
-  },
-  bookingPeriod: {
-    fontFamily: Fonts.bodySemi,
-    fontSize: FontSizes.labelSm,
-    color: Colors.textSecondary,
-  },
-  bookingClassName: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: FontSizes.labelLg,
-    color: Colors.text,
-    marginBottom: 2,
-  },
-  bookingCoach: {
-    fontFamily: Fonts.bodyMed,
-    fontSize: FontSizes.labelMd,
-    color: Colors.textSecondary,
-  },
-  bookingBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  bookingBadgeText: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: FontSizes.labelSm,
-    letterSpacing: 0.5,
-  },
 });

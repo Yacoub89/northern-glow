@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     borderColor: Colors.success,
   },
   checkBtnText: { fontSize: 13, fontWeight: "600", color: Colors.textSecondary },
-  checkBtnTextActive: { color: "#fff" },
+  checkBtnTextActive: { color: Colors.onPrimary },
   emptyCard: {
     backgroundColor: Colors.surface,
     borderRadius: 14,

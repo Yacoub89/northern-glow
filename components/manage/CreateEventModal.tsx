@@ -280,7 +280,7 @@ export function CreateEventModal({
               disabled={saving}
             >
               {saving
-                ? <ActivityIndicator color="#fff" />
+                ? <ActivityIndicator color={Colors.onPrimary} />
                 : <Text style={md.saveText}>Create Event</Text>
               }
             </Pressable>

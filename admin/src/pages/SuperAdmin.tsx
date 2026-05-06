@@ -6,39 +6,39 @@ import { useMediaQuery } from "../components/useMediaQuery";
 
 const S = {
   h1: { fontSize: 24, fontWeight: 700, marginBottom: 8 },
-  sub: { color: "#888", fontSize: 14, marginBottom: 32 },
+  sub: { color: "var(--admin-text-subtle)", fontSize: 14, marginBottom: 32 },
   grid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, alignItems: "start" } as const,
-  card: { background: "#141414", border: "1px solid #252525", borderRadius: 10, padding: 24, marginBottom: 24 },
+  card: { background: "var(--admin-surface)", border: "1px solid var(--admin-border)", borderRadius: 10, padding: 24, marginBottom: 24 },
   cardTitle: { fontSize: 16, fontWeight: 600, marginBottom: 20 },
   group: { marginBottom: 16 },
-  label: { display: "block", fontSize: 13, color: "#aaa", marginBottom: 6 },
+  label: { display: "block", fontSize: 13, color: "var(--admin-text-muted)", marginBottom: 6 },
   input: {
-    width: "100%", background: "#1e1e1e", border: "1px solid #333", borderRadius: 8,
-    padding: "10px 12px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" as const,
+    width: "100%", background: "var(--admin-bg)", border: "1px solid var(--admin-border-strong)", borderRadius: 8,
+    padding: "10px 12px", color: "var(--admin-text)", fontSize: 14, outline: "none", boxSizing: "border-box" as const,
   },
   btn: {
     width: "100%", padding: "11px 0", borderRadius: 8, fontWeight: 600, fontSize: 14,
-    cursor: "pointer", border: "none", background: "#1BBFBF", color: "#000", marginTop: 4,
+    cursor: "pointer", border: "none", background: "var(--admin-primary)", color: "var(--admin-on-primary)", marginTop: 4,
   },
   btnSmall: {
     padding: "5px 12px", borderRadius: 6, fontWeight: 600, fontSize: 12,
-    cursor: "pointer", border: "none", background: "#1BBFBF22", color: "#1BBFBF",
+    cursor: "pointer", border: "none", background: "var(--admin-primary-soft)", color: "var(--admin-primary)",
   },
   btnDanger: {
     padding: "5px 12px", borderRadius: 6, fontWeight: 600, fontSize: 12,
-    cursor: "pointer", border: "none", background: "#ff453a22", color: "#ff453a",
+    cursor: "pointer", border: "none", background: "var(--admin-error-soft)", color: "var(--admin-error)",
   },
-  success: { color: "#34C759", fontSize: 13, marginTop: 12 },
-  error: { color: "#ff453a", fontSize: 13, marginTop: 12 },
+  success: { color: "var(--admin-success)", fontSize: 13, marginTop: 12 },
+  error: { color: "var(--admin-error)", fontSize: 13, marginTop: 12 },
   tableWrap: { width: "100%", overflowX: "auto" as const },
   table: { width: "100%", borderCollapse: "collapse" as const },
-  th: { textAlign: "left" as const, padding: "8px 12px", fontSize: 12, color: "#666", borderBottom: "1px solid #252525" },
-  td: { padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #1a1a1a", verticalAlign: "middle" as const },
+  th: { textAlign: "left" as const, padding: "8px 12px", fontSize: 12, color: "var(--admin-text-subtle)", borderBottom: "1px solid var(--admin-border)" },
+  td: { padding: "10px 12px", fontSize: 13, borderBottom: "1px solid var(--admin-bg)", verticalAlign: "middle" as const },
   idRow: { display: "inline-flex", alignItems: "center", gap: 5, marginLeft: 8, maxWidth: "100%" },
-  idText: { color: "#666", fontFamily: "monospace", fontSize: 11, overflowWrap: "anywhere" as const },
+  idText: { color: "var(--admin-text-subtle)", fontFamily: "monospace", fontSize: 11, overflowWrap: "anywhere" as const },
   copyBtn: {
     width: 22, height: 22, display: "inline-flex", alignItems: "center", justifyContent: "center",
-    border: "1px solid #2b2b2b", borderRadius: 5, background: "#1a1a1a", color: "#888",
+    border: "1px solid var(--admin-border-strong)", borderRadius: 5, background: "var(--admin-bg)", color: "var(--admin-text-subtle)",
     cursor: "pointer", padding: 0,
   },
   dot: (color: string) => ({
@@ -85,7 +85,7 @@ function CopyGymIdButton({ gymId }: { gymId: Id<"gyms"> }) {
   return (
     <button
       type="button"
-      style={{ ...S.copyBtn, color: copied ? "#34C759" : S.copyBtn.color }}
+      style={{ ...S.copyBtn, color: copied ? "var(--admin-success)" : S.copyBtn.color }}
       onClick={handleCopy}
       aria-label={`Copy gym id ${gymId}`}
       title={copied ? "Copied" : "Copy gym id"}
@@ -133,8 +133,8 @@ function PendingInvites() {
     }
   };
 
-  if (invites === undefined) return <p style={{ color: "#666", fontSize: 13 }}>Loading…</p>;
-  if (invites.length === 0) return <p style={{ color: "#666", fontSize: 13 }}>No pending admin invites.</p>;
+  if (invites === undefined) return <p style={{ color: "var(--admin-text-subtle)", fontSize: 13 }}>Loading…</p>;
+  if (invites.length === 0) return <p style={{ color: "var(--admin-text-subtle)", fontSize: 13 }}>No pending admin invites.</p>;
 
   const now = Date.now();
 
@@ -162,12 +162,12 @@ function PendingInvites() {
                 <td style={S.td}>
                   {new Date(inv.expiresAt).toLocaleDateString()}
                   {expired && (
-                    <span style={S.badge("#FF9F0A22", "#FF9F0A")}>expired</span>
+                    <span style={S.badge("var(--admin-warning-soft)", "var(--admin-warning)")}>expired</span>
                   )}
                 </td>
                 <td style={S.td}>
                   {resendSuccess === inv._id ? (
-                    <span style={{ color: "#34C759", fontSize: 12 }}>Sent!</span>
+                    <span style={{ color: "var(--admin-success)", fontSize: 12 }}>Sent!</span>
                   ) : (
                     <button
                       style={S.btnSmall}
@@ -190,10 +190,10 @@ function PendingInvites() {
 // ── Leads panel ──────────────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<string, [string, string]> = {
-  new: ["#1BBFBF22", "#1BBFBF"],
-  contacted: ["#FF9F0A22", "#FF9F0A"],
-  converted: ["#34C75922", "#34C759"],
-  dismissed: ["#55555522", "#555555"],
+  new: ["var(--admin-primary-soft)", "var(--admin-primary)"],
+  contacted: ["var(--admin-warning-soft)", "var(--admin-warning)"],
+  converted: ["var(--admin-success-soft)", "var(--admin-success)"],
+  dismissed: ["var(--admin-text-faint-soft)", "var(--admin-text-faint)"],
 };
 
 function Leads({ onPrefillForm }: { onPrefillForm: (fields: { gymName: string; adminEmail: string }) => void }) {
@@ -210,8 +210,8 @@ function Leads({ onPrefillForm }: { onPrefillForm: (fields: { gymName: string; a
     }
   };
 
-  if (leads === undefined) return <p style={{ color: "#666", fontSize: 13 }}>Loading…</p>;
-  if (leads.length === 0) return <p style={{ color: "#666", fontSize: 13 }}>No leads yet.</p>;
+  if (leads === undefined) return <p style={{ color: "var(--admin-text-subtle)", fontSize: 13 }}>Loading…</p>;
+  if (leads.length === 0) return <p style={{ color: "var(--admin-text-subtle)", fontSize: 13 }}>No leads yet.</p>;
 
   return (
     <div style={S.tableWrap}>
@@ -228,22 +228,22 @@ function Leads({ onPrefillForm }: { onPrefillForm: (fields: { gymName: string; a
         </thead>
         <tbody>
           {leads.map((lead) => {
-            const [bg, color] = STATUS_COLORS[lead.status] ?? ["#33333322", "#aaa"];
+            const [bg, color] = STATUS_COLORS[lead.status] ?? ["var(--admin-border)", "var(--admin-text-muted)"];
             const isUpdating = updating === lead._id;
             return (
               <tr key={lead._id}>
                 <td style={S.td}>
-                  <span style={S.badge(lead.type === "signup" ? "#1BBFBF22" : "#FF9F0A22", lead.type === "signup" ? "#1BBFBF" : "#FF9F0A")}>
+                  <span style={S.badge(lead.type === "signup" ? "var(--admin-primary-soft)" : "var(--admin-warning-soft)", lead.type === "signup" ? "var(--admin-primary)" : "var(--admin-warning)")}>
                     {lead.type === "signup" ? "signup" : "info"}
                   </span>
                 </td>
                 <td style={S.td}>{lead.name}</td>
                 <td style={S.td}>{lead.email}</td>
-                <td style={{ ...S.td, fontSize: 12, color: "#aaa", maxWidth: 200 }}>
+                <td style={{ ...S.td, fontSize: 12, color: "var(--admin-text-muted)", maxWidth: 200 }}>
                   {lead.gymName && <div>{lead.gymName}</div>}
-                  {lead.city && <div style={{ color: "#666" }}>{lead.city}</div>}
-                  {lead.memberCount && <div style={{ color: "#666" }}>{lead.memberCount} members</div>}
-                  {lead.message && <div style={{ color: "#666", fontStyle: "italic" }}>{lead.message.slice(0, 60)}{lead.message.length > 60 ? "…" : ""}</div>}
+                  {lead.city && <div style={{ color: "var(--admin-text-subtle)" }}>{lead.city}</div>}
+                  {lead.memberCount && <div style={{ color: "var(--admin-text-subtle)" }}>{lead.memberCount} members</div>}
+                  {lead.message && <div style={{ color: "var(--admin-text-subtle)", fontStyle: "italic" }}>{lead.message.slice(0, 60)}{lead.message.length > 60 ? "…" : ""}</div>}
                 </td>
                 <td style={S.td}>
                   <span style={S.badge(bg, color)}>{lead.status}</span>
@@ -292,7 +292,7 @@ export default function SuperAdmin() {
   const [form, setForm] = useState({
     gymName: "",
     tagline: "Powered by NorthernGlow",
-    primaryColor: "#1BBFBF",
+    primaryColor: "var(--admin-primary)",
     timezone: "America/New_York",
     adminEmail: "",
   });
@@ -327,7 +327,7 @@ export default function SuperAdmin() {
       setForm({
         gymName: "",
         tagline: "Powered by NorthernGlow",
-        primaryColor: "#1BBFBF",
+        primaryColor: "var(--admin-primary)",
         timezone: "America/New_York",
         adminEmail: "",
       });
@@ -360,7 +360,7 @@ export default function SuperAdmin() {
               </div>
               <div style={S.group}>
                 <label style={S.label}>Primary colour</label>
-                <input style={S.input} value={form.primaryColor} onChange={set("primaryColor")} placeholder="#1BBFBF" />
+                <input style={S.input} value={form.primaryColor} onChange={set("primaryColor")} placeholder="var(--admin-primary)" />
               </div>
               <div style={S.group}>
                 <label style={S.label}>Timezone</label>
@@ -393,9 +393,9 @@ export default function SuperAdmin() {
         <div style={{ ...S.card, padding: isMobile ? 18 : S.card.padding }}>
           <div style={S.cardTitle}>All gyms ({gyms?.length ?? "…"})</div>
           {gyms === undefined ? (
-            <p style={{ color: "#666", fontSize: 13 }}>Loading…</p>
+            <p style={{ color: "var(--admin-text-subtle)", fontSize: 13 }}>Loading…</p>
           ) : gyms.length === 0 ? (
-            <p style={{ color: "#666", fontSize: 13 }}>No gyms yet.</p>
+            <p style={{ color: "var(--admin-text-subtle)", fontSize: 13 }}>No gyms yet.</p>
           ) : (
             <div style={S.tableWrap}>
               <table style={{ ...S.table, minWidth: 560 }}>

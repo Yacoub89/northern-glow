@@ -55,7 +55,7 @@ function SuperAdminGuard({ children }: { children: React.ReactNode }) {
 export function Spinner() {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh" }}>
-      <div style={{ width: 32, height: 32, border: "3px solid #333", borderTopColor: "#1BBFBF", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      <div style={{ width: 32, height: 32, border: "3px solid var(--admin-border-strong)", borderTopColor: "var(--admin-primary)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
@@ -65,7 +65,7 @@ function NoGymAssigned() {
   return (
     <div style={{ maxWidth: 520 }}>
       <h1 style={{ fontSize: 24, fontWeight: 700, marginBottom: 8 }}>No gym assigned</h1>
-      <p style={{ color: "#888", fontSize: 14, lineHeight: 1.6 }}>
+      <p style={{ color: "var(--admin-text-subtle)", fontSize: 14, lineHeight: 1.6 }}>
         This account is not connected to a gym yet. Ask your gym admin or NorthernGlow to send an invite to this email address.
       </p>
     </div>

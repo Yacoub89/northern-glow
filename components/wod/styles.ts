@@ -67,9 +67,14 @@ export const wodStyles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 12,
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 20,
+  },
+  readHeaderText: {
+    flex: 1,
+    minWidth: 0,
   },
   readGymName: {
     fontFamily: Fonts.bodyExtra,
@@ -86,6 +91,7 @@ export const wodStyles = StyleSheet.create({
   editBtn: {
     flexDirection: "row",
     alignItems: "center",
+    flexShrink: 0,
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 7,
@@ -525,7 +531,7 @@ export const wodStyles = StyleSheet.create({
     fontFamily: Fonts.bodyBold,
     fontSize: 13,
   },
-  partSelectTextActive: { color: "#fff" },
+  partSelectTextActive: { color: Colors.onPrimary },
   scaleRow: { flexDirection: "row", gap: 8 },
   scaleBtn: {
     flex: 1,
@@ -542,7 +548,7 @@ export const wodStyles = StyleSheet.create({
     fontFamily: Fonts.bodyBold,
     fontSize: 14,
   },
-  scaleBtnTextActive: { color: "#fff" },
+  scaleBtnTextActive: { color: Colors.onPrimary },
   saveBtn: {
     marginHorizontal: 20,
     borderRadius: 14,
@@ -552,7 +558,7 @@ export const wodStyles = StyleSheet.create({
   saveBtnText: {
     fontFamily: Fonts.display,
     fontSize: FontSizes.labelLg,
-    color: "#fff",
+    color: Colors.onPrimary,
     letterSpacing: 0.5,
   },
 

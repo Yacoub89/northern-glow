@@ -15,7 +15,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../convex/_generated/api";
 import { Colors } from "../../constants/Colors";
-import { useGymColors, useGymConfig } from "../../constants/GymConfig";
+import { useGymColors } from "../../constants/GymConfig";
 import { DEFAULT_WOD_PROGRAM, WOD_PROGRAMS, type WodProgram } from "../../constants/wod";
 import { getTodayDate } from "../../utils/date";
 import { wodStyles as s } from "./styles";
@@ -24,7 +24,6 @@ import { useAppDialog } from "../AppDialog";
 import { WodScheduleStrip } from "./WodScheduleStrip";
 
 export function AthleteLogTab() {
-  const gym = useGymConfig();
   const { primary } = useGymColors();
   const dialog = useAppDialog();
   const today = getTodayDate();
@@ -137,15 +136,6 @@ export function AthleteLogTab() {
             onSelect={setSelectedDate}
           />
 
-          <View style={s.readHeader}>
-            <View>
-              <Text style={[s.readGymName, { color: primary }]}>{gym.name.toUpperCase()}</Text>
-              <Text style={s.readTitle}>
-                {selectedDate === today ? "Log Result" : formatNavDateShort(selectedDate)}
-              </Text>
-            </View>
-          </View>
-
           {announcements.length > 0 ? (
             <>
               <Text style={s.sectionLabel}>ANNOUNCEMENTS</Text>
@@ -168,13 +158,9 @@ export function AthleteLogTab() {
           {wod ? (
             <>
               <Text style={s.sectionLabel}>
-                {selectedDate === today ? "TODAY'S WOD" : `${selectedProgram} WOD`}
+                {selectedDate === today ? "TODAY'S WOD" : formatNavDateShort(selectedDate)}
               </Text>
               <View style={s.readCard}>
-                <Text style={s.readWodTitle}>{wod.title}</Text>
-                <Text style={[s.readWodMeta, { color: primary }]}>
-                  {wod.type.toUpperCase()}
-                </Text>
                 {(!wod.parts || wod.parts.length === 0) && wod.description ? (
                   <Text style={s.readPartDetail}>{wod.description}</Text>
                 ) : null}

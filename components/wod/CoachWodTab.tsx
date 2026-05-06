@@ -35,6 +35,79 @@ import {
 } from "./types";
 import { useAppDialog } from "../AppDialog";
 
+function normalizePartName(part: {
+  name?: string;
+  type?: WodType;
+  movement?: string;
+  sets?: string;
+  reps?: string;
+  percentMax?: string;
+  coachNotes?: string;
+  timeCap?: string;
+  description?: string;
+}): PartName {
+  const name = part.name?.trim().toUpperCase().replace(/[\s_-]/g, "");
+  if (name?.includes("STRENGTH")) return "STRENGTH";
+  if (name?.includes("METCON")) return "METCON";
+  if (name?.includes("SKILL")) return "SKILL";
+  if (name?.includes("ACCESSORY")) return "ACCESSORY";
+  if (part.type && part.type !== "Strength") return "METCON";
+
+  if (
+    part.type === "Strength" ||
+    part.movement ||
+    part.sets ||
+    part.reps ||
+    part.percentMax ||
+    part.coachNotes
+  ) {
+    return "STRENGTH";
+  }
+
+  return "METCON";
+}
+
+function normalizePartType(part: { name?: string; type?: WodType }, name: PartName): WodType {
+  if (part.type) return part.type;
+  const text = part.name ?? "";
+  if (/\bamrap\b/i.test(text)) return "AMRAP";
+  if (/\bemom\b/i.test(text)) return "EMOM";
+  if (/\b(for time|for-time|fortime|rft)\b/i.test(text)) return "ForTime";
+  return name === "METCON" ? "AMRAP" : "Strength";
+}
+
+function inferTimeCap(part: { name?: string; timeCap?: string }) {
+  if (part.timeCap) return part.timeCap;
+  const match = part.name?.match(/\b(?:amrap|emom)\s*(\d{1,2})(?::(\d{2}))?\b/i);
+  if (!match) return "";
+  return match[2] ? `${match[1]}:${match[2]}` : `${match[1]}:00`;
+}
+
+function inferStrengthDetails(part: {
+  description?: string;
+  movement?: string;
+  sets?: string;
+  reps?: string;
+  percentMax?: string;
+}) {
+  const firstLine = part.description?.split("\n").map((line) => line.trim()).find(Boolean) ?? "";
+  const source = [part.movement, firstLine].filter(Boolean).join(" ");
+  const scheme = source.match(/\b(\d+)\s*x\s*([\d\-]+)\b/i);
+  const percent = source.match(/@\s*([\d\-]+%?)/);
+  const movement = source
+    .replace(/\b\d+\s*x\s*[\d\-]+\b/i, "")
+    .replace(/@\s*[\d\-]+%?/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  return {
+    movement: part.movement || movement,
+    sets: part.sets || scheme?.[1] || "",
+    reps: part.reps || scheme?.[2] || "",
+    percentMax: part.percentMax || percent?.[1]?.replace(/%$/, "") || "",
+  };
+}
+
 export function CoachWodTab() {
   const gym = useGymConfig();
   const { primary } = useGymColors();
@@ -81,19 +154,50 @@ export function CoachWodTab() {
       setAccessLevel((wod.accessLevel as AccessLevel) ?? "PUBLIC_CLASS");
       if (wod.parts && wod.parts.length > 0) {
         setParts(
-          wod.parts.map((p, i) => ({
-            label: p.label ?? PART_LABELS[i] ?? String(i + 1),
-            name: (p.name as PartName) ?? "METCON",
-            type: (p.type as WodType) ?? "AMRAP",
-            movement: p.movement ?? "",
-            sets: p.sets ?? "",
-            reps: p.reps ?? "",
-            percentMax: p.percentMax ?? "",
-            coachNotes: p.coachNotes ?? "",
-            timeCap: p.timeCap ?? "",
-            description: p.description ?? "",
-          }))
+          wod.parts.map((p, i) => {
+            const name = normalizePartName(p);
+            const type = normalizePartType(p, name);
+            const strengthDetails =
+              name === "STRENGTH" || name === "SKILL" || name === "ACCESSORY"
+                ? inferStrengthDetails(p)
+                : null;
+            return {
+              label: p.label ?? PART_LABELS[i] ?? String(i + 1),
+              name,
+              type,
+              movement: strengthDetails?.movement ?? p.movement ?? "",
+              sets: strengthDetails?.sets ?? p.sets ?? "",
+              reps: strengthDetails?.reps ?? p.reps ?? "",
+              percentMax: strengthDetails?.percentMax ?? p.percentMax ?? "",
+              coachNotes: p.coachNotes ?? "",
+              timeCap: inferTimeCap(p),
+              description: p.description ?? "",
+            };
+          })
         );
+      } else {
+        const name = wod.type === "Strength" ? "STRENGTH" : "METCON";
+        const strengthDetails =
+          name === "STRENGTH"
+            ? inferStrengthDetails({
+                movement: wod.movements[0],
+                description: wod.movements.length > 0 ? wod.movements.join("\n") : wod.description,
+              })
+            : null;
+        setParts([
+          {
+            label: "A",
+            name,
+            type: wod.type as WodType,
+            movement: strengthDetails?.movement ?? "",
+            sets: strengthDetails?.sets ?? "",
+            reps: strengthDetails?.reps ?? "",
+            percentMax: strengthDetails?.percentMax ?? "",
+            coachNotes: "",
+            timeCap: inferTimeCap({ name: wod.description }),
+            description: wod.movements.length > 0 ? wod.movements.join("\n") : wod.description,
+          },
+        ]);
       }
     } else if (wod === null) {
       setTitle("");
@@ -212,9 +316,9 @@ export function CoachWodTab() {
             onSelect={setSelectedDate}
           />
           <View style={s.readHeader}>
-            <View>
+            <View style={s.readHeaderText}>
               <Text style={[s.readGymName, { color: primary }]}>{gym.name.toUpperCase()}</Text>
-              <Text style={s.readTitle}>
+              <Text style={s.readTitle} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.75}>
                 {selectedDate === today ? "TODAY'S WOD" : formatNavDateShort(selectedDate).toUpperCase()}
               </Text>
             </View>
@@ -228,10 +332,10 @@ export function CoachWodTab() {
           </View>
 
           <View style={s.readCard}>
-            <Text style={[s.readWodMeta, { color: primary }]}>
+            {/* <Text style={[s.readWodMeta, { color: primary }]}>
               {wod.type.toUpperCase()}
               {wod.description ? ` · ${wod.description.toUpperCase()}` : ""}
-            </Text>
+            </Text> */}
             <Text style={s.readWodTitle}>{wod.title}</Text>
             {wod.parts && wod.parts.length > 0
               ? wod.parts.map((p, i) => (

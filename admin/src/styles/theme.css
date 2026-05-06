@@ -1,0 +1,41 @@
+:root {
+  --admin-bg: #f8fafc;
+  --admin-bg-translucent: rgba(248, 250, 252, 0.88);
+  --admin-surface: #ffffff;
+  --admin-surface-muted: #f8fafc;
+  --admin-surface-active: #eef2f7;
+  --admin-border: #e5e7eb;
+  --admin-border-strong: #d1d5db;
+  --admin-text: #111827;
+  --admin-text-muted: #4b5563;
+  --admin-text-subtle: #6b7280;
+  --admin-text-subtle-soft: #6b728022;
+  --admin-text-faint: #9ca3af;
+  --admin-text-faint-soft: #9ca3af22;
+  --admin-primary: #1bbfbf;
+  --admin-primary-bright: #1cd6f0;
+  --admin-primary-soft: #1bbfbf22;
+  --admin-primary-bright-soft: #1cd6f015;
+  --admin-primary-bright-border: #1cd6f038;
+  --admin-on-primary: #062a2a;
+  --admin-success: #34c759;
+  --admin-success-soft: #34c75922;
+  --admin-warning: #ff9f0a;
+  --admin-warning-soft: #ff9f0a22;
+  --admin-error: #ff453a;
+  --admin-error-soft: #ff453a22;
+  --admin-danger-text: #ff8a80;
+  --admin-info-soft: #4285f422;
+  --admin-info-border: #4285f440;
+  --admin-overlay: rgba(0, 0, 0, 0.7);
+  --admin-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.16);
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+  margin: 0;
+  background: var(--admin-bg);
+  color: var(--admin-text);
+}

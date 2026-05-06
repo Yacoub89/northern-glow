@@ -1,14 +1,14 @@
 import "./site.css";
 
-const BORDER = "#1C2D45";
-const BORDER_BRIGHT = "#243650";
-const TEXT = "#ffffff";
-const MUTED = "#7A99BB";
-const DIM = "#3A5270";
+const BORDER = "var(--admin-border)";
+const BORDER_BRIGHT = "var(--admin-border-strong)";
+const TEXT = "var(--admin-text)";
+const MUTED = "var(--admin-text-muted)";
+const DIM = "var(--admin-text-subtle)";
 
 export function SiteNav({ rightSlot, onLogoClick }: { rightSlot?: React.ReactNode; onLogoClick?: () => void }) {
   return (
-    <nav className="l-nav" style={{ background: "#0B1525cc", backdropFilter: "blur(12px)", borderBottom: `1px solid ${BORDER}` }}>
+    <nav className="l-nav" style={{ background: "var(--admin-bg-translucent)", backdropFilter: "blur(12px)", borderBottom: `1px solid ${BORDER}` }}>
       <div className="l-nav-inner">
         <div
           style={{ display: "flex", alignItems: "center", gap: 10, cursor: onLogoClick ? "pointer" : "default" }}
