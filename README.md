@@ -367,6 +367,11 @@ When `submitIos` is checked, the workflow waits for the EAS iOS build to finish,
 extracts that exact EAS build ID, and submits the same build to App Store
 Connect/TestFlight using the same `gymId` and `profile`.
 
+iOS submit uploads the IPA and then lets App Store Connect finish processing in
+the background. This avoids failing the workflow when Apple successfully accepts
+the upload but returns a temporary processing error while TestFlight is still
+working on the build.
+
 ### GitHub Actions Submit to TestFlight
 
 The build-and-submit flow and the standalone submit workflow both need these
