@@ -15,6 +15,14 @@ on:
         description: "App Store Connect numeric app ID for this gym app"
         required: false
         type: string
+      profile:
+        description: "Submit profile"
+        required: true
+        type: choice
+        options:
+          - gym-production
+          - gym-preview
+        default: gym-production
       whatToTest:
         description: "Deprecated: ignored because EAS treats it as an Enterprise-only changelog"
         required: false
@@ -62,6 +70,7 @@ jobs:
           GYM_ID: ${{ inputs.gymId }}
           BUILD_ID: ${{ inputs.buildId }}
           ASC_APP_ID: ${{ inputs.ascAppId }}
+          PROFILE: ${{ inputs.profile }}
           ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
           ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
           ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
@@ -72,6 +81,7 @@ jobs:
           chmod 600 "$ASC_API_KEY_PATH"
 
           args=("$GYM_ID" --env prod)
+          args+=(--profile "$PROFILE")
 
           if [ -n "$BUILD_ID" ]; then
             args+=(--build-id "$BUILD_ID")

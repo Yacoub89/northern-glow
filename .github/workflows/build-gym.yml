@@ -24,6 +24,15 @@ on:
           - gym-production
           - gym-preview
         default: gym-production
+      submitIos:
+        description: "Submit the iOS build after it succeeds"
+        required: true
+        type: boolean
+        default: false
+      ascAppId:
+        description: "App Store Connect numeric app ID for this gym app"
+        required: false
+        type: string
 
 jobs:
   build:
@@ -51,16 +60,76 @@ jobs:
         env:
           BUILD_SECRET: ${{ secrets.NORTHERNGLOW_BUILD_SECRET }}
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
         run: |
           test -n "$BUILD_SECRET" || (echo "Missing NORTHERNGLOW_BUILD_SECRET repo secret" && exit 1)
           test -n "$EXPO_TOKEN" || (echo "Missing EXPO_TOKEN repo secret" && exit 1)
+          if [ "${{ inputs.submitIos }}" = "true" ]; then
+            test "${{ inputs.platform }}" != "android" || (echo "submitIos requires platform ios or all" && exit 1)
+            test -n "$ASC_API_KEY_P8" || (echo "Missing ASC_API_KEY_P8 repo secret" && exit 1)
+            test -n "$ASC_API_KEY_ID" || (echo "Missing ASC_API_KEY_ID repo secret" && exit 1)
+            test -n "$ASC_API_KEY_ISSUER_ID" || (echo "Missing ASC_API_KEY_ISSUER_ID repo secret" && exit 1)
+          fi
 
       - name: Build gym app
+        id: build
         env:
           BUILD_SECRET: ${{ secrets.NORTHERNGLOW_BUILD_SECRET }}
         run: |
-          chmod +x ./scripts/build-gym.sh
-          ./scripts/build-gym.sh "${{ inputs.gymId }}" \
+          build_json="$RUNNER_TEMP/eas-build.json"
+          args=("${{ inputs.gymId }}" \
             --platform "${{ inputs.platform }}" \
             --profile "${{ inputs.profile }}" \
-            --env prod
+            --env prod)
+
+          if [ "${{ inputs.submitIos }}" = "true" ]; then
+            args+=(--wait --json-output "$build_json")
+          fi
+
+          chmod +x ./scripts/build-gym.sh
+          ./scripts/build-gym.sh "${args[@]}"
+
+          if [ "${{ inputs.submitIos }}" = "true" ]; then
+            ios_build_id=$(jq -r '
+              if type == "array" then .[] else . end
+              | select((.platform // "" | ascii_downcase) == "ios")
+              | .id
+            ' "$build_json" | head -n 1)
+
+            test -n "$ios_build_id" || (echo "Could not find iOS build ID in EAS JSON output" && cat "$build_json" && exit 1)
+            echo "ios_build_id=$ios_build_id" >> "$GITHUB_OUTPUT"
+            echo "Built iOS build: $ios_build_id"
+          fi
+
+      - name: Submit iOS build
+        if: ${{ inputs.submitIos }}
+        env:
+          BUILD_SECRET: ${{ secrets.NORTHERNGLOW_BUILD_SECRET }}
+          GYM_ID: ${{ inputs.gymId }}
+          BUILD_ID: ${{ steps.build.outputs.ios_build_id }}
+          PROFILE: ${{ inputs.profile }}
+          ASC_APP_ID: ${{ inputs.ascAppId }}
+          ASC_API_KEY_P8: ${{ secrets.ASC_API_KEY_P8 }}
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_KEY_ISSUER_ID: ${{ secrets.ASC_API_KEY_ISSUER_ID }}
+        run: |
+          ASC_API_KEY_PATH="$RUNNER_TEMP/asc_api_key.p8"
+          printf '%s\n' "$ASC_API_KEY_P8" > "$ASC_API_KEY_PATH"
+          chmod 600 "$ASC_API_KEY_PATH"
+
+          args=("$GYM_ID" \
+            --build-id "$BUILD_ID" \
+            --profile "$PROFILE" \
+            --env prod \
+            --asc-api-key-path "$ASC_API_KEY_PATH" \
+            --asc-api-key-id "$ASC_API_KEY_ID" \
+            --asc-api-key-issuer-id "$ASC_API_KEY_ISSUER_ID")
+
+          if [ -n "$ASC_APP_ID" ]; then
+            args+=(--asc-app-id "$ASC_APP_ID")
+          fi
+
+          chmod +x ./scripts/submit-gym-ios.sh
+          ./scripts/submit-gym-ios.sh "${args[@]}"

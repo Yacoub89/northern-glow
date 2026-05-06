@@ -357,13 +357,20 @@ GitHub > Actions > Build Gym App > Run workflow
 gymId: <Convex gym ID>
 platform: ios
 profile: gym-production
+submitIos: true
+ascAppId: <App Store Connect numeric app ID>
 ```
 
 For internal, non-TestFlight QA builds, use `profile: gym-preview`.
 
+When `submitIos` is checked, the workflow waits for the EAS iOS build to finish,
+extracts that exact EAS build ID, and submits the same build to App Store
+Connect/TestFlight using the same `gymId` and `profile`.
+
 ### GitHub Actions Submit to TestFlight
 
-The submit workflow needs these repository secrets:
+The build-and-submit flow and the standalone submit workflow both need these
+repository secrets:
 
 ```text
 EXPO_TOKEN
@@ -373,7 +380,9 @@ ASC_API_KEY_ID
 ASC_API_KEY_ISSUER_ID
 ```
 
-After the `gym-production` build succeeds, copy the EAS build ID from the build URL:
+The standalone submit workflow is still available when you need to submit an
+older build manually. After the `gym-production` build succeeds, copy the EAS
+build ID from the build URL:
 
 ```text
 https://expo.dev/accounts/yacoub89/projects/northernglow/builds/<buildId>
@@ -386,6 +395,7 @@ GitHub > Actions > Submit iOS Build > Run workflow
 gymId: <Convex gym ID>
 buildId: <EAS build ID>
 ascAppId: <App Store Connect numeric app ID>
+profile: gym-production
 whatToTest: optional TestFlight notes
 ```
 
@@ -418,8 +428,7 @@ Submit first build
 Future updates for that same gym are mostly automated:
 
 ```text
-Run Build Gym App
-Run Submit iOS Build with the same gymId and ascAppId
+Run Build Gym App with submitIos checked
 ```
 
 ### Updating an Existing Gym App

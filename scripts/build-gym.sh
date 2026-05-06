@@ -9,6 +9,8 @@
 #   --env local|preview|prod     Which Convex deployment to hit (default: prod)
 #   --profile <name>             EAS build profile override (default: gym-production)
 #   --interactive                Allow EAS to prompt for Apple credentials
+#   --wait                       Wait for EAS build completion before exiting
+#   --json-output <path>         Write EAS build JSON output to a file
 #   --help                       Show this help
 #
 # Required env vars:
@@ -28,6 +30,8 @@ PLATFORM="all"
 ENV="prod"
 EAS_PROFILE="gym-production"
 INTERACTIVE="false"
+WAIT_FOR_BUILD="false"
+JSON_OUTPUT=""
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 ASSETS_DIR="$ROOT_DIR/assets"
@@ -78,6 +82,8 @@ usage() {
   echo "  --env local|preview|prod     Convex deployment (default: prod)"
   echo "  --profile <name>             EAS build profile (default: gym-production)"
   echo "  --interactive                Allow EAS prompts for first-time iOS credentials"
+  echo "  --wait                       Wait for EAS build completion"
+  echo "  --json-output <path>         Write EAS build JSON output to a file"
   echo "  --help                       Show this help"
   echo ""
   echo "Required env vars:"
@@ -113,6 +119,14 @@ while [[ $# -gt 0 ]]; do
     --interactive)
       INTERACTIVE="true"
       shift
+      ;;
+    --wait)
+      WAIT_FOR_BUILD="true"
+      shift
+      ;;
+    --json-output)
+      JSON_OUTPUT="${2:?--json-output requires a file path}"
+      shift 2
       ;;
     --help)
       usage
@@ -160,6 +174,7 @@ echo "  env:      $ENV → $CONVEX_URL"
 echo "  platform: $PLATFORM"
 echo "  profile:  $EAS_PROFILE"
 echo "  mode:     $([[ "$INTERACTIVE" == "true" ]] && echo "interactive" || echo "non-interactive")"
+echo "  wait:     $WAIT_FOR_BUILD"
 echo ""
 
 # ── 1. Fetch gym config from Convex ──────────────────────────────────────────
@@ -343,24 +358,38 @@ echo "Baked gym config into app.config.js"
 
 echo "Starting EAS build (platform: $PLATFORM, profile: $EAS_PROFILE)..."
 
+run_eas_build() {
+  local build_platform="$1"
+  local args=(build --platform "$build_platform" --profile "$EAS_PROFILE")
+
+  if [[ "$INTERACTIVE" == "true" ]]; then
+    if [[ -n "$JSON_OUTPUT" ]]; then
+      echo "Error: --json-output cannot be used with --interactive"
+      exit 1
+    fi
+  else
+    args+=(--non-interactive)
+  fi
+
+  if [[ "$WAIT_FOR_BUILD" == "true" ]]; then
+    args+=(--wait)
+  fi
+
+  if [[ -n "$JSON_OUTPUT" ]]; then
+    args+=(--json)
+    mkdir -p "$(dirname "$JSON_OUTPUT")"
+    eas "${args[@]}" | tee "$JSON_OUTPUT"
+  else
+    eas "${args[@]}"
+  fi
+}
+
 if [[ "$PLATFORM" == "ios" ]]; then
-  if [[ "$INTERACTIVE" == "true" ]]; then
-    eas build --platform ios --profile "$EAS_PROFILE"
-  else
-    eas build --platform ios --profile "$EAS_PROFILE" --non-interactive
-  fi
+  run_eas_build ios
 elif [[ "$PLATFORM" == "android" ]]; then
-  if [[ "$INTERACTIVE" == "true" ]]; then
-    eas build --platform android --profile "$EAS_PROFILE"
-  else
-    eas build --platform android --profile "$EAS_PROFILE" --non-interactive
-  fi
+  run_eas_build android
 else
-  if [[ "$INTERACTIVE" == "true" ]]; then
-    eas build --platform all --profile "$EAS_PROFILE"
-  else
-    eas build --platform all --profile "$EAS_PROFILE" --non-interactive
-  fi
+  run_eas_build all
 fi
 
 # ── 6. Restore default assets, app.config.js, and iOS native files ───────────

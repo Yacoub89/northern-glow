@@ -13,6 +13,7 @@
 #   --asc-api-key-issuer-id <id> App Store Connect API key issuer ID
 #   --what-to-test <text>        Deprecated: ignored because EAS submits it as an Enterprise-only changelog
 #   --env local|preview|prod     Which Convex deployment to hit (default: prod)
+#   --profile <name>             EAS submit profile (default: gym-production)
 #   --interactive                Allow EAS prompts for first-time submit setup
 #   --help                      Show this help
 #
@@ -33,6 +34,7 @@ ASC_API_KEY_ID="${ASC_API_KEY_ID:-}"
 ASC_API_KEY_ISSUER_ID="${ASC_API_KEY_ISSUER_ID:-}"
 WHAT_TO_TEST=""
 ENV="prod"
+EAS_PROFILE="gym-production"
 INTERACTIVE="false"
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
@@ -79,6 +81,7 @@ usage() {
   echo "  --asc-api-key-issuer-id <id> App Store Connect API key issuer ID"
   echo "  --what-to-test <text>        Deprecated: ignored by submit"
   echo "  --env local|preview|prod     Convex deployment (default: prod)"
+  echo "  --profile <name>             EAS submit profile (default: gym-production)"
   echo "  --interactive                Allow EAS prompts for first-time submit setup"
   echo "  --help                      Show this help"
   echo ""
@@ -126,6 +129,10 @@ while [[ $# -gt 0 ]]; do
       ENV="${2:?--env requires local, preview, or prod}"
       shift 2
       ;;
+    --profile)
+      EAS_PROFILE="${2:?--profile requires a profile name}"
+      shift 2
+      ;;
     --interactive)
       INTERACTIVE="true"
       shift
@@ -163,6 +170,7 @@ esac
 echo ""
 echo "  gym:    $GYM_ID"
 echo "  env:    $ENV -> $CONVEX_URL"
+echo "  profile: $EAS_PROFILE"
 echo "  submit: $([[ -n "$BUILD_ID" ]] && echo "$BUILD_ID" || echo "latest iOS build")"
 echo "  asc:    ${ASC_APP_ID:-not set}"
 echo "  mode:   $([[ "$INTERACTIVE" == "true" ]] && echo "interactive" || echo "non-interactive")"
@@ -284,8 +292,6 @@ export default {
   },
 };
 JSEOF
-
-EAS_PROFILE="gym-production"
 
 if [[ "$INTERACTIVE" != "true" ]]; then
   missing_submit_creds=()
