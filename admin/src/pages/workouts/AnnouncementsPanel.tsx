@@ -65,7 +65,7 @@ export function AnnouncementsPanel({
             <span style={S.label}>End date</span>
             <input style={S.input} type="date" value={announcementEndDate} onChange={(e) => setAnnouncementEndDate(e.target.value)} />
           </label>
-          <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#4b5563", fontSize: 13, paddingTop: 25 }}>
+          <label style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--admin-text-muted)", fontSize: 13, paddingTop: 25 }}>
             <input style={S.check} type="checkbox" checked={announcementPinned} onChange={(e) => setAnnouncementPinned(e.target.checked)} />
             Pin to top
           </label>

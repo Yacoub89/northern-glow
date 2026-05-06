@@ -7,13 +7,13 @@ import { SiteNav, SiteFooter, navBtnGhost } from "../components/SiteChrome";
 
 type Step = "signin" | "signup" | "verify";
 
-const TEAL = "#1CD6F0";
-const BG = "#f8fafc";
-const CARD = "#ffffff";
-const BORDER_BRIGHT = "#d1d5db";
-const TEXT = "#111827";
-const MUTED = "#4b5563";
-const DIM = "#6b7280";
+const TEAL = "var(--admin-primary-bright)";
+const BG = "var(--admin-bg)";
+const CARD = "var(--admin-surface)";
+const BORDER_BRIGHT = "var(--admin-border-strong)";
+const TEXT = "var(--admin-text)";
+const MUTED = "var(--admin-text-muted)";
+const DIM = "var(--admin-text-subtle)";
 
 const S = {
   page: {
@@ -60,7 +60,7 @@ const S = {
   },
   btnSubmit: {
     width: "100%", padding: "12px 0", borderRadius: 8, border: "none",
-    background: TEAL, color: "#062a2a", fontSize: 14, fontWeight: 700,
+    background: TEAL, color: "var(--admin-on-primary)", fontSize: 14, fontWeight: 700,
     cursor: "pointer", marginTop: 8,
   } as const,
   btnSecondary: {
@@ -71,7 +71,7 @@ const S = {
   } as const,
   toggle: { textAlign: "center" as const, marginTop: 20, fontSize: 13, color: DIM },
   toggleLink: { color: TEAL, cursor: "pointer", marginLeft: 4 },
-  error: { color: "#ff453a", fontSize: 13, marginTop: 10 },
+  error: { color: "var(--admin-error)", fontSize: 13, marginTop: 10 },
   success: { color: TEAL, fontSize: 13, marginTop: 10, lineHeight: 1.5 },
 };
 

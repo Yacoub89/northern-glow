@@ -5,19 +5,19 @@ import { useMediaQuery } from "../components/useMediaQuery";
 
 const S = {
   h1: { fontSize: 24, fontWeight: 700, marginBottom: 8 },
-  sub: { color: "#6b7280", fontSize: 14, marginBottom: 32 },
+  sub: { color: "var(--admin-text-subtle)", fontSize: 14, marginBottom: 32 },
   grid: { display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 16, marginBottom: 32 },
-  card: { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20 },
+  card: { background: "var(--admin-surface)", border: "1px solid var(--admin-border)", borderRadius: 10, padding: 20 },
   cardLink: {
-    background: "#ffffff",
-    border: "1px solid #e5e7eb",
+    background: "var(--admin-surface)",
+    border: "1px solid var(--admin-border)",
     borderRadius: 10,
     padding: 20,
     textDecoration: "none",
     display: "block",
   },
-  stat: { fontSize: 32, fontWeight: 700, color: "#1BBFBF" },
-  statLabel: { fontSize: 13, color: "#6b7280", marginTop: 4 },
+  stat: { fontSize: 32, fontWeight: 700, color: "var(--admin-primary)" },
+  statLabel: { fontSize: 13, color: "var(--admin-text-subtle)", marginTop: 4 },
   section: { marginTop: 32 },
   sectionTitle: { fontSize: 16, fontWeight: 600, marginBottom: 16 },
   badge: (status: string) => ({
@@ -25,13 +25,13 @@ const S = {
     padding: "2px 8px",
     borderRadius: 4,
     fontSize: 12,
-    background: status === "pending" ? "#FF9F0A22" : status === "accepted" ? "#34C75922" : "#6b728022",
-    color: status === "pending" ? "#FF9F0A" : status === "accepted" ? "#34C759" : "#6b7280",
+    background: status === "pending" ? "var(--admin-warning-soft)" : status === "accepted" ? "var(--admin-success-soft)" : "var(--admin-text-subtle-soft)",
+    color: status === "pending" ? "var(--admin-warning)" : status === "accepted" ? "var(--admin-success)" : "var(--admin-text-subtle)",
   }),
   tableWrap: { width: "100%", overflowX: "auto" as const },
   table: { width: "100%", borderCollapse: "collapse" as const },
-  th: { textAlign: "left" as const, padding: "8px 12px", fontSize: 12, color: "#6b7280", borderBottom: "1px solid #e5e7eb" },
-  td: { padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #f8fafc" },
+  th: { textAlign: "left" as const, padding: "8px 12px", fontSize: 12, color: "var(--admin-text-subtle)", borderBottom: "1px solid var(--admin-border)" },
+  td: { padding: "10px 12px", fontSize: 13, borderBottom: "1px solid var(--admin-bg)" },
 };
 
 export default function Dashboard() {

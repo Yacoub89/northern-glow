@@ -14,26 +14,26 @@ const GYM_NAV = [
 ];
 
 const S = {
-  shell: { display: "flex", minHeight: "100vh", background: "#f8fafc", color: "#111827" } as const,
+  shell: { display: "flex", minHeight: "100vh", background: "var(--admin-bg)", color: "var(--admin-text)" } as const,
   sidebar: {
     width: 220,
-    background: "#ffffff",
-    borderRight: "1px solid #e5e7eb",
+    background: "var(--admin-surface)",
+    borderRight: "1px solid var(--admin-border)",
     display: "flex",
     flexDirection: "column" as const,
     padding: "24px 0",
     flexShrink: 0,
   },
-  brand: { padding: "0 20px 24px", borderBottom: "1px solid #e5e7eb", marginBottom: 16 },
-  brandTitle: { fontSize: 16, fontWeight: 700, color: "#111827" },
-  brandSub: { fontSize: 12, color: "#6b7280", marginTop: 2 },
+  brand: { padding: "0 20px 24px", borderBottom: "1px solid var(--admin-border)", marginBottom: 16 },
+  brandTitle: { fontSize: 16, fontWeight: 700, color: "var(--admin-text)" },
+  brandSub: { fontSize: 12, color: "var(--admin-text-subtle)", marginTop: 2 },
   nav: { flex: 1, padding: "0 8px" },
   link: (active: boolean) => ({
     display: "block",
     padding: "9px 12px",
     borderRadius: 6,
-    color: active ? "#111827" : "#6b7280",
-    background: active ? "#1BBFBF22" : "transparent",
+    color: active ? "var(--admin-text)" : "var(--admin-text-subtle)",
+    background: active ? "var(--admin-primary-soft)" : "transparent",
     textDecoration: "none",
     fontSize: 14,
     marginBottom: 2,
@@ -44,14 +44,14 @@ const S = {
     padding: "9px 12px",
     borderRadius: 6,
     background: "transparent",
-    color: "#6b7280",
+    color: "var(--admin-text-subtle)",
     border: "none",
     cursor: "pointer",
     fontSize: 14,
     textAlign: "left" as const,
     width: "calc(100% - 16px)",
   },
-  main: { flex: 1, padding: 32, overflowY: "auto" as const, minWidth: 0, background: "#f8fafc" },
+  main: { flex: 1, padding: 32, overflowY: "auto" as const, minWidth: 0, background: "var(--admin-bg)" },
 };
 
 export default function Layout() {
@@ -77,7 +77,7 @@ export default function Layout() {
           width: isMobile ? "100%" : S.sidebar.width,
           padding: isMobile ? "14px 0 10px" : S.sidebar.padding,
           borderRight: isMobile ? "none" : S.sidebar.borderRight,
-          borderBottom: isMobile ? "1px solid #e5e7eb" : "none",
+          borderBottom: isMobile ? "1px solid var(--admin-border)" : "none",
         }}
       >
         <div
@@ -119,7 +119,7 @@ export default function Layout() {
               whiteSpace: "nowrap",
               marginTop: !showGymNav || isMobile ? 0 : 16,
               marginBottom: isMobile ? 0 : navLink(isActive).marginBottom,
-              borderTop: !showGymNav || isMobile ? "none" : "1px solid #e5e7eb",
+              borderTop: !showGymNav || isMobile ? "none" : "1px solid var(--admin-border)",
               paddingTop: !showGymNav || isMobile ? 9 : 16,
             })}>
               Super Admin

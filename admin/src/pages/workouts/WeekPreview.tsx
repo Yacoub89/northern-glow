@@ -62,7 +62,7 @@ export function WeekPreview({
                   <button style={{ ...S.btn(false), padding: "7px 10px" }} type="button" onClick={() => onEdit(wod)}>
                     Edit
                   </button>
-                  <button style={{ ...S.btn(false), padding: "7px 10px", color: "#ff8a80" }} type="button" onClick={() => onDelete(wod)}>
+                  <button style={{ ...S.btn(false), padding: "7px 10px", color: "var(--admin-danger-text)" }} type="button" onClick={() => onDelete(wod)}>
                     Delete
                   </button>
                 </div>
