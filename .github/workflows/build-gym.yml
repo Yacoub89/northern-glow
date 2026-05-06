@@ -24,6 +24,11 @@ on:
           - gym-production
           - gym-preview
         default: gym-production
+      appVersion:
+        description: "App Store version, for example 1.0.1"
+        required: true
+        type: string
+        default: "1.0.0"
       submitIos:
         description: "Submit the iOS build after it succeeds"
         required: true
@@ -82,6 +87,7 @@ jobs:
           args=("${{ inputs.gymId }}" \
             --platform "${{ inputs.platform }}" \
             --profile "${{ inputs.profile }}" \
+            --app-version "${{ inputs.appVersion }}" \
             --env prod)
 
           if [ "${{ inputs.submitIos }}" = "true" ]; then

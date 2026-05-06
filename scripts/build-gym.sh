@@ -8,6 +8,7 @@
 #   --platform ios|android|all   Which platform to build (default: all)
 #   --env local|preview|prod     Which Convex deployment to hit (default: prod)
 #   --profile <name>             EAS build profile override (default: gym-production)
+#   --app-version <version>      App Store marketing version (default: 1.0.0)
 #   --interactive                Allow EAS to prompt for Apple credentials
 #   --wait                       Wait for EAS build completion before exiting
 #   --json-output <path>         Write EAS build JSON output to a file
@@ -29,6 +30,7 @@ GYM_ID=""
 PLATFORM="all"
 ENV="prod"
 EAS_PROFILE="gym-production"
+APP_VERSION="1.0.0"
 INTERACTIVE="false"
 WAIT_FOR_BUILD="false"
 JSON_OUTPUT=""
@@ -81,6 +83,7 @@ usage() {
   echo "  --platform ios|android|all   Platform to build (default: all)"
   echo "  --env local|preview|prod     Convex deployment (default: prod)"
   echo "  --profile <name>             EAS build profile (default: gym-production)"
+  echo "  --app-version <version>      App Store marketing version (default: 1.0.0)"
   echo "  --interactive                Allow EAS prompts for first-time iOS credentials"
   echo "  --wait                       Wait for EAS build completion"
   echo "  --json-output <path>         Write EAS build JSON output to a file"
@@ -114,6 +117,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --profile)
       EAS_PROFILE="${2:?--profile requires a profile name}"
+      shift 2
+      ;;
+    --app-version)
+      APP_VERSION="${2:?--app-version requires a version like 1.0.1}"
       shift 2
       ;;
     --interactive)
@@ -173,6 +180,7 @@ echo "  gym:      $GYM_ID"
 echo "  env:      $ENV → $CONVEX_URL"
 echo "  platform: $PLATFORM"
 echo "  profile:  $EAS_PROFILE"
+echo "  version:  $APP_VERSION"
 echo "  mode:     $([[ "$INTERACTIVE" == "true" ]] && echo "interactive" || echo "non-interactive")"
 echo "  wait:     $WAIT_FOR_BUILD"
 echo ""
@@ -250,7 +258,7 @@ if [[ "$PLATFORM" == "ios" ]] || [[ "$PLATFORM" == "all" ]]; then
   cp "$PROJECT_PBX" "$PROJECT_PBX.bak"
   cp "$XCASSETS_ICON" "$XCASSETS_ICON.bak"
 
-  GYM_NAME="$GYM_NAME" INFO_PLIST="$INFO_PLIST" python3 -c "
+  APP_VERSION="$APP_VERSION" GYM_NAME="$GYM_NAME" INFO_PLIST="$INFO_PLIST" python3 -c "
 import plistlib, os
 path = os.environ['INFO_PLIST']
 name = os.environ['GYM_NAME']
@@ -258,6 +266,8 @@ with open(path, 'rb') as f:
     plist = plistlib.load(f)
 plist['CFBundleDisplayName'] = name
 plist['NSFaceIDUsageDescription'] = f'Allow {name} to access Face ID for secure login.'
+plist['CFBundleShortVersionString'] = os.environ['APP_VERSION']
+plist['UIUserInterfaceStyle'] = 'Light'
 with open(path, 'wb') as f:
     plistlib.dump(plist, f)
 "
@@ -297,7 +307,7 @@ export default {
   expo: {
     name: "$GYM_NAME",
     slug: "northernglow",
-    version: "1.0.0",
+    version: "$APP_VERSION",
     orientation: "portrait",
     scheme: "$GYM_SLUG",
     userInterfaceStyle: "light",

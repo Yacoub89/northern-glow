@@ -357,11 +357,14 @@ GitHub > Actions > Build Gym App > Run workflow
 gymId: <Convex gym ID>
 platform: ios
 profile: gym-production
+appVersion: 1.0.1
 submitIos: true
 ascAppId: <App Store Connect numeric app ID>
 ```
 
 For internal, non-TestFlight QA builds, use `profile: gym-preview`.
+`appVersion` is the App Store marketing version. EAS still auto-increments the
+build number in parentheses, so `appVersion: 1.0.1` may appear as `1.0.1 (5)`.
 
 When `submitIos` is checked, the workflow waits for the EAS iOS build to finish,
 extracts that exact EAS build ID, and submits the same build to App Store
