@@ -8,12 +8,12 @@ import { SiteNav, SiteFooter, navBtnGhost } from "../components/SiteChrome";
 type Step = "signin" | "signup" | "verify";
 
 const TEAL = "#1CD6F0";
-const BG = "#0B1525";
-const CARD = "#0F1E36";
-const BORDER_BRIGHT = "#243650";
-const TEXT = "#ffffff";
-const MUTED = "#7A99BB";
-const DIM = "#3A5270";
+const BG = "#f8fafc";
+const CARD = "#ffffff";
+const BORDER_BRIGHT = "#d1d5db";
+const TEXT = "#111827";
+const MUTED = "#4b5563";
+const DIM = "#6b7280";
 
 const S = {
   page: {
@@ -60,7 +60,7 @@ const S = {
   },
   btnSubmit: {
     width: "100%", padding: "12px 0", borderRadius: 8, border: "none",
-    background: TEAL, color: "#000", fontSize: 14, fontWeight: 700,
+    background: TEAL, color: "#062a2a", fontSize: 14, fontWeight: 700,
     cursor: "pointer", marginTop: 8,
   } as const,
   btnSecondary: {

@@ -527,7 +527,7 @@ export default function Workouts() {
               ))}
             </div>
             <div style={{ ...S.formActions, justifyContent: "space-between" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#aaa", fontSize: 13 }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 8, color: "#4b5563", fontSize: 13 }}>
                 <input
                   style={S.check}
                   type="checkbox"

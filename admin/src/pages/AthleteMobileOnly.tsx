@@ -6,8 +6,8 @@ import { SiteFooter, SiteNav, navBtnGhost } from "../components/SiteChrome";
 
 const S = {
   page: {
-    background: "#0B1525",
-    color: "#fff",
+    background: "#f8fafc",
+    color: "#111827",
     minHeight: "100vh",
     fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
     display: "flex",
@@ -23,22 +23,22 @@ const S = {
   panel: {
     width: "100%",
     maxWidth: 480,
-    background: "#0F1E36",
-    border: "1px solid #243650",
+    background: "#ffffff",
+    border: "1px solid #d1d5db",
     borderRadius: 12,
     padding: "36px 32px",
     boxSizing: "border-box" as const,
   },
   eyebrow: { color: "#1CD6F0", fontSize: 13, fontWeight: 700, marginBottom: 10 },
   h1: { fontSize: 24, fontWeight: 800, margin: "0 0 12px" },
-  copy: { color: "#9BB7D6", fontSize: 15, lineHeight: 1.6, margin: "0 0 24px" },
+  copy: { color: "#4b5563", fontSize: 15, lineHeight: 1.6, margin: "0 0 24px" },
   button: {
     width: "100%",
     padding: "12px 0",
     borderRadius: 8,
     border: "none",
     background: "#1CD6F0",
-    color: "#001018",
+    color: "#062a2a",
     fontSize: 14,
     fontWeight: 800,
     cursor: "pointer",

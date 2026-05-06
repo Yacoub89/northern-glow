@@ -6,19 +6,19 @@ import { useMediaQuery } from "../components/useMediaQuery";
 
 const S = {
   h1: { fontSize: 24, fontWeight: 700, marginBottom: 8 },
-  sub: { color: "#888", fontSize: 14, marginBottom: 32 },
+  sub: { color: "#6b7280", fontSize: 14, marginBottom: 32 },
   grid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, alignItems: "start" } as const,
-  card: { background: "#141414", border: "1px solid #252525", borderRadius: 10, padding: 24, marginBottom: 24 },
+  card: { background: "#ffffff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 24, marginBottom: 24 },
   cardTitle: { fontSize: 16, fontWeight: 600, marginBottom: 20 },
   group: { marginBottom: 16 },
-  label: { display: "block", fontSize: 13, color: "#aaa", marginBottom: 6 },
+  label: { display: "block", fontSize: 13, color: "#4b5563", marginBottom: 6 },
   input: {
-    width: "100%", background: "#1e1e1e", border: "1px solid #333", borderRadius: 8,
-    padding: "10px 12px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" as const,
+    width: "100%", background: "#f8fafc", border: "1px solid #d1d5db", borderRadius: 8,
+    padding: "10px 12px", color: "#111827", fontSize: 14, outline: "none", boxSizing: "border-box" as const,
   },
   btn: {
     width: "100%", padding: "11px 0", borderRadius: 8, fontWeight: 600, fontSize: 14,
-    cursor: "pointer", border: "none", background: "#1BBFBF", color: "#000", marginTop: 4,
+    cursor: "pointer", border: "none", background: "#1BBFBF", color: "#062a2a", marginTop: 4,
   },
   btnSmall: {
     padding: "5px 12px", borderRadius: 6, fontWeight: 600, fontSize: 12,
@@ -32,13 +32,13 @@ const S = {
   error: { color: "#ff453a", fontSize: 13, marginTop: 12 },
   tableWrap: { width: "100%", overflowX: "auto" as const },
   table: { width: "100%", borderCollapse: "collapse" as const },
-  th: { textAlign: "left" as const, padding: "8px 12px", fontSize: 12, color: "#666", borderBottom: "1px solid #252525" },
-  td: { padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #1a1a1a", verticalAlign: "middle" as const },
+  th: { textAlign: "left" as const, padding: "8px 12px", fontSize: 12, color: "#6b7280", borderBottom: "1px solid #e5e7eb" },
+  td: { padding: "10px 12px", fontSize: 13, borderBottom: "1px solid #f8fafc", verticalAlign: "middle" as const },
   idRow: { display: "inline-flex", alignItems: "center", gap: 5, marginLeft: 8, maxWidth: "100%" },
-  idText: { color: "#666", fontFamily: "monospace", fontSize: 11, overflowWrap: "anywhere" as const },
+  idText: { color: "#6b7280", fontFamily: "monospace", fontSize: 11, overflowWrap: "anywhere" as const },
   copyBtn: {
     width: 22, height: 22, display: "inline-flex", alignItems: "center", justifyContent: "center",
-    border: "1px solid #2b2b2b", borderRadius: 5, background: "#1a1a1a", color: "#888",
+    border: "1px solid #d1d5db", borderRadius: 5, background: "#f8fafc", color: "#6b7280",
     cursor: "pointer", padding: 0,
   },
   dot: (color: string) => ({
@@ -133,8 +133,8 @@ function PendingInvites() {
     }
   };
 
-  if (invites === undefined) return <p style={{ color: "#666", fontSize: 13 }}>Loading…</p>;
-  if (invites.length === 0) return <p style={{ color: "#666", fontSize: 13 }}>No pending admin invites.</p>;
+  if (invites === undefined) return <p style={{ color: "#6b7280", fontSize: 13 }}>Loading…</p>;
+  if (invites.length === 0) return <p style={{ color: "#6b7280", fontSize: 13 }}>No pending admin invites.</p>;
 
   const now = Date.now();
 
@@ -193,7 +193,7 @@ const STATUS_COLORS: Record<string, [string, string]> = {
   new: ["#1BBFBF22", "#1BBFBF"],
   contacted: ["#FF9F0A22", "#FF9F0A"],
   converted: ["#34C75922", "#34C759"],
-  dismissed: ["#55555522", "#555555"],
+  dismissed: ["#9ca3af55522", "#9ca3af555"],
 };
 
 function Leads({ onPrefillForm }: { onPrefillForm: (fields: { gymName: string; adminEmail: string }) => void }) {
@@ -210,8 +210,8 @@ function Leads({ onPrefillForm }: { onPrefillForm: (fields: { gymName: string; a
     }
   };
 
-  if (leads === undefined) return <p style={{ color: "#666", fontSize: 13 }}>Loading…</p>;
-  if (leads.length === 0) return <p style={{ color: "#666", fontSize: 13 }}>No leads yet.</p>;
+  if (leads === undefined) return <p style={{ color: "#6b7280", fontSize: 13 }}>Loading…</p>;
+  if (leads.length === 0) return <p style={{ color: "#6b7280", fontSize: 13 }}>No leads yet.</p>;
 
   return (
     <div style={S.tableWrap}>
@@ -228,7 +228,7 @@ function Leads({ onPrefillForm }: { onPrefillForm: (fields: { gymName: string; a
         </thead>
         <tbody>
           {leads.map((lead) => {
-            const [bg, color] = STATUS_COLORS[lead.status] ?? ["#33333322", "#aaa"];
+            const [bg, color] = STATUS_COLORS[lead.status] ?? ["#e5e7eb", "#4b5563"];
             const isUpdating = updating === lead._id;
             return (
               <tr key={lead._id}>
@@ -239,11 +239,11 @@ function Leads({ onPrefillForm }: { onPrefillForm: (fields: { gymName: string; a
                 </td>
                 <td style={S.td}>{lead.name}</td>
                 <td style={S.td}>{lead.email}</td>
-                <td style={{ ...S.td, fontSize: 12, color: "#aaa", maxWidth: 200 }}>
+                <td style={{ ...S.td, fontSize: 12, color: "#4b5563", maxWidth: 200 }}>
                   {lead.gymName && <div>{lead.gymName}</div>}
-                  {lead.city && <div style={{ color: "#666" }}>{lead.city}</div>}
-                  {lead.memberCount && <div style={{ color: "#666" }}>{lead.memberCount} members</div>}
-                  {lead.message && <div style={{ color: "#666", fontStyle: "italic" }}>{lead.message.slice(0, 60)}{lead.message.length > 60 ? "…" : ""}</div>}
+                  {lead.city && <div style={{ color: "#6b7280" }}>{lead.city}</div>}
+                  {lead.memberCount && <div style={{ color: "#6b7280" }}>{lead.memberCount} members</div>}
+                  {lead.message && <div style={{ color: "#6b7280", fontStyle: "italic" }}>{lead.message.slice(0, 60)}{lead.message.length > 60 ? "…" : ""}</div>}
                 </td>
                 <td style={S.td}>
                   <span style={S.badge(bg, color)}>{lead.status}</span>
@@ -393,9 +393,9 @@ export default function SuperAdmin() {
         <div style={{ ...S.card, padding: isMobile ? 18 : S.card.padding }}>
           <div style={S.cardTitle}>All gyms ({gyms?.length ?? "…"})</div>
           {gyms === undefined ? (
-            <p style={{ color: "#666", fontSize: 13 }}>Loading…</p>
+            <p style={{ color: "#6b7280", fontSize: 13 }}>Loading…</p>
           ) : gyms.length === 0 ? (
-            <p style={{ color: "#666", fontSize: 13 }}>No gyms yet.</p>
+            <p style={{ color: "#6b7280", fontSize: 13 }}>No gyms yet.</p>
           ) : (
             <div style={S.tableWrap}>
               <table style={{ ...S.table, minWidth: 560 }}>
