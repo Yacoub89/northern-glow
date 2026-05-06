@@ -300,7 +300,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingVertical: 14,
   },
-  addTimeBtnText: { color: "#fff", fontWeight: "700", fontSize: 15 },
+  addTimeBtnText: { color: Colors.onPrimary, fontWeight: "700", fontSize: 15 },
   preset: {
     borderRadius: 8,
     paddingHorizontal: 12,
@@ -310,7 +310,7 @@ const styles = StyleSheet.create({
   },
   presetActive: {},
   presetText: { color: Colors.textSecondary, fontWeight: "600", fontSize: 13 },
-  presetTextActive: { color: "#fff" },
+  presetTextActive: { color: Colors.onPrimary },
   wodPreview: {
     backgroundColor: Colors.surface,
     borderRadius: 12,
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: "center",
   },
-  saveBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  saveBtnText: { color: Colors.onPrimary, fontWeight: "700", fontSize: 16 },
   // Date picker modal
   modalOverlay: {
     flex: 1,
@@ -355,5 +355,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
     alignItems: "center",
   },
-  modalDoneBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  modalDoneBtnText: { color: Colors.onPrimary, fontWeight: "700", fontSize: 16 },
 });

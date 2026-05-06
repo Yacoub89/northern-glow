@@ -539,7 +539,7 @@ const sc = StyleSheet.create({
   addClassBtnText: {
     fontFamily: Fonts.bodyBold,
     fontSize: FontSizes.labelSm,
-    color: "#fff",
+    color: Colors.onPrimary,
     letterSpacing: 0.8,
   },
 

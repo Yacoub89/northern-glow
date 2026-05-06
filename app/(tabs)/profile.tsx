@@ -345,7 +345,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  avatarInitials: { fontSize: 22, fontFamily: Fonts.display, color: "#fff" },
+  avatarInitials: { fontSize: 22, fontFamily: Fonts.display, color: Colors.onPrimary },
   headerInfo: { flex: 1 },
   name: { fontSize: 20, fontWeight: "700", color: Colors.text, marginBottom: 2 },
   memberSince: { fontSize: 13, color: Colors.textSecondary },
@@ -403,7 +403,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 6,
   },
-  addBtnText: { color: "#fff", fontWeight: "700", fontSize: 13 },
+  addBtnText: { color: Colors.onPrimary, fontWeight: "700", fontSize: 13 },
 
   settingsRow: {
     backgroundColor: Colors.surface,
@@ -495,5 +495,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 24,
   },
-  modalSaveBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  modalSaveBtnText: { color: Colors.onPrimary, fontWeight: "700", fontSize: 16 },
 });

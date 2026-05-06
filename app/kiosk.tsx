@@ -134,7 +134,7 @@ export default function KioskScreen() {
                 </Text>
                 {isIn && (
                   <View style={kioskStyles.checkBadge}>
-                    <Ionicons name="checkmark" size={14} color="#fff" />
+                    <Ionicons name="checkmark" size={14} color={Colors.onPrimary} />
                   </View>
                 )}
               </Pressable>

@@ -327,7 +327,7 @@ export default function DocumentsScreen() {
         </View>
         {isCoach && (
           <Pressable style={[s.newBtn, { backgroundColor: primary }]} onPress={() => setCreateVisible(true)}>
-            <Ionicons name="add" size={18} color="#fff" />
+            <Ionicons name="add" size={18} color={Colors.onPrimary} />
             <Text style={s.newBtnText}>New</Text>
           </Pressable>
         )}
@@ -416,7 +416,7 @@ export default function DocumentsScreen() {
                   onPress={() => pdfUrl && Linking.openURL(pdfUrl)}
                   disabled={!pdfUrl}
                 >
-                  <Ionicons name="open-outline" size={16} color="#fff" />
+                  <Ionicons name="open-outline" size={16} color={Colors.onPrimary} />
                   <Text style={s.openPdfText}>Open PDF to Review</Text>
                 </Pressable>
               </View>
@@ -445,7 +445,7 @@ export default function DocumentsScreen() {
               onPress={handleSign}
               disabled={!sigName.trim() || !sigPaths || signing}
             >
-              <Ionicons name="pencil" size={16} color="#fff" style={{ marginRight: 8 }} />
+              <Ionicons name="pencil" size={16} color={Colors.onPrimary} style={{ marginRight: 8 }} />
               <Text style={s.signBtnText}>{signing ? "Signing…" : "I Agree & Sign"}</Text>
             </Pressable>
           </View>
@@ -548,7 +548,7 @@ const s = StyleSheet.create({
   title: { fontSize: 28, fontWeight: "800", color: Colors.text },
   pendingBadge: { fontSize: 13, color: Colors.warning, fontWeight: "600", marginTop: 2 },
   newBtn: { flexDirection: "row", alignItems: "center", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 8, gap: 4 },
-  newBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  newBtnText: { color: Colors.onPrimary, fontWeight: "700", fontSize: 14 },
   list: { paddingHorizontal: 20, paddingBottom: 32 },
   card: { backgroundColor: Colors.surface, borderRadius: 14, padding: 16, flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderColor: Colors.border },
   cardSigned: { borderColor: Colors.success + "44" },
@@ -571,11 +571,11 @@ const s = StyleSheet.create({
   pdfCardTitle: { fontSize: 16, fontWeight: "700", color: Colors.text },
   pdfCardHint: { fontSize: 12, color: Colors.textSecondary },
   openPdfBtn: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, paddingHorizontal: 20, paddingVertical: 12, marginTop: 8 },
-  openPdfText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  openPdfText: { color: Colors.onPrimary, fontWeight: "700", fontSize: 14 },
   signSection: { backgroundColor: Colors.surface, paddingHorizontal: 20, paddingTop: 16, paddingBottom: 32, borderTopWidth: 1, borderTopColor: Colors.border },
   nameInput: { backgroundColor: Colors.background, borderRadius: 12, padding: 14, color: Colors.text, fontSize: 15, borderWidth: 1, borderColor: Colors.border, marginBottom: 8 },
   signBtn: { borderRadius: 12, paddingVertical: 16, alignItems: "center", flexDirection: "row", justifyContent: "center", marginTop: 12 },
-  signBtnText: { color: "#fff", fontWeight: "700", fontSize: 16 },
+  signBtnText: { color: Colors.onPrimary, fontWeight: "700", fontSize: 16 },
 
   // Modals
   overlay: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)" },
@@ -599,7 +599,7 @@ const s = StyleSheet.create({
   toggleBtn: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 10, borderRadius: 9 },
   toggleActive: {},
   toggleText: { fontSize: 13, fontWeight: "600", color: Colors.textSecondary },
-  toggleTextActive: { color: "#fff" },
+  toggleTextActive: { color: Colors.onPrimary },
   pickBtn: { flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: Colors.background, borderRadius: 12, borderWidth: 1.5, borderStyle: "dashed", padding: 16 },
   pickBtnText: { fontSize: 14, fontWeight: "600", flex: 1 },
   pickedHint: { fontSize: 12, color: Colors.success, marginTop: 6, fontWeight: "600" },

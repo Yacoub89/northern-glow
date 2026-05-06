@@ -1,43 +1,43 @@
-// Arctic Performance — "The Luminous Glacier" palette
+// Mobile app theme — light, gym-branded, readable by default.
 export const Colors = {
-  // Surfaces (depth layers — no hard borders)
-  background:              "#041329", // Deep ocean beneath the ice
-  surfaceContainerLow:     "#0d1c32", // Base content sections
-  surface:                 "#162236", // Mid elevation
-  surfaceContainerHighest: "#27354c", // Top interaction layer / active state
-  surfaceBright:           "#2c3951", // Brightest surface (for "carved out" contrast)
-  surfaceVariant:          "#1a2840", // Subtle section backgrounds
+  // Surfaces
+  background:              "#ffffff",
+  surfaceContainerLow:     "#f8fafc",
+  surface:                 "#f1f5f9",
+  surfaceContainerHighest: "#e2e8f0",
+  surfaceBright:           "#e5edf5",
+  surfaceVariant:          "#f8fafc",
 
   // Brand / accent
-  primary:          "#c3f5ff", // Light crystal cyan — text/icons on dark
-  primaryContainer: "#00e5ff", // Vivid cyan — gradient end, highlights
-  onPrimary:        "#041329", // Dark text placed ON a primary-filled button
-  primaryGlow:      "rgba(195, 245, 255, 0.08)", // 8% primary for ambient shadows
+  primary:          "#1BBFBF",
+  primaryContainer: "#77e6e6",
+  onPrimary:        "#062a2a",
+  primaryGlow:      "rgba(27, 191, 191, 0.12)",
 
-  // Tertiary (used on near-goal performance meters)
-  tertiary: "#c5f5fc",
+  // Tertiary
+  tertiary: "#0f766e",
 
   // Text
-  text:          "#FFFFFF",
-  textSecondary: "#8899aa",
-  textMuted:     "#3d5166",
+  text:          "#0f172a",
+  textSecondary: "#475569",
+  textMuted:     "#94a3b8",
 
   // Semantic
   success: "#34C759",
   warning: "#FF9F0A",
-  error:   "#ffb4ab", // Frosted rose — not standard red
+  error:   "#D92D20",
 
-  // Ghost border fallback (for form fields only — 15% opacity primary)
-  outlineVariant: "rgba(195, 245, 255, 0.15)",
+  // Borders
+  outlineVariant: "#cbd5e1",
 
   // Aliases kept for backward compatibility with screens not yet redesigned
-  border:          "rgba(195, 245, 255, 0.10)",
-  surfaceElevated: "#1a2840",
-  primaryDark:     "#00b8cc",
+  border:          "#dbe3ea",
+  surfaceElevated: "#eaf0f6",
+  primaryDark:     "#0f8f8f",
 };
 
 // Gradient arrays — used with expo-linear-gradient
 export const Gradients = {
-  primaryCta:    ["#c3f5ff", "#00e5ff"] as const, // 135° — main CTAs
-  primaryCtaStr: ["#c3f5ff", "#00e5ff"] as const,
+  primaryCta:    ["#1BBFBF", "#77e6e6"] as const,
+  primaryCtaStr: ["#1BBFBF", "#77e6e6"] as const,
 };

@@ -270,7 +270,7 @@ export default function MembershipScreen() {
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="#fff" />
+              <ActivityIndicator color={Colors.onPrimary} />
             ) : (
               <Text style={styles.subscribeBtnText}>
                 Subscribe · {PRICES[selectedPlan][selectedPeriod]}
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 28,
   },
-  subscribeBtnText: { color: "#fff", fontWeight: "700", fontSize: 17 },
+  subscribeBtnText: { color: Colors.onPrimary, fontWeight: "700", fontSize: 17 },
   changeNote: {
     textAlign: "center",
     color: Colors.textSecondary,

@@ -259,7 +259,7 @@ export const modalStyles = StyleSheet.create({
   },
   chipActive: {},
   chipText: { fontFamily: Fonts.bodySemi, color: Colors.textSecondary, fontSize: 13 },
-  chipTextActive: { color: "#fff" },
+  chipTextActive: { color: Colors.onPrimary },
   actions: { flexDirection: "row", gap: 12, marginTop: 28 },
   cancelBtn: {
     flex: 1, padding: 14, borderRadius: 10,
@@ -267,7 +267,7 @@ export const modalStyles = StyleSheet.create({
   },
   cancelText: { fontFamily: Fonts.bodyBold, color: Colors.textSecondary },
   saveBtn: { flex: 1, padding: 14, borderRadius: 10, alignItems: "center" },
-  saveText: { fontFamily: Fonts.bodyBold, color: "#fff" },
+  saveText: { fontFamily: Fonts.bodyBold, color: Colors.onPrimary },
 });
 
 // ─── Shared time helpers ──────────────────────────────────────────────────────

@@ -153,7 +153,7 @@ export default function GymSettingsScreen() {
                   onPress={() => setPrimaryColor(c)}
                 >
                   {primaryColor === c && (
-                    <Ionicons name="checkmark" size={16} color="#fff" />
+                    <Ionicons name="checkmark" size={16} color={Colors.onPrimary} />
                   )}
                 </Pressable>
               ))}

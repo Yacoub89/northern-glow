@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
   },
   segmentTextActive: {
-    color: "#fff",
+    color: Colors.onPrimary,
   },
 
   // Day picker
@@ -669,7 +669,7 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     color: Colors.text,
   },
-  dayPillTextActive: { color: "#fff" },
+  dayPillTextActive: { color: Colors.onPrimary },
 
   // List
   list: { paddingHorizontal: 20, paddingBottom: 40 },
@@ -708,7 +708,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 9,
   },
-  bookBtnText: { color: "#fff", fontWeight: "700", fontSize: 14 },
+  bookBtnText: { color: Colors.onPrimary, fontWeight: "700", fontSize: 14 },
   fullBtn: {
     backgroundColor: "transparent",
     borderWidth: 1,
@@ -750,7 +750,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   coachAvatarText: {
-    color: "#fff",
+    color: Colors.onPrimary,
     fontSize: 16,
     fontWeight: "800",
   },

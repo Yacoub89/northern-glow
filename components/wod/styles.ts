@@ -531,7 +531,7 @@ export const wodStyles = StyleSheet.create({
     fontFamily: Fonts.bodyBold,
     fontSize: 13,
   },
-  partSelectTextActive: { color: "#fff" },
+  partSelectTextActive: { color: Colors.onPrimary },
   scaleRow: { flexDirection: "row", gap: 8 },
   scaleBtn: {
     flex: 1,
@@ -548,7 +548,7 @@ export const wodStyles = StyleSheet.create({
     fontFamily: Fonts.bodyBold,
     fontSize: 14,
   },
-  scaleBtnTextActive: { color: "#fff" },
+  scaleBtnTextActive: { color: Colors.onPrimary },
   saveBtn: {
     marginHorizontal: 20,
     borderRadius: 14,
@@ -558,7 +558,7 @@ export const wodStyles = StyleSheet.create({
   saveBtnText: {
     fontFamily: Fonts.display,
     fontSize: FontSizes.labelLg,
-    color: "#fff",
+    color: Colors.onPrimary,
     letterSpacing: 0.5,
   },
 
