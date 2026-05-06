@@ -49,8 +49,8 @@ export default function Workouts() {
   const createWod = useMutation(api.wods.create);
   const updateWod = useMutation(api.wods.update);
   const deleteWod = useMutation(api.wods.remove);
-  const previewGoogleDoc = useAction(api.wods.previewGoogleDoc);
-  const importMany = useMutation(api.wods.importMany);
+  const previewGoogleDoc = useAction(api.wodImport.previewGoogleDoc);
+  const importMany = useMutation(api.wodImport.importMany);
   const createAnnouncement = useMutation(api.announcements.create);
   const deleteAnnouncement = useMutation(api.announcements.remove);
 

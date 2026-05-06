@@ -78,10 +78,10 @@ Admin portal routes are defined in `admin/src/App.tsx`.
 | `/` | Public | Marketing / landing page. |
 | `/login` | Public | Sign in to the admin portal. |
 | `/dashboard` | Signed-in users with a gym | Main gym overview: gym name, member count, pending invites, brand colour, timezone. |
-| `/gym/settings` | Signed-in users with a gym | Gym branding/settings such as name, tagline, primary colour, timezone, custom domain, and email domain settings. |
+| `/gym/settings` | Signed-in users with a gym | Gym branding/settings such as name, tagline, primary colour, and timezone. |
 | `/gym/invites` | Signed-in users with a gym; backend requires coach or admin | Send, view, and revoke invites for athletes, coaches, and admins in the current gym. |
 | `/gym/members` | Signed-in users with a gym; backend requires coach or admin to list, admin to change roles | View members and change member roles. |
-| `/gym/create` | Signed-in super admin with no gym | Create a gym and link the current super admin account to it as that gym's admin. |
+| `/no-gym` | Signed-in user with no gym and no pending invite | Explains that the user needs an invite before they can access a gym. |
 | `/accept-invite` | Signed-in user with a pending admin invite | Accept a gym admin invite, agree to terms, and join that gym as admin. |
 | `/super` | Signed-in super admin only | NorthernGlow staff panel for creating client gyms, sending admin invites, resending admin invites, and managing setup details. |
 | `*` | Anyone | Unknown routes redirect back to `/`. |
@@ -91,10 +91,10 @@ Admin portal routes are defined in `admin/src/App.tsx`.
 The web app uses three route guards:
 
 - `AuthGuard`: checks Convex auth. If the user is not signed in, they go to `/login`.
-- `GymGuard`: checks `api.users.getMe` and `api.invites.getMyAdminInvite`.
+- `GymGuard`: checks `api.users.getMe` and `api.adminInvites.getMyAdminInvite`.
   - If the user has a `gymId`, they can enter normal gym routes.
   - If they have no `gymId` but do have a pending admin invite, they go to `/accept-invite`.
-  - If they have no `gymId` and no admin invite, they go to `/gym/create`.
+  - If they have no `gymId` and no invite, they go to `/no-gym`.
 - `SuperAdminGuard`: checks `api.users.isSuperAdmin`. If false, the user is redirected to `/dashboard`.
 
 Important: the UI guard is not the only protection. Convex mutations and queries also enforce access on the backend.
@@ -112,15 +112,12 @@ A signed-in user is a super admin when their account email appears in that comma
 Super admin can:
 
 - Open `/super`.
-- Create a new client gym through `api.invites.superAdminCreateGym`.
+- Create a new client gym through `api.gymProvisioning.superAdminCreateGym`.
 - Send the first admin invite for that gym.
 - View pending admin invites across gyms.
 - Resend an admin invite.
-- Register and verify email-domain setup for a gym.
 
 The `/super` flow is meant for onboarding client gyms. It creates the gym and sends an invite to the gym owner's/admin's email. It does **not** add the super admin to that client gym.
-
-There is also `/gym/create`, which calls `api.invites.createGymWithAdmin`. That path creates a gym and links the current super admin to it as admin. It only works if the super admin is not already part of a gym.
 
 ### Gym admin access
 

@@ -284,8 +284,7 @@ const FEATURES = [
   { icon: "🏋️", title: "WOD programming", desc: "Publish daily WODs in AMRAP, ForTime, EMOM, Strength, or custom formats. Athletes track scores and progress over time." },
   { icon: "📄", title: "Google Docs import", desc: "Paste a Google Doc link and import your programming block in seconds. No copy-paste, no reformatting." },
   { icon: "💳", title: "Memberships & billing", desc: "Stripe-powered recurring billing with monthly and annual plans. Members manage their own subscriptions from the app." },
-  { icon: "📨", title: "Custom email domain", desc: "Send emails as noreply@yourgym.com. DNS verified, Resend-powered — your brand, not ours." },
-  { icon: "🎨", title: "White-label branding", desc: "Your gym name, your colors, your domain. Athletes see your brand everywhere — not a generic platform name." },
+  { icon: "🎨", title: "White-label branding", desc: "Your gym name, your colors, and your app visuals. Athletes see your brand everywhere — not a generic platform name." },
 ];
 
 function Features() {

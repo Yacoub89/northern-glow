@@ -7,72 +7,9 @@ import { seedGymAndUser, insertGym } from "./testHelpers";
 
 const modules = import.meta.glob("./**/*.ts");
 
-// ── invites.createGymWithAdmin ────────────────────────────────────────────────
+// ── gymProvisioning.superAdminCreateGym ──────────────────────────────────────
 
-describe("invites.createGymWithAdmin", () => {
-  test("super-admin without a gym can create one and become admin", async () => {
-    process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = "founder@test.com";
-    const t = convexTest(schema, modules);
-    const userId = await t.run((ctx) =>
-      ctx.db.insert("users", { name: "Founder", email: "founder@test.com" })
-    );
-    const identity = { subject: `${userId}|session` };
-
-    const gymId = await t.withIdentity(identity).mutation(api.invites.createGymWithAdmin, {
-      gymName: "Iron Works",
-      tagline: "Stronger every day",
-      primaryColor: "#FF0000",
-      timezone: "America/Vancouver",
-    });
-
-    const gym = await t.run((ctx) => ctx.db.get(gymId));
-    expect(gym?.name).toBe("Iron Works");
-
-    const user = await t.run((ctx) => ctx.db.get(userId));
-    expect(user?.gymId).toBe(gymId);
-    expect(user?.role).toBe("admin");
-  });
-
-  test("non-super-admin cannot create a gym", async () => {
-    process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = "founder@test.com";
-    const t = convexTest(schema, modules);
-    const userId = await t.run((ctx) =>
-      ctx.db.insert("users", { name: "Random", email: "random@test.com" })
-    );
-    const identity = { subject: `${userId}|session` };
-
-    await expect(
-      t.withIdentity(identity).mutation(api.invites.createGymWithAdmin, {
-        gymName: "Sneaky Gym",
-        tagline: "...",
-        primaryColor: "#000",
-        timezone: "UTC",
-      })
-    ).rejects.toThrow("Unauthorized");
-  });
-
-  test("super-admin already in a gym cannot create another", async () => {
-    process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = "founder@test.com";
-    const t = convexTest(schema, modules);
-    const { identity } = await seedGymAndUser(t, {
-      role: "admin",
-      email: "founder@test.com",
-    });
-
-    await expect(
-      t.withIdentity(identity).mutation(api.invites.createGymWithAdmin, {
-        gymName: "Second Gym",
-        tagline: "...",
-        primaryColor: "#000",
-        timezone: "UTC",
-      })
-    ).rejects.toThrow("You are already part of a gym");
-  });
-});
-
-// ── invites.superAdminCreateGym ──────────────────────────────────────────────
-
-describe("invites.superAdminCreateGym", () => {
+describe("gymProvisioning.superAdminCreateGym", () => {
   test("creates a client gym and invite without linking the super-admin", async () => {
     const previous = process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
     process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = "founder@test.com";
@@ -84,7 +21,7 @@ describe("invites.superAdminCreateGym", () => {
       );
       const identity = { subject: `${userId}|session` };
 
-      const gymId = await t.withIdentity(identity).mutation(api.invites.superAdminCreateGym, {
+      const gymId = await t.withIdentity(identity).mutation(api.gymProvisioning.superAdminCreateGym, {
         gymName: "Client Gym",
         tagline: "Powered by NorthernGlow",
         primaryColor: "#1BBFBF",
@@ -115,170 +52,6 @@ describe("invites.superAdminCreateGym", () => {
     }
   });
 
-  test("normalizes custom and email domains when creating a client gym", async () => {
-    const previous = process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
-    process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = "founder@test.com";
-
-    try {
-      const t = convexTest(schema, modules);
-      const userId = await t.run((ctx) =>
-        ctx.db.insert("users", { name: "Founder", email: "founder@test.com" })
-      );
-      const identity = { subject: `${userId}|session` };
-
-      const gymId = await t.withIdentity(identity).mutation(api.invites.superAdminCreateGym, {
-        gymName: "Client Gym",
-        tagline: "Powered by NorthernGlow",
-        primaryColor: "#1BBFBF",
-        timezone: "America/Toronto",
-        adminEmail: "owner@test.com",
-        customDomain: " Admin.ClientGym.COM ",
-        emailDomain: " ClientGym.COM ",
-      });
-
-      const gym = await t.run((ctx) => ctx.db.get(gymId));
-      expect(gym?.customDomain).toBe("admin.clientgym.com");
-      expect(gym?.emailDomain).toBe("clientgym.com");
-      expect(gym?.emailDomainStatus).toBe("pending");
-    } finally {
-      if (previous === undefined) {
-        delete process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
-      } else {
-        process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = previous;
-      }
-    }
-  });
-
-  test("rejects duplicate custom domains when creating a client gym", async () => {
-    const previous = process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
-    process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = "founder@test.com";
-
-    try {
-      const t = convexTest(schema, modules);
-      await t.run((ctx) =>
-        ctx.db.insert("gyms", {
-          name: "Existing",
-          tagline: "Already here",
-          primaryColor: "#1BBFBF",
-          timezone: "America/Toronto",
-          customDomain: "admin.example.com",
-        })
-      );
-      const userId = await t.run((ctx) =>
-        ctx.db.insert("users", { name: "Founder", email: "founder@test.com" })
-      );
-      const identity = { subject: `${userId}|session` };
-
-      await expect(
-        t.withIdentity(identity).mutation(api.invites.superAdminCreateGym, {
-          gymName: "Client Gym",
-          tagline: "Powered by NorthernGlow",
-          primaryColor: "#1BBFBF",
-          timezone: "America/Toronto",
-          adminEmail: "owner@test.com",
-          customDomain: " ADMIN.EXAMPLE.COM ",
-        })
-      ).rejects.toThrow("That custom domain is already assigned to another gym");
-    } finally {
-      if (previous === undefined) {
-        delete process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
-      } else {
-        process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = previous;
-      }
-    }
-  });
-});
-
-// ── gyms.superAdminUpdateGymDomains ──────────────────────────────────────────
-
-describe("gyms.superAdminUpdateGymDomains", () => {
-  test("clears existing domains and email verification metadata", async () => {
-    const previous = process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
-    process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = "founder@test.com";
-
-    try {
-      const t = convexTest(schema, modules);
-      const gymId = await t.run((ctx) =>
-        ctx.db.insert("gyms", {
-          name: "Client Gym",
-          tagline: "Powered by NorthernGlow",
-          primaryColor: "#1BBFBF",
-          timezone: "America/Toronto",
-          customDomain: "admin.clientgym.com",
-          emailDomain: "clientgym.com",
-          emailDomainStatus: "verified",
-          resendDomainId: "resend_domain_id",
-          emailDomainRecords: [],
-        })
-      );
-      const userId = await t.run((ctx) =>
-        ctx.db.insert("users", { name: "Founder", email: "founder@test.com" })
-      );
-      const identity = { subject: `${userId}|session` };
-
-      await t.withIdentity(identity).mutation(api.gyms.superAdminUpdateGymDomains, {
-        gymId,
-        customDomain: "",
-        emailDomain: "",
-      });
-
-      const gym = await t.run((ctx) => ctx.db.get(gymId));
-      expect(gym?.customDomain).toBeUndefined();
-      expect(gym?.emailDomain).toBeUndefined();
-      expect(gym?.emailDomainStatus).toBeUndefined();
-      expect(gym?.resendDomainId).toBeUndefined();
-      expect(gym?.emailDomainRecords).toBeUndefined();
-    } finally {
-      if (previous === undefined) {
-        delete process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
-      } else {
-        process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = previous;
-      }
-    }
-  });
-
-  test("rejects duplicate custom domains when updating a gym", async () => {
-    const previous = process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
-    process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = "founder@test.com";
-
-    try {
-      const t = convexTest(schema, modules);
-      await t.run((ctx) =>
-        ctx.db.insert("gyms", {
-          name: "Existing",
-          tagline: "Already here",
-          primaryColor: "#1BBFBF",
-          timezone: "America/Toronto",
-          customDomain: "admin.example.com",
-        })
-      );
-      const gymId = await t.run((ctx) =>
-        ctx.db.insert("gyms", {
-          name: "Client Gym",
-          tagline: "Powered by NorthernGlow",
-          primaryColor: "#1BBFBF",
-          timezone: "America/Toronto",
-        })
-      );
-      const userId = await t.run((ctx) =>
-        ctx.db.insert("users", { name: "Founder", email: "founder@test.com" })
-      );
-      const identity = { subject: `${userId}|session` };
-
-      await expect(
-        t.withIdentity(identity).mutation(api.gyms.superAdminUpdateGymDomains, {
-          gymId,
-          customDomain: " ADMIN.EXAMPLE.COM ",
-        })
-      ).rejects.toThrow("That custom domain is already assigned to another gym");
-    } finally {
-      if (previous === undefined) {
-        delete process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
-      } else {
-        process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = previous;
-      }
-    }
-  });
 });
 
 // ── invites.send ──────────────────────────────────────────────────────────────
@@ -368,7 +141,7 @@ describe("invites.send", () => {
   });
 });
 
-// ── invites.getMyAdminInvite / acceptAdminInvite ─────────────────────────────
+// ── adminInvites.getMyAdminInvite / acceptAdminInvite ────────────────────────
 
 describe("admin invite acceptance", () => {
   test("does not expose athlete invites as admin invites", async () => {
@@ -391,7 +164,7 @@ describe("admin invite acceptance", () => {
       })
     );
 
-    const adminInvite = await t.withIdentity(identity).query(api.invites.getMyAdminInvite);
+    const adminInvite = await t.withIdentity(identity).query(api.adminInvites.getMyAdminInvite);
     const pendingInvite = await t.withIdentity(identity).query(api.invites.getMyPendingInvite);
 
     expect(adminInvite).toBeNull();
@@ -419,7 +192,7 @@ describe("admin invite acceptance", () => {
     );
 
     await expect(
-      t.withIdentity(identity).mutation(api.invites.acceptAdminInvite)
+      t.withIdentity(identity).mutation(api.adminInvites.acceptAdminInvite)
     ).rejects.toThrow("mobile app");
   });
 });

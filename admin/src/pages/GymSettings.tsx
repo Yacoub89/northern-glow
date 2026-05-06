@@ -85,8 +85,10 @@ const S = {
 
 export default function GymSettings() {
   const gym = useQuery(api.gyms.getMyGym);
-  const updateSettings = useMutation(api.gyms.updateSettings);
-  const generateLogoUploadUrl = useMutation(api.gyms.generateLogoUploadUrl);
+  const updateProfile = useMutation(api.gyms.updateProfile);
+  const updateBrandAssets = useMutation(api.gymBranding.updateAssets);
+  const updatePriceIds = useMutation(api.gymBilling.updatePriceIds);
+  const generateLogoUploadUrl = useMutation(api.gymBranding.generateUploadUrl);
   const isMobile = useMediaQuery("(max-width: 760px)");
 
   const [form, setForm] = useState({
@@ -116,15 +118,15 @@ export default function GymSettings() {
   const tzRef = useRef<HTMLDivElement>(null);
 
   const logoUrl = useQuery(
-    api.gyms.getLogoUrl,
+    api.gymBranding.getAssetUrl,
     form.logoStorageId ? { storageId: form.logoStorageId } : "skip"
   );
   const appIconUrl = useQuery(
-    api.gyms.getLogoUrl,
+    api.gymBranding.getAssetUrl,
     form.appIconStorageId ? { storageId: form.appIconStorageId } : "skip"
   );
   const splashUrl = useQuery(
-    api.gyms.getLogoUrl,
+    api.gymBranding.getAssetUrl,
     form.splashStorageId ? { storageId: form.splashStorageId } : "skip"
   );
 
@@ -189,7 +191,7 @@ export default function GymSettings() {
     id: Id<"_storage">,
   ) => {
     setForm((f) => ({ ...f, [field]: id }));
-    await updateSettings({ [field]: id });
+    await updateBrandAssets({ [field]: id });
     setSaved(true);
     setTimeout(() => setSaved(false), 2500);
   };
@@ -216,19 +218,27 @@ export default function GymSettings() {
     e.preventDefault();
     setSaving(true);
     try {
-      await updateSettings({
-        name: form.name,
-        tagline: form.tagline,
-        primaryColor: form.primaryColor,
-        timezone: form.timezone,
-        logoStorageId: form.logoStorageId,
-        appIconStorageId: form.appIconStorageId,
-        splashStorageId: form.splashStorageId,
-        stripeUnlimitedMonthlyPriceId: form.stripeUnlimitedMonthlyPriceId || undefined,
-        stripeUnlimitedAnnualPriceId: form.stripeUnlimitedAnnualPriceId || undefined,
-        stripeTwiceWeeklyMonthlyPriceId: form.stripeTwiceWeeklyMonthlyPriceId || undefined,
-        stripeTwiceWeeklyAnnualPriceId: form.stripeTwiceWeeklyAnnualPriceId || undefined,
-      });
+      if (activeTab === "profile") {
+        await updateProfile({
+          name: form.name,
+          tagline: form.tagline,
+          primaryColor: form.primaryColor,
+          timezone: form.timezone,
+        });
+      } else if (activeTab === "mobile") {
+        await updateBrandAssets({
+          logoStorageId: form.logoStorageId,
+          appIconStorageId: form.appIconStorageId,
+          splashStorageId: form.splashStorageId,
+        });
+      } else {
+        await updatePriceIds({
+          stripeUnlimitedMonthlyPriceId: form.stripeUnlimitedMonthlyPriceId || undefined,
+          stripeUnlimitedAnnualPriceId: form.stripeUnlimitedAnnualPriceId || undefined,
+          stripeTwiceWeeklyMonthlyPriceId: form.stripeTwiceWeeklyMonthlyPriceId || undefined,
+          stripeTwiceWeeklyAnnualPriceId: form.stripeTwiceWeeklyAnnualPriceId || undefined,
+        });
+      }
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } finally {

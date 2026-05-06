@@ -293,15 +293,15 @@ describe("wods.remove", () => {
   });
 });
 
-// ── wods.importMany ───────────────────────────────────────────────────────────
+// ── wodImport.importMany ──────────────────────────────────────────────────────
 
-describe("wods.importMany", () => {
+describe("wodImport.importMany", () => {
   test("coach can import WODs and skips existing dates by default", async () => {
     const t = convexTest(schema, modules);
     const { gymId, userId, identity } = await seedGymAndUser(t, { role: "coach" });
     await insertWod(t, gymId, userId, "2099-11-01");
 
-    const result = await t.withIdentity(identity).mutation(api.wods.importMany, {
+    const result = await t.withIdentity(identity).mutation(api.wodImport.importMany, {
       wods: [
         {
           date: "2099-11-01",
@@ -331,7 +331,7 @@ describe("wods.importMany", () => {
     const { gymId, userId, identity } = await seedGymAndUser(t, { role: "admin" });
     await insertWod(t, gymId, userId, "2099-11-03");
 
-    const result = await t.withIdentity(identity).mutation(api.wods.importMany, {
+    const result = await t.withIdentity(identity).mutation(api.wodImport.importMany, {
       overwrite: true,
       wods: [
         {
@@ -355,7 +355,7 @@ describe("wods.importMany", () => {
     const { identity } = await seedGymAndUser(t, { role: "athlete" });
 
     await expect(
-      t.withIdentity(identity).mutation(api.wods.importMany, {
+      t.withIdentity(identity).mutation(api.wodImport.importMany, {
         wods: [
           {
             date: "2099-11-04",

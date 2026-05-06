@@ -162,7 +162,7 @@ http.route({
       return new Response("Missing gymId", { status: 400 });
     }
 
-    const gym = await ctx.runQuery(internal.gyms.getGymForBuild, {
+    const gym = await ctx.runQuery(internal.gymBuilds.getGymForBuild, {
       gymId: gymId as Id<"gyms">,
     });
 

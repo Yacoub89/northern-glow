@@ -46,7 +46,7 @@ export default function GymSettingsScreen() {
   const router = useRouter();
   const dialog = useAppDialog();
   const gym = useQuery(api.gyms.getMyGym);
-  const updateSettings = useMutation(api.gyms.updateSettings);
+  const updateProfile = useMutation(api.gyms.updateProfile);
 
   const [name, setName] = useState("");
   const [tagline, setTagline] = useState("");
@@ -80,7 +80,7 @@ export default function GymSettingsScreen() {
     }
     setSaving(true);
     try {
-      await updateSettings({ name: name.trim(), tagline: tagline.trim(), primaryColor, timezone });
+      await updateProfile({ name: name.trim(), tagline: tagline.trim(), primaryColor, timezone });
       dialog.alert("Saved", "Gym settings updated successfully", [
         { text: "OK", onPress: () => router.back() },
       ]);

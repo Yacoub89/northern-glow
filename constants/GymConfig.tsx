@@ -36,7 +36,7 @@ let lastKnownGymConfig: GymConfig | null = null;
  */
 export function useGymConfig(): GymConfig {
   // Post-auth query — also resolves storage URLs for logo
-  const gymFull = useQuery(api.gyms.getMyGymFull);
+  const gymFull = useQuery(api.gymBranding.getMyGymFull);
 
   // Pre-auth query — public, uses gymId baked in at build time
   const gymById = useQuery(

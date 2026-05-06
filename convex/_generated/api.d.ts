@@ -9,6 +9,7 @@
  */
 
 import type * as ResendOTP from "../ResendOTP.js";
+import type * as adminInvites from "../adminInvites.js";
 import type * as announcements from "../announcements.js";
 import type * as appointments from "../appointments.js";
 import type * as auth from "../auth.js";
@@ -18,9 +19,14 @@ import type * as crons from "../crons.js";
 import type * as documents from "../documents.js";
 import type * as email from "../email.js";
 import type * as events from "../events.js";
+import type * as gymBilling from "../gymBilling.js";
+import type * as gymBranding from "../gymBranding.js";
+import type * as gymBuilds from "../gymBuilds.js";
+import type * as gymProvisioning from "../gymProvisioning.js";
 import type * as gyms from "../gyms.js";
 import type * as helpers from "../helpers.js";
 import type * as http from "../http.js";
+import type * as inviteHelpers from "../inviteHelpers.js";
 import type * as invites from "../invites.js";
 import type * as leads from "../leads.js";
 import type * as memberships from "../memberships.js";
@@ -34,6 +40,8 @@ import type * as staff from "../staff.js";
 import type * as stripe from "../stripe.js";
 import type * as testHelpers from "../testHelpers.js";
 import type * as users from "../users.js";
+import type * as wodImport from "../wodImport.js";
+import type * as wodTypes from "../wodTypes.js";
 import type * as wods from "../wods.js";
 
 import type {
@@ -44,6 +52,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   ResendOTP: typeof ResendOTP;
+  adminInvites: typeof adminInvites;
   announcements: typeof announcements;
   appointments: typeof appointments;
   auth: typeof auth;
@@ -53,9 +62,14 @@ declare const fullApi: ApiFromModules<{
   documents: typeof documents;
   email: typeof email;
   events: typeof events;
+  gymBilling: typeof gymBilling;
+  gymBranding: typeof gymBranding;
+  gymBuilds: typeof gymBuilds;
+  gymProvisioning: typeof gymProvisioning;
   gyms: typeof gyms;
   helpers: typeof helpers;
   http: typeof http;
+  inviteHelpers: typeof inviteHelpers;
   invites: typeof invites;
   leads: typeof leads;
   memberships: typeof memberships;
@@ -69,6 +83,8 @@ declare const fullApi: ApiFromModules<{
   stripe: typeof stripe;
   testHelpers: typeof testHelpers;
   users: typeof users;
+  wodImport: typeof wodImport;
+  wodTypes: typeof wodTypes;
   wods: typeof wods;
 }>;
 

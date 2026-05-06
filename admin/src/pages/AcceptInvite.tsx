@@ -57,8 +57,8 @@ const S = {
 
 export default function AcceptInvite() {
   const navigate = useNavigate();
-  const invite = useQuery(api.invites.getMyAdminInvite);
-  const acceptAdminInvite = useMutation(api.invites.acceptAdminInvite);
+  const invite = useQuery(api.adminInvites.getMyAdminInvite);
+  const acceptAdminInvite = useMutation(api.adminInvites.acceptAdminInvite);
   const agreeToTerms = useMutation(api.users.agreeToTerms);
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);

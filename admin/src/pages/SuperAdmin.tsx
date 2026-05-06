@@ -1,4 +1,4 @@
-import { Fragment, useState } from "react";
+import { useState } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@convex/_generated/api";
 import { Doc, Id } from "@convex/_generated/dataModel";
@@ -12,7 +12,6 @@ const S = {
   cardTitle: { fontSize: 16, fontWeight: 600, marginBottom: 20 },
   group: { marginBottom: 16 },
   label: { display: "block", fontSize: 13, color: "#aaa", marginBottom: 6 },
-  labelHint: { fontSize: 11, color: "#555", marginTop: 4 },
   input: {
     width: "100%", background: "#1e1e1e", border: "1px solid #333", borderRadius: 8,
     padding: "10px 12px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" as const,
@@ -49,11 +48,6 @@ const S = {
   badge: (bg: string, color: string) => ({
     display: "inline-block", padding: "2px 7px", borderRadius: 4, fontSize: 11, background: bg, color,
   }),
-  codeBlock: {
-    background: "#0d0d0d", border: "1px solid #2a2a2a", borderRadius: 6,
-    padding: "10px 12px", fontFamily: "monospace", fontSize: 12, color: "#ccc",
-    overflowX: "auto" as const, marginBottom: 8,
-  },
 };
 
 const TIMEZONES = [
@@ -72,36 +66,12 @@ function errorMessage(error: unknown, fallback = "Failed") {
   return error instanceof Error ? error.message : fallback;
 }
 
-// ── DNS Records panel ─────────────────────────────────────────────────────────
-
-type DnsRecord = {
-  record: string;
-  name: string;
-  type: string;
-  ttl: string;
-  status: string;
-  value: string;
-  priority?: number;
-};
-
 type Gym = {
   _id: Id<"gyms">;
   name: string;
   timezone: string;
   primaryColor: string;
-  customDomain?: string;
-  emailDomain?: string;
-  emailDomainStatus?: "pending" | "verified" | "failed";
-  emailDomainRecords?: DnsRecord[];
-  resendDomainId?: string;
 };
-
-function statusBadge(status?: string) {
-  if (status === "verified") return <span style={S.badge("#34C75922", "#34C759")}>verified</span>;
-  if (status === "failed") return <span style={S.badge("#ff453a22", "#ff453a")}>failed</span>;
-  if (status === "pending") return <span style={S.badge("#FF9F0A22", "#FF9F0A")}>pending DNS</span>;
-  return null;
-}
 
 function CopyGymIdButton({ gymId }: { gymId: Id<"gyms"> }) {
   const [copied, setCopied] = useState(false);
@@ -143,86 +113,11 @@ function GymIdLabel({ gymId }: { gymId: Id<"gyms"> }) {
   );
 }
 
-function DnsRecordsPanel({ gym }: { gym: Gym }) {
-  const verify = useMutation(api.gyms.superAdminVerifyEmailDomain);
-  const [verifying, setVerifying] = useState(false);
-  const [verifyMsg, setVerifyMsg] = useState("");
-
-  const handleVerify = async () => {
-    setVerifying(true);
-    setVerifyMsg("");
-    try {
-      await verify({ gymId: gym._id });
-      setVerifyMsg("Verification triggered — refresh in a moment.");
-    } catch (e: unknown) {
-      setVerifyMsg(errorMessage(e));
-    } finally {
-      setVerifying(false);
-    }
-  };
-
-  if (!gym.emailDomain) return null;
-
-  return (
-    <div style={{ marginTop: 12, padding: "12px 16px", background: "#0f0f0f", borderRadius: 8, border: "1px solid #222" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-        <span style={{ fontSize: 12, color: "#aaa", fontWeight: 600 }}>
-          Email domain: {gym.emailDomain}
-        </span>
-        {statusBadge(gym.emailDomainStatus)}
-      </div>
-
-      {gym.customDomain && (
-        <div style={{ fontSize: 12, color: "#666", marginBottom: 10 }}>
-          Portal: <span style={{ color: "#aaa" }}>{gym.customDomain}</span>
-          <span style={{ color: "#555", marginLeft: 8 }}>→ CNAME to your deployment URL</span>
-        </div>
-      )}
-
-      {gym.emailDomainStatus !== "verified" && gym.emailDomainRecords && gym.emailDomainRecords.length > 0 && (
-        <>
-          <div style={{ fontSize: 12, color: "#666", marginBottom: 8 }}>
-            Ask the gym to add these DNS records, then click Verify:
-          </div>
-          {gym.emailDomainRecords.map((r, i) => (
-            <div key={i} style={S.codeBlock}>
-              <span style={{ color: "#888" }}>{r.type} </span>
-              <span style={{ color: "#1BBFBF" }}>{r.name}.{gym.emailDomain}</span>
-              {r.priority !== undefined && <span style={{ color: "#888" }}> (priority {r.priority})</span>}
-              <br />
-              <span style={{ color: "#eee" }}>{r.value}</span>
-              <span style={{ float: "right", color: r.status === "verified" ? "#34C759" : "#555" }}>
-                {r.status}
-              </span>
-            </div>
-          ))}
-          <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 8 }}>
-            <button style={S.btnSmall} onClick={handleVerify} disabled={verifying}>
-              {verifying ? "Checking…" : "Verify DNS"}
-            </button>
-            {verifyMsg && <span style={{ fontSize: 12, color: "#aaa" }}>{verifyMsg}</span>}
-          </div>
-        </>
-      )}
-
-      {gym.emailDomainStatus === "verified" && (
-        <div style={{ fontSize: 12, color: "#34C759" }}>
-          Emails will send from noreply@{gym.emailDomain}
-        </div>
-      )}
-
-      {(!gym.emailDomainRecords || gym.emailDomainRecords.length === 0) && gym.emailDomainStatus !== "verified" && (
-        <div style={{ fontSize: 12, color: "#555" }}>Registering with Resend…</div>
-      )}
-    </div>
-  );
-}
-
 // ── Pending invites table ─────────────────────────────────────────────────────
 
 function PendingInvites() {
-  const invites = useQuery(api.invites.listPendingAdminInvites);
-  const resend = useMutation(api.invites.superAdminResendInvite);
+  const invites = useQuery(api.adminInvites.listPendingAdminInvites);
+  const resend = useMutation(api.adminInvites.superAdminResendInvite);
   const [resending, setResending] = useState<string | null>(null);
   const [resendSuccess, setResendSuccess] = useState<string | null>(null);
 
@@ -288,70 +183,6 @@ function PendingInvites() {
           })}
         </tbody>
       </table>
-    </div>
-  );
-}
-
-// ── Domain editor (inline in gyms list) ──────────────────────────────────────
-
-function DomainEditor({ gym, onClose }: { gym: Gym; onClose: () => void }) {
-  const updateDomains = useMutation(api.gyms.superAdminUpdateGymDomains);
-  const [customDomain, setCustomDomain] = useState(gym.customDomain ?? "");
-  const [emailDomain, setEmailDomain] = useState(gym.emailDomain ?? "");
-  const [saving, setSaving] = useState(false);
-  const [msg, setMsg] = useState("");
-  const isMobile = useMediaQuery("(max-width: 760px)");
-
-  const handleSave = async () => {
-    setSaving(true);
-    setMsg("");
-    try {
-      await updateDomains({
-        gymId: gym._id,
-        customDomain: customDomain.trim(),
-        emailDomain: emailDomain.trim(),
-      });
-      setMsg("Saved.");
-      setTimeout(onClose, 800);
-    } catch (e: unknown) {
-      setMsg(errorMessage(e));
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  return (
-    <div style={{ padding: "14px 16px", background: "#0f0f0f", borderRadius: 8, border: "1px solid #333", marginTop: 8 }}>
-      <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>Domain settings — {gym.name}</div>
-      <div style={S.group}>
-        <label style={S.label}>Custom portal domain</label>
-        <input
-          style={S.input}
-          value={customDomain}
-          onChange={(e) => setCustomDomain(e.target.value)}
-          placeholder="admin.theirgym.com"
-        />
-        <div style={S.labelHint}>Gym adds a CNAME record pointing to your deployment. Leave blank to use the default portal URL.</div>
-      </div>
-      <div style={S.group}>
-        <label style={S.label}>Email sending domain</label>
-        <input
-          style={S.input}
-          value={emailDomain}
-          onChange={(e) => setEmailDomain(e.target.value)}
-          placeholder="theirgym.com"
-        />
-        <div style={S.labelHint}>Emails send as noreply@domain. Changing this re-registers with Resend and resets DNS verification.</div>
-      </div>
-      <div style={{ display: "flex", gap: 8, alignItems: "center", flexDirection: isMobile ? "column" : "row" }}>
-        <button style={{ ...S.btnSmall, padding: "7px 16px", width: isMobile ? "100%" : "auto" }} onClick={handleSave} disabled={saving}>
-          {saving ? "Saving…" : "Save"}
-        </button>
-        <button style={{ ...S.btnSmall, background: "#1e1e1e", color: "#666", width: isMobile ? "100%" : "auto" }} onClick={onClose}>
-          Cancel
-        </button>
-        {msg && <span style={{ fontSize: 12, color: "#aaa" }}>{msg}</span>}
-      </div>
     </div>
   );
 }
@@ -456,7 +287,7 @@ function Leads({ onPrefillForm }: { onPrefillForm: (fields: { gymName: string; a
 
 export default function SuperAdmin() {
   const gyms = useQuery(api.gyms.list) as Gym[] | undefined;
-  const superAdminCreateGym = useMutation(api.invites.superAdminCreateGym);
+  const superAdminCreateGym = useMutation(api.gymProvisioning.superAdminCreateGym);
 
   const [form, setForm] = useState({
     gymName: "",
@@ -464,14 +295,10 @@ export default function SuperAdmin() {
     primaryColor: "#1BBFBF",
     timezone: "America/New_York",
     adminEmail: "",
-    customDomain: "",
-    emailDomain: "",
   });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [expandedGym, setExpandedGym] = useState<Id<"gyms"> | null>(null);
-  const [editingDomains, setEditingDomains] = useState<Id<"gyms"> | null>(null);
   const isMobile = useMediaQuery("(max-width: 980px)");
 
   const prefillForm = ({ gymName, adminEmail }: { gymName: string; adminEmail: string }) => {
@@ -495,8 +322,6 @@ export default function SuperAdmin() {
         primaryColor: form.primaryColor,
         timezone: form.timezone,
         adminEmail: form.adminEmail,
-        ...(form.customDomain.trim() ? { customDomain: form.customDomain.trim() } : {}),
-        ...(form.emailDomain.trim() ? { emailDomain: form.emailDomain.trim() } : {}),
       });
       setSuccess(`Gym "${form.gymName}" created. Invite sent to ${form.adminEmail}.`);
       setForm({
@@ -505,8 +330,6 @@ export default function SuperAdmin() {
         primaryColor: "#1BBFBF",
         timezone: "America/New_York",
         adminEmail: "",
-        customDomain: "",
-        emailDomain: "",
       });
     } catch (err: unknown) {
       setError(errorMessage(err, "Failed to create gym"));
@@ -551,16 +374,6 @@ export default function SuperAdmin() {
                 <label style={S.label}>Gym admin email (they'll receive an invite)</label>
                 <input style={S.input} type="email" value={form.adminEmail} onChange={set("adminEmail")} placeholder="owner@theirgym.com" required />
               </div>
-              <div style={S.group}>
-                <label style={S.label}>Custom portal domain <span style={{ color: "#555" }}>(optional)</span></label>
-                <input style={S.input} value={form.customDomain} onChange={set("customDomain")} placeholder="admin.theirgym.com" />
-                <div style={S.labelHint}>If set, invite links point here. Gym adds a CNAME to your deployment.</div>
-              </div>
-              <div style={S.group}>
-                <label style={S.label}>Email sending domain <span style={{ color: "#555" }}>(optional)</span></label>
-                <input style={S.input} value={form.emailDomain} onChange={set("emailDomain")} placeholder="theirgym.com" />
-                <div style={S.labelHint}>All emails send as noreply@domain once DNS is verified with Resend.</div>
-              </div>
               <button style={S.btn} type="submit" disabled={saving}>
                 {saving ? "Creating…" : "Create gym & send invite"}
               </button>
@@ -585,72 +398,27 @@ export default function SuperAdmin() {
             <p style={{ color: "#666", fontSize: 13 }}>No gyms yet.</p>
           ) : (
             <div style={S.tableWrap}>
-              <table style={{ ...S.table, minWidth: 820 }}>
+              <table style={{ ...S.table, minWidth: 560 }}>
                 <thead>
                   <tr>
                     <th style={S.th}>Name</th>
                     <th style={S.th}>Timezone</th>
                     <th style={S.th}>Colour</th>
-                    <th style={S.th}>Email domain</th>
-                    <th style={S.th}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {gyms.map((gym) => (
-                    <Fragment key={gym._id}>
-                      <tr>
-                        <td style={S.td}>
-                          {gym.name}
-                          <GymIdLabel gymId={gym._id} />
-                        </td>
-                        <td style={S.td}>{gym.timezone}</td>
-                        <td style={S.td}>
-                          <span style={S.dot(gym.primaryColor)} />
-                          {gym.primaryColor}
-                        </td>
-                        <td style={S.td}>
-                          {gym.emailDomain ? (
-                            <span
-                              style={{ cursor: "pointer" }}
-                              onClick={() =>
-                                setExpandedGym(expandedGym === gym._id ? null : gym._id)
-                              }
-                            >
-                              {gym.emailDomain} {statusBadge(gym.emailDomainStatus)}
-                            </span>
-                          ) : (
-                            <span style={{ color: "#444", fontSize: 12 }}>none</span>
-                          )}
-                        </td>
-                        <td style={S.td}>
-                          <button
-                            style={S.btnSmall}
-                            onClick={() =>
-                              setEditingDomains(editingDomains === gym._id ? null : gym._id)
-                            }
-                          >
-                            Domains
-                          </button>
-                        </td>
-                      </tr>
-                      {expandedGym === gym._id && (
-                        <tr>
-                          <td colSpan={5} style={{ padding: "0 12px 12px" }}>
-                            <DnsRecordsPanel gym={gym} />
-                          </td>
-                        </tr>
-                      )}
-                      {editingDomains === gym._id && (
-                        <tr>
-                          <td colSpan={5} style={{ padding: "0 12px 12px" }}>
-                            <DomainEditor
-                              gym={gym}
-                              onClose={() => setEditingDomains(null)}
-                            />
-                          </td>
-                        </tr>
-                      )}
-                    </Fragment>
+                    <tr key={gym._id}>
+                      <td style={S.td}>
+                        {gym.name}
+                        <GymIdLabel gymId={gym._id} />
+                      </td>
+                      <td style={S.td}>{gym.timezone}</td>
+                      <td style={S.td}>
+                        <span style={S.dot(gym.primaryColor)} />
+                        {gym.primaryColor}
+                      </td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
