@@ -13,6 +13,14 @@ const WodType = v.union(
 );
 
 const DEFAULT_WOD_PROGRAM = "OC-60";
+const MAX_SCHEDULE_DAYS = 31;
+
+function boundedScheduleDays(days: number) {
+  if (!Number.isFinite(days) || days < 1) {
+    throw new Error("days must be at least 1");
+  }
+  return Math.min(Math.floor(days), MAX_SCHEDULE_DAYS);
+}
 
 const WodPart = v.object({
   label: v.string(),
@@ -411,9 +419,10 @@ export const getSchedule = query({
   args: { startDate: v.string(), days: v.optional(v.number()), program: v.optional(v.string()) },
   handler: async (ctx, { startDate, days = 7, program = DEFAULT_WOD_PROGRAM }) => {
     const { gymId } = await requireAuth(ctx);
+    const scheduleDays = boundedScheduleDays(days);
     const [y, mo, d] = startDate.split("-").map(Number);
     return await Promise.all(
-      Array.from({ length: days }, async (_, i) => {
+      Array.from({ length: scheduleDays }, async (_, i) => {
         const dt = new Date(y, mo - 1, d + i);
         const date = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
         const wod = await ctx.db
@@ -438,9 +447,10 @@ export const getUpcoming = query({
   args: { startDate: v.string(), days: v.optional(v.number()), program: v.optional(v.string()) },
   handler: async (ctx, { startDate, days = 7, program = DEFAULT_WOD_PROGRAM }) => {
     const { gymId } = await requireAuth(ctx);
+    const scheduleDays = boundedScheduleDays(days);
     const [y, mo, d] = startDate.split("-").map(Number);
     const wods = await Promise.all(
-      Array.from({ length: days }, async (_, i) => {
+      Array.from({ length: scheduleDays }, async (_, i) => {
         const dt = new Date(y, mo - 1, d + i);
         const date = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
         const wod = await ctx.db

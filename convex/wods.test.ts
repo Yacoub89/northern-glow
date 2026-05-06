@@ -161,6 +161,26 @@ describe("wods.getSchedule", () => {
     expect(schedule[1].wod).toBeNull();
     expect(schedule[2].wod).toBeNull();
   });
+
+  test("clamps schedule requests to 31 days", async () => {
+    const t = convexTest(schema, modules);
+    const { identity } = await seedGymAndUser(t);
+
+    const schedule = await t
+      .withIdentity(identity)
+      .query(api.wods.getSchedule, { startDate: "2099-09-01", days: 500 });
+
+    expect(schedule).toHaveLength(31);
+  });
+
+  test("rejects invalid schedule day counts", async () => {
+    const t = convexTest(schema, modules);
+    const { identity } = await seedGymAndUser(t);
+
+    await expect(
+      t.withIdentity(identity).query(api.wods.getSchedule, { startDate: "2099-09-01", days: 0 })
+    ).rejects.toThrow("days must be at least 1");
+  });
 });
 
 // ── wods.update ───────────────────────────────────────────────────────────────

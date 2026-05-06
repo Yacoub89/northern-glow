@@ -308,8 +308,8 @@ function DomainEditor({ gym, onClose }: { gym: Gym; onClose: () => void }) {
     try {
       await updateDomains({
         gymId: gym._id,
-        customDomain: customDomain.trim() || undefined,
-        emailDomain: emailDomain.trim() || undefined,
+        customDomain: customDomain.trim(),
+        emailDomain: emailDomain.trim(),
       });
       setMsg("Saved.");
       setTimeout(onClose, 800);

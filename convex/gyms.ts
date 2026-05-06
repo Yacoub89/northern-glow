@@ -9,6 +9,9 @@ const gymSlug = (name: string) =>
   name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") ||
   "gym";
 
+const normalizeDomain = (domain: string | undefined) =>
+  domain?.trim().toLowerCase() || undefined;
+
 const androidPackageSegment = (slug: string) => {
   const segment =
     slug.replace(/[^a-z0-9]+/g, "_").replace(/(^_+|_+$)/g, "") || "gym";
@@ -438,14 +441,30 @@ export const superAdminUpdateGymDomains = mutation({
 
     const updates: Record<string, unknown> = {};
     if (customDomain !== undefined) {
-      updates.customDomain = customDomain.trim().toLowerCase() || undefined;
+      const normalizedCustomDomain = normalizeDomain(customDomain);
+      if (normalizedCustomDomain) {
+        const existing = await ctx.db
+          .query("gyms")
+          .withIndex("by_customDomain", (q) => q.eq("customDomain", normalizedCustomDomain))
+          .first();
+        if (existing && existing._id !== gymId) {
+          throw new Error("That custom domain is already assigned to another gym");
+        }
+      }
+      updates.customDomain = normalizedCustomDomain;
     }
 
-    const isNewDomain = emailDomain && emailDomain !== gym.emailDomain;
+    const normalizedEmailDomain = normalizeDomain(emailDomain);
+    const existingEmailDomain = normalizeDomain(gym.emailDomain);
+    const isNewDomain = !!normalizedEmailDomain && normalizedEmailDomain !== existingEmailDomain;
     if (emailDomain !== undefined) {
-      updates.emailDomain = emailDomain || undefined;
+      updates.emailDomain = normalizedEmailDomain;
       if (isNewDomain) {
         updates.emailDomainStatus = "pending";
+        updates.resendDomainId = undefined;
+        updates.emailDomainRecords = undefined;
+      } else if (!normalizedEmailDomain) {
+        updates.emailDomainStatus = undefined;
         updates.resendDomainId = undefined;
         updates.emailDomainRecords = undefined;
       }
@@ -453,10 +472,10 @@ export const superAdminUpdateGymDomains = mutation({
 
     await ctx.db.patch(gymId, updates);
 
-    if (isNewDomain && emailDomain) {
+    if (isNewDomain && normalizedEmailDomain) {
       await ctx.scheduler.runAfter(0, internal.gyms.registerResendDomain, {
         gymId,
-        emailDomain,
+        emailDomain: normalizedEmailDomain,
       });
     }
   },

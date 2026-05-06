@@ -17,6 +17,9 @@ import { v } from "convex/values";
 import { requireCoachOrAdmin, requireGymAdmin, requireSuperAdmin } from "./helpers";
 import { internal } from "./_generated/api";
 
+const normalizeDomain = (domain: string | undefined) =>
+  domain?.trim().toLowerCase() || undefined;
+
 function generateInviteCode(): string {
   // 8-char base32 code from 5 random bytes (~40 bits of CSPRNG entropy).
   const bytes = new Uint8Array(5);
@@ -188,20 +191,32 @@ export const superAdminCreateGym = mutation({
     const { userId } = await requireSuperAdmin(ctx);
 
     const normalizedEmail = adminEmail.toLowerCase().trim();
+    const normalizedCustomDomain = normalizeDomain(customDomain);
+    const normalizedEmailDomain = normalizeDomain(emailDomain);
+
+    if (normalizedCustomDomain) {
+      const existingGym = await ctx.db
+        .query("gyms")
+        .withIndex("by_customDomain", (q) => q.eq("customDomain", normalizedCustomDomain))
+        .first();
+      if (existingGym) {
+        throw new Error("That custom domain is already assigned to another gym");
+      }
+    }
 
     const gymId = await ctx.db.insert("gyms", {
       name: gymName,
       tagline,
       primaryColor,
       timezone,
-      ...(customDomain ? { customDomain: customDomain.trim().toLowerCase() } : {}),
-      ...(emailDomain ? { emailDomain, emailDomainStatus: "pending" } : {}),
+      ...(normalizedCustomDomain ? { customDomain: normalizedCustomDomain } : {}),
+      ...(normalizedEmailDomain ? { emailDomain: normalizedEmailDomain, emailDomainStatus: "pending" } : {}),
     });
 
-    if (emailDomain) {
+    if (normalizedEmailDomain) {
       await ctx.scheduler.runAfter(0, internal.gyms.registerResendDomain, {
         gymId,
-        emailDomain,
+        emailDomain: normalizedEmailDomain,
       });
     }
 

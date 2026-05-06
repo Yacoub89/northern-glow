@@ -114,6 +114,171 @@ describe("invites.superAdminCreateGym", () => {
       }
     }
   });
+
+  test("normalizes custom and email domains when creating a client gym", async () => {
+    const previous = process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
+    process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = "founder@test.com";
+
+    try {
+      const t = convexTest(schema, modules);
+      const userId = await t.run((ctx) =>
+        ctx.db.insert("users", { name: "Founder", email: "founder@test.com" })
+      );
+      const identity = { subject: `${userId}|session` };
+
+      const gymId = await t.withIdentity(identity).mutation(api.invites.superAdminCreateGym, {
+        gymName: "Client Gym",
+        tagline: "Powered by NorthernGlow",
+        primaryColor: "#1BBFBF",
+        timezone: "America/Toronto",
+        adminEmail: "owner@test.com",
+        customDomain: " Admin.ClientGym.COM ",
+        emailDomain: " ClientGym.COM ",
+      });
+
+      const gym = await t.run((ctx) => ctx.db.get(gymId));
+      expect(gym?.customDomain).toBe("admin.clientgym.com");
+      expect(gym?.emailDomain).toBe("clientgym.com");
+      expect(gym?.emailDomainStatus).toBe("pending");
+    } finally {
+      if (previous === undefined) {
+        delete process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
+      } else {
+        process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = previous;
+      }
+    }
+  });
+
+  test("rejects duplicate custom domains when creating a client gym", async () => {
+    const previous = process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
+    process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = "founder@test.com";
+
+    try {
+      const t = convexTest(schema, modules);
+      await t.run((ctx) =>
+        ctx.db.insert("gyms", {
+          name: "Existing",
+          tagline: "Already here",
+          primaryColor: "#1BBFBF",
+          timezone: "America/Toronto",
+          customDomain: "admin.example.com",
+        })
+      );
+      const userId = await t.run((ctx) =>
+        ctx.db.insert("users", { name: "Founder", email: "founder@test.com" })
+      );
+      const identity = { subject: `${userId}|session` };
+
+      await expect(
+        t.withIdentity(identity).mutation(api.invites.superAdminCreateGym, {
+          gymName: "Client Gym",
+          tagline: "Powered by NorthernGlow",
+          primaryColor: "#1BBFBF",
+          timezone: "America/Toronto",
+          adminEmail: "owner@test.com",
+          customDomain: " ADMIN.EXAMPLE.COM ",
+        })
+      ).rejects.toThrow("That custom domain is already assigned to another gym");
+    } finally {
+      if (previous === undefined) {
+        delete process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
+      } else {
+        process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = previous;
+      }
+    }
+  });
+});
+
+// ── gyms.superAdminUpdateGymDomains ──────────────────────────────────────────
+
+describe("gyms.superAdminUpdateGymDomains", () => {
+  test("clears existing domains and email verification metadata", async () => {
+    const previous = process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
+    process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = "founder@test.com";
+
+    try {
+      const t = convexTest(schema, modules);
+      const gymId = await t.run((ctx) =>
+        ctx.db.insert("gyms", {
+          name: "Client Gym",
+          tagline: "Powered by NorthernGlow",
+          primaryColor: "#1BBFBF",
+          timezone: "America/Toronto",
+          customDomain: "admin.clientgym.com",
+          emailDomain: "clientgym.com",
+          emailDomainStatus: "verified",
+          resendDomainId: "resend_domain_id",
+          emailDomainRecords: [],
+        })
+      );
+      const userId = await t.run((ctx) =>
+        ctx.db.insert("users", { name: "Founder", email: "founder@test.com" })
+      );
+      const identity = { subject: `${userId}|session` };
+
+      await t.withIdentity(identity).mutation(api.gyms.superAdminUpdateGymDomains, {
+        gymId,
+        customDomain: "",
+        emailDomain: "",
+      });
+
+      const gym = await t.run((ctx) => ctx.db.get(gymId));
+      expect(gym?.customDomain).toBeUndefined();
+      expect(gym?.emailDomain).toBeUndefined();
+      expect(gym?.emailDomainStatus).toBeUndefined();
+      expect(gym?.resendDomainId).toBeUndefined();
+      expect(gym?.emailDomainRecords).toBeUndefined();
+    } finally {
+      if (previous === undefined) {
+        delete process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
+      } else {
+        process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = previous;
+      }
+    }
+  });
+
+  test("rejects duplicate custom domains when updating a gym", async () => {
+    const previous = process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
+    process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = "founder@test.com";
+
+    try {
+      const t = convexTest(schema, modules);
+      await t.run((ctx) =>
+        ctx.db.insert("gyms", {
+          name: "Existing",
+          tagline: "Already here",
+          primaryColor: "#1BBFBF",
+          timezone: "America/Toronto",
+          customDomain: "admin.example.com",
+        })
+      );
+      const gymId = await t.run((ctx) =>
+        ctx.db.insert("gyms", {
+          name: "Client Gym",
+          tagline: "Powered by NorthernGlow",
+          primaryColor: "#1BBFBF",
+          timezone: "America/Toronto",
+        })
+      );
+      const userId = await t.run((ctx) =>
+        ctx.db.insert("users", { name: "Founder", email: "founder@test.com" })
+      );
+      const identity = { subject: `${userId}|session` };
+
+      await expect(
+        t.withIdentity(identity).mutation(api.gyms.superAdminUpdateGymDomains, {
+          gymId,
+          customDomain: " ADMIN.EXAMPLE.COM ",
+        })
+      ).rejects.toThrow("That custom domain is already assigned to another gym");
+    } finally {
+      if (previous === undefined) {
+        delete process.env.NORTHERNGLOW_SUPERADMIN_EMAILS;
+      } else {
+        process.env.NORTHERNGLOW_SUPERADMIN_EMAILS = previous;
+      }
+    }
+  });
 });
 
 // ── invites.send ──────────────────────────────────────────────────────────────
