@@ -99,17 +99,6 @@ export default function ManageScreen() {
           </Pressable>
         </View>
 
-        <Pressable style={[sc.deployCard, { borderColor: primary + "44" }]} onPress={() => router.push("/class-form")}>
-          <View style={[sc.deployIcon, { borderColor: primary + "66" }]}>
-            <Ionicons name="add" size={22} color={primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={sc.deployTitle}>Add Class</Text>
-            <Text style={sc.deploySubtitle}>Schedule a new class</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color={Colors.textMuted} />
-        </Pressable>
-
         {dayClasses.length > 0 && (
           <VelocityCard classes={dayClasses as EnrichedClass[]} />
         )}
@@ -124,7 +113,7 @@ export default function ManageScreen() {
           ) : dayClasses.length === 0 ? (
             <View style={sc.emptyCard}>
               <Text style={sc.emptyText}>No classes scheduled</Text>
-              <Text style={sc.emptyHint}>Tap Add Class above to create one</Text>
+              <Text style={sc.emptyHint}>Tap + to create one</Text>
             </View>
           ) : (
             (dayClasses as EnrichedClass[]).map((cls) => (

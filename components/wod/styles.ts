@@ -67,9 +67,14 @@ export const wodStyles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 12,
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 20,
+  },
+  readHeaderText: {
+    flex: 1,
+    minWidth: 0,
   },
   readGymName: {
     fontFamily: Fonts.bodyExtra,
@@ -86,6 +91,7 @@ export const wodStyles = StyleSheet.create({
   editBtn: {
     flexDirection: "row",
     alignItems: "center",
+    flexShrink: 0,
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 7,

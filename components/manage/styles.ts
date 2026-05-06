@@ -51,27 +51,6 @@ export const manageStyles = StyleSheet.create({
     letterSpacing: 0.5,
   },
 
-  // Deploy card
-  deployCard: {
-    marginHorizontal: 22, marginBottom: 14,
-    backgroundColor: Colors.surface,
-    borderRadius: 16, borderWidth: 1,
-    flexDirection: "row", alignItems: "center",
-    padding: 16, gap: 14,
-  },
-  deployIcon: {
-    width: 46, height: 46, borderRadius: 12, borderWidth: 1.5,
-    alignItems: "center", justifyContent: "center",
-    backgroundColor: Colors.surfaceContainerHighest,
-  },
-  deployTitle: {
-    fontFamily: Fonts.display,
-    fontSize: FontSizes.titleMd,
-    color: Colors.text,
-    marginBottom: 3,
-  },
-  deploySubtitle: { fontFamily: Fonts.body, fontSize: 12, color: Colors.textSecondary },
-
   // Velocity card
   velocityCard: {
     marginHorizontal: 22, marginBottom: 14,
@@ -107,19 +86,10 @@ export const manageStyles = StyleSheet.create({
 
   // Section block
   sectionBlock: { marginHorizontal: 22, marginBottom: 24 },
-  sectionHeaderRow: {
-    flexDirection: "row", alignItems: "center",
-    justifyContent: "space-between", marginBottom: 12,
-  },
   sectionLabel: {
     fontFamily: Fonts.display, fontSize: FontSizes.titleMd,
     color: Colors.text, letterSpacing: 0.5, marginBottom: 14,
   },
-  addSlotBtn: {
-    flexDirection: "row", alignItems: "center", gap: 4,
-    borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6,
-  },
-  addSlotBtnText: { fontFamily: Fonts.bodyBold, fontSize: 12, color: Colors.onPrimary },
 
   // Class card
   classCard: {

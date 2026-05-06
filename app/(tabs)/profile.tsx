@@ -35,7 +35,6 @@ export default function ProfileScreen() {
   const { signOut } = useAuthActions();
   const me = useQuery(api.users.getMe);
   const isCoachOrAdmin = me?.role === "coach" || me?.role === "admin";
-  const stats = useQuery(api.users.getMyStats, isCoachOrAdmin ? "skip" : undefined);
   const membership = useQuery(api.memberships.getMyMembership);
   const prs = useQuery(api.personalRecords.getMyPRs, isCoachOrAdmin ? "skip" : undefined);
   const upsertPR = useMutation(api.personalRecords.upsert);
@@ -185,24 +184,6 @@ export default function ProfileScreen() {
             </View>
             <Ionicons name="chevron-forward" size={18} color={Colors.textSecondary} />
           </Pressable>
-        )}
-
-        {/* Stats — athletes only */}
-        {!isCoachOrAdmin && (
-          <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <Text style={[styles.statValue, { color: primary }]}>{stats?.classesAttended ?? "—"}</Text>
-              <Text style={styles.statLabel}>Classes</Text>
-            </View>
-            <View style={[styles.statBox, styles.statBoxMiddle]}>
-              <Text style={[styles.statValue, { color: primary }]}>{stats?.wodsLogged ?? "—"}</Text>
-              <Text style={styles.statLabel}>WODs logged</Text>
-            </View>
-            <View style={styles.statBox}>
-              <Text style={[styles.statValue, { color: primary }]}>{stats?.prsSet ?? "—"}</Text>
-              <Text style={styles.statLabel}>PRs set</Text>
-            </View>
-          </View>
         )}
 
         {/* Admin Tools — coaches and admins only */}
@@ -402,36 +383,6 @@ const styles = StyleSheet.create({
   membershipCardLeft: { flexDirection: "row", alignItems: "center", flex: 1 },
   membershipTitle: { fontSize: 15, fontWeight: "700", color: Colors.text, marginBottom: 2 },
   membershipSub: { fontSize: 12, color: Colors.textSecondary },
-
-  // Stats
-  statsRow: {
-    flexDirection: "row",
-    gap: 10,
-    marginBottom: 28,
-  },
-  statBox: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  statBoxMiddle: {
-    borderColor: Colors.border,
-  },
-  statValue: {
-    fontSize: 28,
-    fontWeight: "800",
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-    textAlign: "center",
-    fontWeight: "600",
-  },
 
   // Section
   sectionHeader: {

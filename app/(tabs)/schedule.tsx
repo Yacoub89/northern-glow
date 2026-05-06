@@ -16,7 +16,7 @@ import { Colors } from "../../constants/Colors";
 import { useGymColors } from "../../constants/GymConfig";
 import { formatTime, getTodayDate } from "../../utils/date";
 import { isMembershipRequiredError, showMembershipRequiredAlert } from "../../utils/membershipErrors";
-import { getDayNum, parseMovement } from "../../components/wod/types";
+import { getDayNum } from "../../components/wod/types";
 import { useAppDialog } from "../../components/AppDialog";
 
 function generateDates(count = 7): string[] {
@@ -477,7 +477,6 @@ export default function ScheduleScreen() {
 
   const classes = useQuery(api.classes.getUpcoming, { startDate: today, days: 7 });
   const myBookings = useQuery(api.bookings.getMyBookings);
-  const wod = useQuery(api.wods.getByDate, { date: selectedDate });
 
   const dayClasses = useMemo(() => {
     if (!classes) return [];
@@ -537,7 +536,7 @@ export default function ScheduleScreen() {
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.dayPicker}
-        style={mode === "events" ? { display: "none" } : undefined}
+        style={[styles.dayPickerWrap, mode === "events" && { display: "none" }]}
       >
         {dates.map((d) => {
           const isSelected = d === selectedDate;
@@ -567,41 +566,7 @@ export default function ScheduleScreen() {
           <EventsPanel />
         ) : mode === "classes" ? (
           <>
-            {/* WOD of the day */}
-            <Text style={[styles.dayHeader, { marginTop: 8 }]}>WORKOUT OF THE DAY</Text>
-            {wod ? (
-              <View style={styles.wodCard}>
-                <Text style={[styles.wodCardLabel, { color: primary }]}>WOD</Text>
-                <Text style={styles.wodCardTitle}>{wod.title}</Text>
-                <Text style={[styles.wodCardMeta, { color: primary }]}>
-                  {wod.type.toUpperCase()}
-                  {wod.description ? ` · ${wod.description}` : ""}
-                </Text>
-                {wod.movements.length > 0 && (
-                  <View style={styles.wodMovements}>
-                    {wod.movements.map((m, i) => {
-                      const { num, label } = parseMovement(m);
-                      return (
-                        <View key={i} style={styles.wodMovementRow}>
-                          <Text style={[styles.wodMovementNum, { color: primary }]}>{num ?? "·"}</Text>
-                          <Text style={styles.wodMovementLabel}>{label}</Text>
-                        </View>
-                      );
-                    })}
-                  </View>
-                )}
-                {wod.scalingNotes ? (
-                  <Text style={styles.wodScaling}>Scaling: {wod.scalingNotes}</Text>
-                ) : null}
-              </View>
-            ) : (
-              <View style={styles.noWodCard}>
-                <Text style={styles.noWodText}>No WOD posted for this day</Text>
-              </View>
-            )}
-
-            {/* Classes */}
-            <Text style={[styles.dayHeader, { marginTop: 20 }]}>
+            <Text style={styles.dayHeader}>
               {selectedDate === today ? "TODAY" : getDayName(selectedDate)} CLASSES
             </Text>
             {dayClasses.length === 0 ? (
@@ -671,9 +636,13 @@ const styles = StyleSheet.create({
   },
 
   // Day picker
+  dayPickerWrap: {
+    flexGrow: 0,
+    height: 58,
+  },
   dayPicker: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 10,
     gap: 8,
   },
   dayPill: {
@@ -713,43 +682,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
 
-  // WOD card
-  wodCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  wodCardLabel: {
-    fontSize: 10,
-    fontWeight: "800",
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    marginBottom: 6,
-  },
-  wodCardTitle: {
-    fontSize: 18,
-    fontWeight: "800",
-    color: Colors.text,
-    marginBottom: 3,
-  },
-  wodCardMeta: {
-    fontSize: 12,
-    fontWeight: "700",
-    letterSpacing: 0.5,
-    marginBottom: 12,
-  },
-  noWodCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: 14,
-    padding: 14,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  noWodText: { color: Colors.textSecondary, fontSize: 13 },
-
   // Class card
   classCard: {
     backgroundColor: Colors.surface,
@@ -769,23 +701,6 @@ const styles = StyleSheet.create({
   classCoach: { fontSize: 13, color: Colors.textSecondary },
   classSpots: { fontSize: 13, color: Colors.textSecondary },
   classFull: { color: Colors.error },
-
-  // WOD movements
-  wodMovements: { gap: 7 },
-  wodMovementRow: { flexDirection: "row", alignItems: "baseline", gap: 12 },
-  wodMovementNum: {
-    width: 26,
-    fontSize: 14,
-    fontWeight: "800",
-    textAlign: "right",
-  },
-  wodMovementLabel: { fontSize: 14, color: Colors.text, fontWeight: "500", flex: 1 },
-  wodScaling: {
-    marginTop: 10,
-    fontSize: 12,
-    color: Colors.textSecondary,
-    fontStyle: "italic",
-  },
 
   // Book buttons
   bookBtn: {

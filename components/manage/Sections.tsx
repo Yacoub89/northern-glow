@@ -1,6 +1,5 @@
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "expo-router";
-import { useState } from "react";
 import { ActivityIndicator, Pressable, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { api } from "../../convex/_generated/api";
@@ -9,8 +8,6 @@ import { Colors } from "../../constants/Colors";
 import { useGymColors } from "../../constants/GymConfig";
 import { formatTime } from "../../utils/date";
 import { manageStyles as sc, DAY_NAMES } from "./styles";
-import { AddAvailabilityModal } from "./AddAvailabilityModal";
-import { CreateEventModal } from "./CreateEventModal";
 import { useAppDialog } from "../AppDialog";
 
 export type EnrichedClass = Doc<"classes"> & {
@@ -29,7 +26,6 @@ function sessionLabel(startTime: string): string {
 export function AvailabilitySection() {
   const { primary } = useGymColors();
   const dialog = useAppDialog();
-  const [showModal, setShowModal] = useState(false);
   const availability = useQuery(api.appointments.getMyAvailability);
   const removeAvailability = useMutation(api.appointments.removeAvailability);
 
@@ -58,20 +54,14 @@ export function AvailabilitySection() {
 
   return (
     <View style={sc.sectionBlock}>
-      <View style={sc.sectionHeaderRow}>
-        <Text style={sc.sectionLabel}>1:1 Availability</Text>
-        <Pressable style={[sc.addSlotBtn, { backgroundColor: primary }]} onPress={() => setShowModal(true)}>
-          <Ionicons name="add" size={14} color={Colors.onPrimary} />
-          <Text style={sc.addSlotBtnText}>Add Slot</Text>
-        </Pressable>
-      </View>
+      <Text style={sc.sectionLabel}>1:1 Availability</Text>
 
       {availability === undefined ? (
         <ActivityIndicator color={primary} style={{ marginTop: 8 }} />
       ) : availability.length === 0 ? (
         <View style={sc.emptyCard}>
           <Text style={sc.emptyText}>No availability set</Text>
-          <Text style={sc.emptyHint}>Add slots so athletes can book 1:1 sessions</Text>
+          <Text style={sc.emptyHint}>Tap + to add 1:1 slots</Text>
         </View>
       ) : (
         [0, 1, 2, 3, 4, 5, 6]
@@ -93,8 +83,6 @@ export function AvailabilitySection() {
             </View>
           ))
       )}
-
-      <AddAvailabilityModal visible={showModal} onClose={() => setShowModal(false)} />
     </View>
   );
 }
@@ -201,7 +189,6 @@ export function EventsSection() {
   const { primary } = useGymColors();
   const router = useRouter();
   const dialog = useAppDialog();
-  const [showModal, setShowModal] = useState(false);
   const events = useQuery(api.events.listUpcoming);
   const cancelEvent = useMutation(api.events.cancel);
 
@@ -223,20 +210,14 @@ export function EventsSection() {
 
   return (
     <View style={sc.sectionBlock}>
-      <View style={sc.sectionHeaderRow}>
-        <Text style={sc.sectionLabel}>Events</Text>
-        <Pressable style={[sc.addSlotBtn, { backgroundColor: primary }]} onPress={() => setShowModal(true)}>
-          <Ionicons name="add" size={14} color={Colors.onPrimary} />
-          <Text style={sc.addSlotBtnText}>Create</Text>
-        </Pressable>
-      </View>
+      <Text style={sc.sectionLabel}>Events</Text>
 
       {events === undefined ? (
         <ActivityIndicator color={primary} style={{ marginTop: 8 }} />
       ) : events.length === 0 ? (
         <View style={sc.emptyCard}>
           <Text style={sc.emptyText}>No upcoming events</Text>
-          <Text style={sc.emptyHint}>Tap Create to add a paid or free event</Text>
+          <Text style={sc.emptyHint}>Tap + to create one</Text>
         </View>
       ) : (
         events.map((event) => {
@@ -276,8 +257,6 @@ export function EventsSection() {
           );
         })
       )}
-
-      <CreateEventModal visible={showModal} onClose={() => setShowModal(false)} />
     </View>
   );
 }
