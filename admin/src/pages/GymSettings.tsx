@@ -199,7 +199,7 @@ export default function GymSettings() {
   const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    await uploadImage(file, 1024 * 1024, "Logo", setUploading, (id) => persistUploadedImage("logoStorageId", id), e.target);
+    await uploadImage(file,  2 * 1024 * 1024, "Logo", setUploading, (id) => persistUploadedImage("logoStorageId", id), e.target);
   };
 
   const handleAppIconChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -298,7 +298,7 @@ export default function GymSettings() {
                   <button type="button" style={S.uploadBtn} disabled={uploading} onClick={() => fileInputRef.current?.click()}>
                     {uploading ? "Uploading…" : logoUrl ? "Replace" : "Upload logo"}
                   </button>
-                  <div style={S.uploadHint}>PNG or SVG · max 1 MB</div>
+                  <div style={S.uploadHint}>PNG or SVG · max 2 MB</div>
                 </div>
                 <input ref={fileInputRef} type="file" accept="image/png,image/svg+xml,image/jpeg" style={{ display: "none" }} onChange={handleLogoChange} />
               </div>
