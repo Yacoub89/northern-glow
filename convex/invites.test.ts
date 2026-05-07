@@ -24,7 +24,7 @@ describe("gymProvisioning.superAdminCreateGym", () => {
       const gymId = await t.withIdentity(identity).mutation(api.gymProvisioning.superAdminCreateGym, {
         gymName: "Client Gym",
         tagline: "Powered by NorthernGlow",
-        primaryColor: "#1BBFBF",
+        primaryColor: "#0E7490",
         timezone: "America/Toronto",
         adminEmail: "owner@test.com",
       });

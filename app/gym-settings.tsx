@@ -32,7 +32,7 @@ const TIMEZONE_OPTIONS = [
 ];
 
 const COLOR_PRESETS = [
-  "#1BBFBF",
+  "#0E7490",
   "#007AFF",
   "#34C759",
   "#FF9F0A",
@@ -50,7 +50,7 @@ export default function GymSettingsScreen() {
 
   const [name, setName] = useState("");
   const [tagline, setTagline] = useState("");
-  const [primaryColor, setPrimaryColor] = useState("#1BBFBF");
+  const [primaryColor, setPrimaryColor] = useState("#0E7490");
   const [timezone, setTimezone] = useState("America/New_York");
   const [saving, setSaving] = useState(false);
   const [initialized, setInitialized] = useState(false);

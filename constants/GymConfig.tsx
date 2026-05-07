@@ -20,7 +20,7 @@ const GYM_ID = (Constants.expoConfig?.extra?.gymId ?? null) as Id<"gyms"> | null
 const DEFAULT_CONFIG: GymConfig = {
   name: Constants.expoConfig?.name ?? "NorthernGlow",
   tagline: "",
-  primaryColor: "#1BBFBF",
+  primaryColor: "#0E7490",
   timezone: "America/New_York",
   logoUrl: null,
 };

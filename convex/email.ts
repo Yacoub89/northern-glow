@@ -170,7 +170,7 @@ export const sendInviteEmail = internalAction({
             <p>Download the app your admin told you to use, tap <strong>Sign Up</strong>, and create an account using <strong>this email address</strong>. Your gym membership will be activated automatically.</p>`
       : `
             <p>Create an account using <strong>this email address</strong>.</p>
-            <a href="${createAccountUrl}" style="display:inline-block;background:#1BBFBF;color:#000;font-weight:700;padding:12px 24px;border-radius:8px;text-decoration:none;font-size:14px;margin:16px 0">Create account</a>`;
+            <a href="${createAccountUrl}" style="display:inline-block;background:#0E7490;color:#fff;font-weight:700;padding:12px 24px;border-radius:8px;text-decoration:none;font-size:14px;margin:16px 0">Create account</a>`;
     const bodyText = isAthleteInvite
       ? `Your gym admin has invited you to use the NorthernGlow mobile app. Download the app your admin told you to use, tap Sign Up, and create an account using this email address. Your gym membership will be activated automatically.`
       : `Create your account using this email address: ${createAccountUrl}.`;
@@ -555,7 +555,7 @@ export const sendAdminPortalInviteEmail = internalAction({
             <h2 style="color:#111">You're set up as the admin for ${gymName}</h2>
             <p>NorthernGlow has set up a gym account for <strong>${gymName}</strong> and made you its admin.</p>
             <p>To get started, visit the admin portal and create an account using <strong>this email address</strong>. Your gym will be linked automatically.</p>
-            <a href="${portalUrl}" style="display:inline-block;background:#1BBFBF;color:#000;font-weight:700;padding:12px 24px;border-radius:8px;text-decoration:none;font-size:14px;margin:16px 0">${portalUrl}</a>
+            <a href="${portalUrl}" style="display:inline-block;background:#0E7490;color:#fff;font-weight:700;padding:12px 24px;border-radius:8px;text-decoration:none;font-size:14px;margin:16px 0">${portalUrl}</a>
             <p style="color:#555;font-size:13px">This invite expires in 7 days. If you didn't expect this email, you can safely ignore it.</p>
           </div>`,
         text: `You're set up as the admin for ${gymName} on NorthernGlow. Go to ${portalUrl} and create an account using this email address. Your gym will be linked automatically.`,

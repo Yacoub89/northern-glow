@@ -105,7 +105,7 @@ export const run = internalMutation({
     const gymId = await ctx.db.insert("gyms", {
       name: "Demo CrossFit",
       tagline: "Powered by NorthernGlow",
-      primaryColor: "#1BBFBF",
+      primaryColor: "#0E7490",
       timezone: "America/New_York",
     });
 

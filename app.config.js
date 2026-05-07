@@ -11,7 +11,7 @@ export default {
     splash: {
       image: "./assets/splash.png",
       resizeMode: "contain",
-      backgroundColor: "#1BBFBF",
+      backgroundColor: "#0E7490",
     },
     ios: {
       supportsTablet: false,
@@ -23,7 +23,7 @@ export default {
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/adaptive-icon.png",
-        backgroundColor: "#1BBFBF",
+        backgroundColor: "#0E7490",
       },
       package: "com.northernglow.app",
     },

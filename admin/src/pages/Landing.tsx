@@ -7,9 +7,10 @@ import "./Landing.css";
 
 // ── Tokens ────────────────────────────────────────────────────────────────────
 
-const TEAL = "var(--admin-primary-bright)";
-const TEAL_DIM = "var(--admin-primary-bright-soft)";
-const TEAL_BORDER = "var(--admin-primary-bright-border)";
+const TEAL = "var(--landing-accent)";
+const TEAL_STEADY = "var(--landing-accent)";
+const TEAL_DIM = "var(--landing-accent-soft)";
+const TEAL_BORDER = "var(--landing-accent-border)";
 const BG = "var(--admin-bg)";
 const SURFACE = "var(--admin-surface)";
 const CARD = "var(--admin-surface)";
@@ -29,7 +30,7 @@ const T = {
   } as const,
   btnPrimary: {
     padding: "14px 28px", borderRadius: 10, border: "none",
-    background: TEAL, color: "var(--admin-on-primary)", fontSize: 16, fontWeight: 700,
+    background: TEAL, color: "var(--landing-on-accent)", fontSize: 16, fontWeight: 700,
     cursor: "pointer",
   } as const,
   btnGhostLg: {
@@ -41,7 +42,7 @@ const T = {
     display: "inline-flex", alignItems: "center", gap: 6,
     padding: "5px 14px", borderRadius: 999,
     background: TEAL_DIM, border: `1px solid ${TEAL_BORDER}`,
-    color: TEAL, fontSize: 12, fontWeight: 600, marginBottom: 28,
+    color: TEAL_STEADY, fontSize: 12, fontWeight: 600, marginBottom: 28,
   } as const,
   sectionLabel: {
     fontSize: 12, fontWeight: 700, color: TEAL,
@@ -96,7 +97,7 @@ const M = {
   actions: { display: "flex", gap: 10, marginTop: 24 } as const,
   btnSubmit: {
     flex: 1, padding: "12px 0", borderRadius: 8, border: "none",
-    background: TEAL, color: "var(--admin-on-primary)", fontSize: 14, fontWeight: 700, cursor: "pointer",
+    background: TEAL, color: "var(--landing-on-accent)", fontSize: 14, fontWeight: 700, cursor: "pointer",
   } as const,
   btnCancel: {
     padding: "12px 20px", borderRadius: 8, border: `1px solid ${BORDER_BRIGHT}`,
@@ -246,7 +247,7 @@ function Hero({ onApply, onLearnMore }: { onApply: () => void; onLearnMore: () =
       </div>
       <h1 className="l-h1">
         Run your gym.<br />
-        <span style={{ color: TEAL }}>Not your spreadsheets.</span>
+        <span style={{ color: TEAL_STEADY }}>Not your <br className="l-mobile-break" />spreadsheets.</span>
       </h1>
       <p className="l-hero-sub" style={{ color: MUTED, maxWidth: 580, margin: "0 auto 36px" }}>
         NorthernGlow handles athlete management, WOD programming, class bookings,
@@ -270,9 +271,9 @@ function Stats() {
   return (
     <div className="l-stats-row">
       {items.map(({ num, label }) => (
-        <div key={label} style={{ textAlign: "center" }}>
-          <span style={{ fontSize: 32, fontWeight: 800, color: TEAL, display: "block" }}>{num}</span>
-          <div style={{ fontSize: 14, color: MUTED, marginTop: 4 }}>{label}</div>
+        <div className="l-stat-card" key={label}>
+          <span className="l-stat-num">{num}</span>
+          <div className="l-stat-label">{label}</div>
         </div>
       ))}
     </div>
@@ -440,7 +441,7 @@ export default function Landing() {
   const [modal, setModal] = useState<"learn" | "apply" | null>(null);
 
   return (
-    <div style={{ background: BG, color: TEXT, minHeight: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+    <div className="l-page" style={{ background: BG, color: TEXT, minHeight: "100vh", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
       <SiteNav rightSlot={<button style={navBtnGhost} onClick={() => navigate("/login")}>Sign in</button>} />
       <Hero onApply={() => setModal("apply")} onLearnMore={() => setModal("learn")} />
       <Stats />

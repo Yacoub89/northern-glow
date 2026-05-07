@@ -9,13 +9,13 @@ export const Colors = {
   surfaceVariant:          "#f8fafc",
 
   // Brand / accent
-  primary:          "#1BBFBF",
-  primaryContainer: "#77e6e6",
-  onPrimary:        "#062a2a",
-  primaryGlow:      "rgba(27, 191, 191, 0.12)",
+  primary:          "#0E7490",
+  primaryContainer: "#A5F3FC",
+  onPrimary:        "#ffffff",
+  primaryGlow:      "rgba(14, 116, 144, 0.12)",
 
   // Tertiary
-  tertiary: "#0f766e",
+  tertiary: "#164e63",
 
   // Text
   text:          "#0f172a",
@@ -33,11 +33,11 @@ export const Colors = {
   // Aliases kept for backward compatibility with screens not yet redesigned
   border:          "#dbe3ea",
   surfaceElevated: "#eaf0f6",
-  primaryDark:     "#0f8f8f",
+  primaryDark:     "#0f6b78",
 };
 
 // Gradient arrays — used with expo-linear-gradient
 export const Gradients = {
-  primaryCta:    ["#1BBFBF", "#77e6e6"] as const,
-  primaryCtaStr: ["#1BBFBF", "#77e6e6"] as const,
+  primaryCta:    ["#0E7490", "#22D3EE"] as const,
+  primaryCtaStr: ["#0E7490", "#22D3EE"] as const,
 };

@@ -12,12 +12,12 @@
   --admin-text-subtle-soft: #6b728022;
   --admin-text-faint: #9ca3af;
   --admin-text-faint-soft: #9ca3af22;
-  --admin-primary: #1bbfbf;
-  --admin-primary-bright: #1cd6f0;
-  --admin-primary-soft: #1bbfbf22;
-  --admin-primary-bright-soft: #1cd6f015;
-  --admin-primary-bright-border: #1cd6f038;
-  --admin-on-primary: #062a2a;
+  --admin-primary: #0e7490;
+  --admin-primary-bright: #0e7490;
+  --admin-primary-soft: #0e749022;
+  --admin-primary-bright-soft: #0e749015;
+  --admin-primary-bright-border: #0e749040;
+  --admin-on-primary: #ffffff;
   --admin-success: #34c759;
   --admin-success-soft: #34c75922;
   --admin-warning: #ff9f0a;
