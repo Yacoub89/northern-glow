@@ -13,7 +13,6 @@ import {
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { api } from "../../convex/_generated/api";
 import { Doc } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
@@ -43,15 +42,9 @@ function getFormattedDate(): string {
   });
 }
 
-function getWodSubtitle(wod: { type: string; description: string }): string {
-  const text = `${wod.type} ${wod.description}`;
-  const m = text.match(/(\d+)[\s-]?min/i);
-  const mins = m ? parseInt(m[1]) : wod.type === "AMRAP" ? 20 : null;
-  if (wod.type === "AMRAP") return mins ? `AMRAP ${mins} MINUTES` : "AMRAP";
-  if (wod.type === "ForTime") return mins ? `FOR TIME (${mins} MIN CAP)` : "FOR TIME";
-  if (wod.type === "EMOM") return mins ? `EMOM ${mins} MINUTES` : "EMOM";
-  if (wod.type === "Strength") return "STRENGTH WORK";
-  return "WORKOUT";
+function formatWodTypeLabel(type: string): string {
+  if (type === "ForTime") return "For Time";
+  return type || "Workout";
 }
 
 function splitFormattedTime(time: string): { hour: string; period: string } {
@@ -183,75 +176,39 @@ export default function HomeScreen() {
           <Text style={sc.greetingDate}>{getFormattedDate()}</Text>
         </FadeIn>
 
-        {/* ── WOD Hero ── */}
-        <FadeIn delay={80}>
+        {/* ── WOD ── */}
+        <FadeIn delay={80} style={{ paddingHorizontal: hPad }}>
+          <Text style={sc.sectionTitle}>TODAY'S WOD</Text>
           <ScalePress
             onPress={() => router.push("/(tabs)/wod")}
-            style={[sc.wodHero, { marginHorizontal: hPad }]}
+            style={sc.wodHero}
           >
-            <View style={[sc.wodAccentBar, { backgroundColor: primary }]} />
+            <View style={[sc.wodLeftBorder, { backgroundColor: primary }]} />
             <View style={sc.wodContent}>
-              <View style={sc.wodHeroHeader}>
-                <View style={{ flex: 1, minWidth: 0 }}>
-                  {wod ? (
-                    <>
-                      <Text style={[sc.wodSubtitle, { color: primary }]}>{getWodSubtitle(wod)}</Text>
-                      <Text style={sc.wodTitle} adjustsFontSizeToFit numberOfLines={2} minimumFontScale={0.7}>{wod.title.toUpperCase()}</Text>
-                    </>
-                  ) : (
-                    <>
-                      <Text style={[sc.wodSubtitle, { color: primary }]}>TODAY</Text>
-                      <Text style={sc.wodTitle} adjustsFontSizeToFit numberOfLines={2} minimumFontScale={0.7}>NO WOD POSTED</Text>
-                    </>
+              {wod ? (
+                <>
+                  <Text style={sc.wodTitle}>{formatWodTypeLabel(wod.type)}</Text>
+                  {!!wod.description && (
+                    <Text style={sc.wodDescription}>{wod.description}</Text>
                   )}
-                </View>
-
-                {wod && !isCoach && (
-                  <LinearGradient
-                    colors={[primary, Colors.primaryContainer]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={sc.logBtn}
-                  >
-                    <Text style={[sc.logBtnText, { color: Colors.onPrimary }]}>LOG</Text>
-                    <Ionicons name="add-circle-outline" size={16} color={Colors.onPrimary} />
-                  </LinearGradient>
-                )}
-
-                {wod && isCoach && (
-                  <View style={[sc.logBtn, { backgroundColor: Colors.surfaceContainerHighest }]}>
-                    <Text style={[sc.logBtnText, { color: primary }]}>EDIT</Text>
-                    <Ionicons name="create-outline" size={16} color={primary} />
-                  </View>
-                )}
-
-                {!wod && isCoach && (
-                  <LinearGradient
-                    colors={[primary, Colors.primaryContainer]}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                    style={sc.logBtn}
-                  >
-                    <Text style={[sc.logBtnText, { color: Colors.onPrimary }]}>POST</Text>
-                    <Ionicons name="add-circle-outline" size={16} color={Colors.onPrimary} />
-                  </LinearGradient>
-                )}
-              </View>
-
-              {wod && wod.movements.length > 0 && (
-                <View style={sc.movementList}>
-                  {wod.movements.slice(0, 4).map((m, i) => (
-                    <View key={i} style={sc.movementRow}>
-                      <View style={[sc.movementBullet, { backgroundColor: primary }]} />
-                      <Text style={sc.movementItem}>{m}</Text>
+                  {wod.movements.length > 0 && (
+                    <View style={sc.movementList}>
+                      {wod.movements.slice(0, 4).map((m, i) => (
+                        <View key={i} style={sc.movementRow}>
+                          <Text style={[sc.movementBullet, { color: primary }]}>•</Text>
+                          <Text style={sc.movementItem}>{m}</Text>
+                        </View>
+                      ))}
+                      {wod.movements.length > 4 && (
+                        <Text style={[sc.moreMovements, { color: primary }]}>+{wod.movements.length - 4} more</Text>
+                      )}
                     </View>
-                  ))}
-                  {wod.movements.length > 4 && (
-                    <Text style={[sc.moreMovements, { color: primary }]}>
-                      +{wod.movements.length - 4} more
-                    </Text>
                   )}
-                </View>
+                </>
+              ) : (
+                <>
+                  <Text style={sc.noWodText}>No WOD posted for today</Text>
+                </>
               )}
             </View>
           </ScalePress>
@@ -276,10 +233,13 @@ export default function HomeScreen() {
           </View>
 
           {todayClassList.length === 0 ? (
-            <View style={[sc.emptyClasses, { marginHorizontal: hPad }]}>
-              <Ionicons name="moon-outline" size={28} color={Colors.textMuted} style={{ marginBottom: 8 }} />
-              <Text style={sc.emptyTitle}>No classes today</Text>
-              <Text style={sc.emptyText}>Rest day? Recovery is gains too.</Text>
+            <View style={[sc.emptyClassesCard, { marginHorizontal: hPad }]}>
+              <View style={[sc.emptyLeftBorder, { backgroundColor: primary }]} />
+              <View style={sc.emptyClasses}>
+                <Ionicons name="moon-outline" size={28} color={Colors.textMuted} style={{ marginBottom: 8 }} />
+                <Text style={sc.emptyTitle}>No classes today</Text>
+                <Text style={sc.emptyText}>Rest day? Recovery is gains too.</Text>
+              </View>
             </View>
           ) : (
             todayClassList.map((cls, idx) => {
@@ -444,65 +404,48 @@ const sc = StyleSheet.create({
     overflow: "hidden",
     flexDirection: "row",
   },
-  wodAccentBar: {
-    width: 4,
+  wodLeftBorder: {
+    width: 3,
+    alignSelf: "stretch",
+    borderTopRightRadius: 3,
+    borderBottomRightRadius: 3,
   },
   wodContent: {
     flex: 1,
-    padding: 18,
-  },
-  wodHeroHeader: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 12,
-    marginBottom: 16,
-  },
-  wodSubtitle: {
-    fontFamily: Fonts.bodyBold,
-    fontSize: FontSizes.labelSm,
-    letterSpacing: 1.2,
-    marginBottom: 6,
+    padding: 20,
   },
   wodTitle: {
-    fontFamily: Fonts.display,
-    fontSize: FontSizes.displayMd,
+    fontFamily: Fonts.bodySemi,
+    fontSize: FontSizes.titleLg,
     color: Colors.text,
-    letterSpacing: -0.5,
-    lineHeight: 40,
+    marginBottom: 6,
   },
-  logBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    flexShrink: 0,
-    gap: 5,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: 10,
-    marginTop: 6,
-  },
-  logBtnText: {
-    fontFamily: Fonts.display,
-    fontSize: FontSizes.labelMd,
-    letterSpacing: 1,
-  },
-  movementList: {
-    gap: 8,
-  },
-  movementRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-  },
-  movementBullet: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-  },
-  movementItem: {
+  wodDescription: {
     fontFamily: Fonts.bodySemi,
     fontSize: FontSizes.labelLg,
     color: Colors.text,
     lineHeight: 22,
+  },
+  movementList: {
+    gap: 8,
+    marginTop: 10,
+  },
+  movementRow: {
+    flexDirection: "row",
+    alignItems: "baseline",
+    gap: 10,
+  },
+  movementBullet: {
+    width: 18,
+    textAlign: "center",
+    fontFamily: Fonts.display,
+    fontSize: 14,
+  },
+  movementItem: {
+    fontFamily: Fonts.bodyMed,
+    fontSize: FontSizes.labelLg,
+    color: Colors.text,
+    flex: 1,
   },
   moreMovements: {
     fontFamily: Fonts.bodyBold,
@@ -625,11 +568,22 @@ const sc = StyleSheet.create({
     height: 3,
     borderRadius: 1.5,
   },
-  emptyClasses: {
-    paddingVertical: 32,
-    paddingHorizontal: 20,
+  emptyClassesCard: {
     backgroundColor: Colors.surfaceContainerLow,
     borderRadius: 14,
+    overflow: "hidden",
+    flexDirection: "row",
+  },
+  emptyLeftBorder: {
+    width: 3,
+    alignSelf: "stretch",
+    borderTopRightRadius: 3,
+    borderBottomRightRadius: 3,
+  },
+  emptyClasses: {
+    flex: 1,
+    paddingVertical: 32,
+    paddingHorizontal: 20,
     alignItems: "center",
   },
   emptyTitle: {
