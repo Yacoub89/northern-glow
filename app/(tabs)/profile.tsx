@@ -59,6 +59,12 @@ export default function ProfileScreen() {
     .join("")
     .toUpperCase()
     .slice(0, 2);
+  const membershipActive = membership?.status === "active" || membership?.status === "trialing";
+  const membershipLabel = membershipActive
+    ? membership?.plan === "unlimited"
+      ? "Unlimited"
+      : "2x weekly"
+    : "Inactive";
 
   const handleSavePR = async () => {
     if (!prMovement.trim() || !prScore.trim()) return;
@@ -131,6 +137,19 @@ export default function ProfileScreen() {
           </Pressable>
         </View>
 
+        <View style={styles.statGrid}>
+          <View style={styles.statTile}>
+            <Text style={styles.statValue}>{membershipLabel}</Text>
+            <Text style={styles.statLabel}>membership</Text>
+          </View>
+          <View style={styles.statTile}>
+            <Text style={styles.statValue}>
+              {isCoachOrAdmin ? (me?.role === "admin" ? "Admin" : "Coach") : prs?.length ?? "--"}
+            </Text>
+            <Text style={styles.statLabel}>{isCoachOrAdmin ? "access" : "prs"}</Text>
+          </View>
+        </View>
+
         {/* Membership */}
         {me?.role !== "coach" && me?.role !== "admin" && (
           <Pressable
@@ -186,10 +205,9 @@ export default function ProfileScreen() {
           </Pressable>
         )}
 
-        {/* Admin Tools — coaches and admins only */}
         {isCoachOrAdmin && (
           <>
-            <Text style={[styles.sectionLabel, { marginBottom: 10 }]}>Admin Tools</Text>
+            <Text style={[styles.sectionLabel, { marginBottom: 10 }]}>Coach Console</Text>
             <Pressable
               style={styles.settingsRow}
               onPress={() => router.push("/(tabs)/members")}
@@ -249,17 +267,33 @@ export default function ProfileScreen() {
                 {prs.map((pr) => (
                   <Pressable
                     key={pr._id}
-                    style={styles.prRow}
+                    style={styles.prCard}
                     onLongPress={() => handleDeletePR(pr)}
                   >
-                    <Text style={styles.prMovement}>{pr.movement}</Text>
+                    <Text style={styles.prMovement} numberOfLines={2}>{pr.movement}</Text>
                     <Text style={[styles.prScore, { color: primary }]}>{pr.score}</Text>
                   </Pressable>
                 ))}
               </View>
             )}
 
-            {/* Documents & Waivers */}
+            <View style={styles.actionGrid}>
+              <Pressable
+                style={styles.actionTile}
+                onPress={() => router.push("/(tabs)/schedule")}
+              >
+                <Ionicons name="calendar-clear" size={20} color={primary} />
+                <Text style={styles.actionTileText}>Book classes</Text>
+              </Pressable>
+              <Pressable
+                style={styles.actionTile}
+                onPress={() => router.push("/(tabs)/wod")}
+              >
+                <Ionicons name="timer" size={20} color={primary} />
+                <Text style={styles.actionTileText}>Log WOD</Text>
+              </Pressable>
+            </View>
+
             <Pressable
               style={[styles.settingsRow, { marginTop: 8 }]}
               onPress={() => router.push("/(tabs)/documents")}
@@ -335,36 +369,65 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 22,
     gap: 14,
+    paddingBottom: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
   avatar: {
     width: 64,
     height: 64,
-    borderRadius: 14,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
   },
   avatarInitials: { fontSize: 22, fontFamily: Fonts.display, color: Colors.onPrimary },
   headerInfo: { flex: 1 },
-  name: { fontSize: 20, fontWeight: "700", color: Colors.text, marginBottom: 2 },
-  memberSince: { fontSize: 13, color: Colors.textSecondary },
+  name: { fontSize: 21, fontFamily: Fonts.display, color: Colors.text, marginBottom: 2 },
+  memberSince: { fontSize: 13, fontFamily: Fonts.bodyMed, color: Colors.textSecondary },
   signOutIcon: { padding: 4 },
   roleBadge: {
-    borderRadius: 6,
+    borderRadius: 4,
     paddingHorizontal: 8,
     paddingVertical: 2,
   },
   roleBadgeText: {
     fontSize: 11,
-    fontWeight: "700",
+    fontFamily: Fonts.bodyExtra,
     textTransform: "uppercase",
     letterSpacing: 0.5,
+  },
+  statGrid: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 14,
+  },
+  statTile: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 14,
+  },
+  statValue: {
+    fontFamily: Fonts.display,
+    fontSize: 22,
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  statLabel: {
+    fontFamily: Fonts.bodyExtra,
+    fontSize: 10,
+    color: Colors.textMuted,
+    letterSpacing: 1,
+    textTransform: "uppercase",
   },
 
   // Membership card
   membershipCard: {
-    borderRadius: 14,
+    borderRadius: 8,
     padding: 16,
     flexDirection: "row",
     alignItems: "center",
@@ -381,8 +444,8 @@ const styles = StyleSheet.create({
     borderColor: Colors.warning + "55",
   },
   membershipCardLeft: { flexDirection: "row", alignItems: "center", flex: 1 },
-  membershipTitle: { fontSize: 15, fontWeight: "700", color: Colors.text, marginBottom: 2 },
-  membershipSub: { fontSize: 12, color: Colors.textSecondary },
+  membershipTitle: { fontSize: 15, fontFamily: Fonts.bodyBold, color: Colors.text, marginBottom: 2 },
+  membershipSub: { fontSize: 12, fontFamily: Fonts.bodyMed, color: Colors.textSecondary },
 
   // Section
   sectionHeader: {
@@ -393,21 +456,21 @@ const styles = StyleSheet.create({
   },
   sectionLabel: {
     fontSize: 12,
-    fontWeight: "700",
+    fontFamily: Fonts.bodyExtra,
     color: Colors.textSecondary,
     textTransform: "uppercase",
     letterSpacing: 1,
   },
   addBtn: {
-    borderRadius: 8,
+    borderRadius: 6,
     paddingHorizontal: 14,
     paddingVertical: 6,
   },
-  addBtnText: { color: Colors.onPrimary, fontWeight: "700", fontSize: 13 },
+  addBtnText: { color: Colors.onPrimary, fontFamily: Fonts.bodyBold, fontSize: 13 },
 
   settingsRow: {
     backgroundColor: Colors.surface,
-    borderRadius: 14,
+    borderRadius: 8,
     padding: 16,
     flexDirection: "row",
     alignItems: "center",
@@ -418,34 +481,53 @@ const styles = StyleSheet.create({
   settingsRowText: {
     flex: 1,
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: Fonts.bodySemi,
+    color: Colors.text,
+  },
+  actionGrid: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 12,
+  },
+  actionTile: {
+    flex: 1,
+    minHeight: 92,
+    backgroundColor: Colors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    padding: 14,
+    justifyContent: "space-between",
+  },
+  actionTileText: {
+    fontFamily: Fonts.display,
+    fontSize: 16,
     color: Colors.text,
   },
 
   // PRs
   prList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 10,
+    marginBottom: 20,
+  },
+  prCard: {
+    width: "48%",
+    minHeight: 112,
     backgroundColor: Colors.surface,
-    borderRadius: 14,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: Colors.border,
-    marginBottom: 20,
-    overflow: "hidden",
-  },
-  prRow: {
-    flexDirection: "row",
-    alignItems: "center",
+    padding: 14,
     justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
   },
-  prMovement: { fontSize: 16, color: Colors.text, fontWeight: "500" },
-  prScore: { fontSize: 16, fontWeight: "700" },
+  prMovement: { fontSize: 13, color: Colors.textSecondary, fontFamily: Fonts.bodyExtra, textTransform: "uppercase", letterSpacing: 0.8 },
+  prScore: { fontSize: 24, fontFamily: Fonts.display },
 
   emptyCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 14,
+    borderRadius: 8,
     padding: 24,
     alignItems: "center",
     borderWidth: 1,
@@ -468,13 +550,13 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: "700",
+    fontFamily: Fonts.display,
     color: Colors.text,
     marginBottom: 20,
   },
   modalLabel: {
     fontSize: 12,
-    fontWeight: "700",
+    fontFamily: Fonts.bodyExtra,
     color: Colors.textSecondary,
     textTransform: "uppercase",
     letterSpacing: 0.8,
@@ -482,7 +564,7 @@ const styles = StyleSheet.create({
   },
   modalInput: {
     backgroundColor: Colors.background,
-    borderRadius: 12,
+    borderRadius: 8,
     padding: 14,
     color: Colors.text,
     fontSize: 15,
@@ -490,10 +572,10 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   modalSaveBtn: {
-    borderRadius: 12,
+    borderRadius: 8,
     paddingVertical: 16,
     alignItems: "center",
     marginTop: 24,
   },
-  modalSaveBtnText: { color: Colors.onPrimary, fontWeight: "700", fontSize: 16 },
+  modalSaveBtnText: { color: Colors.onPrimary, fontFamily: Fonts.bodyBold, fontSize: 16 },
 });

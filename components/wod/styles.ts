@@ -21,7 +21,7 @@ export const wodStyles = StyleSheet.create({
     marginBottom: 2,
     paddingHorizontal: 16,
     paddingVertical: 15,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: Colors.outlineVariant,
     backgroundColor: Colors.surfaceContainerLow,
@@ -95,7 +95,7 @@ export const wodStyles = StyleSheet.create({
     gap: 4,
     paddingHorizontal: 12,
     paddingVertical: 7,
-    borderRadius: 8,
+    borderRadius: 6,
     borderWidth: 1.5,
   },
   editBtnText: {
@@ -116,11 +116,13 @@ export const wodStyles = StyleSheet.create({
 
   // WOD read card
   readCard: {
-    backgroundColor: Colors.surfaceContainerLow,
+    backgroundColor: Colors.surface,
     marginHorizontal: 20,
-    borderRadius: 16,
+    borderRadius: 8,
     padding: 20,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   readWodTitle: {
     fontFamily: Fonts.display,
@@ -160,11 +162,11 @@ export const wodStyles = StyleSheet.create({
   announcementCard: {
     flexDirection: "row",
     gap: 12,
-    backgroundColor: Colors.surfaceContainerLow,
-    borderRadius: 16,
+    backgroundColor: Colors.surface,
+    borderRadius: 8,
     padding: 16,
     borderWidth: 1,
-    borderColor: Colors.outlineVariant,
+    borderColor: Colors.border,
   },
   announcementIcon: {
     width: 34,
@@ -192,12 +194,12 @@ export const wodStyles = StyleSheet.create({
     marginBottom: 8,
   },
   athletePartCard: {
-    backgroundColor: Colors.surfaceContainerLow,
-    borderRadius: 16,
+    backgroundColor: Colors.surface,
+    borderRadius: 8,
     padding: 18,
     gap: 8,
     borderWidth: 1,
-    borderColor: Colors.outlineVariant,
+    borderColor: Colors.border,
   },
   athletePartCardTop: {
     flexDirection: "row",
@@ -225,7 +227,7 @@ export const wodStyles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    borderRadius: 999,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: Colors.outlineVariant,
     paddingHorizontal: 12,
@@ -243,7 +245,7 @@ export const wodStyles = StyleSheet.create({
   expandWodBtn: {
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1.5,
     paddingVertical: 12,
     marginTop: 18,
@@ -264,12 +266,12 @@ export const wodStyles = StyleSheet.create({
   scalingNotesCard: {
     marginHorizontal: 20,
     marginBottom: 8,
-    backgroundColor: Colors.surfaceContainerLow,
-    borderRadius: 16,
+    backgroundColor: Colors.surface,
+    borderRadius: 8,
     padding: 18,
     borderTopWidth: 0,
     borderWidth: 1,
-    borderColor: Colors.outlineVariant,
+    borderColor: Colors.border,
   },
 
   movementRow: { flexDirection: "row", alignItems: "baseline", gap: 14 },
@@ -289,8 +291,10 @@ export const wodStyles = StyleSheet.create({
   noWodBanner: {
     marginHorizontal: 20,
     padding: 32,
-    backgroundColor: Colors.surfaceContainerLow,
-    borderRadius: 16,
+    backgroundColor: Colors.surface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.border,
     alignItems: "center",
     gap: 10,
     marginBottom: 24,

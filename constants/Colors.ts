@@ -1,43 +1,43 @@
-// Mobile app theme — light, gym-branded, readable by default.
+// Mobile app theme — performance gym UI: high contrast, fast scanning, clear action states.
 export const Colors = {
   // Surfaces
-  background:              "#ffffff",
-  surfaceContainerLow:     "#f8fafc",
-  surface:                 "#f1f5f9",
-  surfaceContainerHighest: "#e2e8f0",
-  surfaceBright:           "#e5edf5",
-  surfaceVariant:          "#f8fafc",
+  background:              "#0B0D10",
+  surfaceContainerLow:     "#14181D",
+  surface:                 "#1B2027",
+  surfaceContainerHighest: "#2A313B",
+  surfaceBright:           "#F4F1EA",
+  surfaceVariant:          "#101419",
 
   // Brand / accent
-  primary:          "#0E7490",
-  primaryContainer: "#A5F3FC",
+  primary:          "#F04438",
+  primaryContainer: "#3A1715",
   onPrimary:        "#ffffff",
-  primaryGlow:      "rgba(14, 116, 144, 0.12)",
+  primaryGlow:      "rgba(240, 68, 56, 0.20)",
 
   // Tertiary
-  tertiary: "#164e63",
+  tertiary: "#F7B731",
 
   // Text
-  text:          "#0f172a",
-  textSecondary: "#475569",
-  textMuted:     "#94a3b8",
+  text:          "#F7F3EA",
+  textSecondary: "#B8B3A7",
+  textMuted:     "#777F8A",
 
   // Semantic
-  success: "#34C759",
-  warning: "#FF9F0A",
-  error:   "#D92D20",
+  success: "#2ECC71",
+  warning: "#F7B731",
+  error:   "#FF5A4F",
 
   // Borders
-  outlineVariant: "#cbd5e1",
+  outlineVariant: "#303844",
 
   // Aliases kept for backward compatibility with screens not yet redesigned
-  border:          "#dbe3ea",
-  surfaceElevated: "#eaf0f6",
-  primaryDark:     "#0f6b78",
+  border:          "#2B333E",
+  surfaceElevated: "#242B34",
+  primaryDark:     "#B42318",
 };
 
 // Gradient arrays — used with expo-linear-gradient
 export const Gradients = {
-  primaryCta:    ["#0E7490", "#22D3EE"] as const,
-  primaryCtaStr: ["#0E7490", "#22D3EE"] as const,
+  primaryCta:    ["#F04438", "#F7B731"] as const,
+  primaryCtaStr: ["#F04438", "#F7B731"] as const,
 };

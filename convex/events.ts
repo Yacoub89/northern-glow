@@ -85,6 +85,43 @@ export const getMyRegistration = query({
   },
 });
 
+/** List upcoming events the current athlete is registered for. */
+export const getMyUpcomingRegistrations = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+
+    const today = new Date().toISOString().slice(0, 10);
+    const registrations = await ctx.db
+      .query("eventRegistrations")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    const active = registrations.filter(
+      (reg) => reg.status === "registered" && isActiveRegistration(reg)
+    );
+
+    const enriched = await Promise.all(
+      active.map(async (registration) => {
+        const event = await ctx.db.get(registration.eventId);
+        if (!event || event.status !== "upcoming" || event.date < today) {
+          return null;
+        }
+        return { registration, event };
+      })
+    );
+
+    return enriched
+      .filter((item): item is NonNullable<typeof item> => item !== null)
+      .sort((a, b) =>
+        a.event.date !== b.event.date
+          ? a.event.date.localeCompare(b.event.date)
+          : a.event.startTime.localeCompare(b.event.startTime)
+      );
+  },
+});
+
 // ── Public mutations ──────────────────────────────────────────────────────────
 
 /** Register for a free event. Throws if the event is paid. */

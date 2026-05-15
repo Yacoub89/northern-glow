@@ -13,6 +13,7 @@ import { useRouter } from "expo-router";
 import { api } from "../../convex/_generated/api";
 import { Doc, Id } from "../../convex/_generated/dataModel";
 import { Colors } from "../../constants/Colors";
+import { Fonts, FontSizes } from "../../constants/Typography";
 import { useGymColors } from "../../constants/GymConfig";
 import { formatTime, getTodayDate } from "../../utils/date";
 import { isMembershipRequiredError, showMembershipRequiredAlert } from "../../utils/membershipErrors";
@@ -65,6 +66,14 @@ function ClassCard({
   );
   const spotsLeft = cls.capacity - cls.bookedCount;
   const isFull = spotsLeft <= 0;
+  const fillPercent = `${Math.min((cls.bookedCount / cls.capacity) * 100, 100)}%` as `${number}%`;
+  const statusLabel = myBooking
+    ? myBooking.status === "waitlist"
+      ? `Waitlist #${myBooking.waitlistPosition}`
+      : "You're in"
+    : isFull
+    ? "Class full"
+    : `${spotsLeft} open`;
 
   const handleBook = async () => {
     try {
@@ -102,38 +111,66 @@ function ClassCard({
 
   return (
     <View style={styles.classCard}>
-      <View style={styles.classRow}>
+      <View style={styles.classTopRow}>
+        <View style={[styles.timeBlock, { borderColor: primary }]}>
+          <Text style={[styles.classTime, { color: primary }]}>{formatTime(cls.startTime)}</Text>
+          <Text style={styles.timeLabel}>start</Text>
+        </View>
         <View style={styles.classInfo}>
-          <Text style={styles.classTime}>{formatTime(cls.startTime)}</Text>
-          <Text style={styles.classCoach}>
-            {cls.coachName}
-            {" · "}
-            <Text style={[styles.classSpots, isFull && !myBooking && styles.classFull]}>
-              {isFull ? "Full" : `${cls.bookedCount}/${cls.capacity} spots`}
-            </Text>
+          <Text style={styles.className} numberOfLines={1}>
+            {cls.wodTitle || "CrossFit Class"}
+          </Text>
+          <Text style={styles.classCoach} numberOfLines={1}>
+            Coach {cls.coachName} · {cls.wodType || "Training"}
           </Text>
         </View>
-
-        {!myBooking ? (
-          <Pressable
-            style={[styles.bookBtn, { backgroundColor: primary }, isFull && styles.fullBtn]}
-            onPress={isFull ? undefined : handleBook}
-            disabled={isFull}
-          >
-            <Text style={[styles.bookBtnText, isFull && styles.fullBtnText]}>
-              {isFull ? "Full" : "Book"}
-            </Text>
-          </Pressable>
-        ) : (
-          <Pressable style={styles.bookedBtn} onPress={handleCancel}>
-            <Text style={styles.bookedBtnText}>
-              {myBooking.status === "waitlist"
-                ? `#${myBooking.waitlistPosition} waitlist`
-                : "Booked"}
-            </Text>
-          </Pressable>
-        )}
       </View>
+
+      {cls.wodMovements && cls.wodMovements.length > 0 ? (
+        <View style={styles.movementChips}>
+          {cls.wodMovements.slice(0, 3).map((movement) => (
+            <Text key={movement} style={styles.movementChip} numberOfLines={1}>
+              {movement}
+            </Text>
+          ))}
+        </View>
+      ) : null}
+
+      <View style={styles.capacityRow}>
+        <Text style={[styles.capacityStatus, myBooking && { color: Colors.success }]}>
+          {statusLabel}
+        </Text>
+        <Text style={styles.capacityCount}>{cls.bookedCount}/{cls.capacity}</Text>
+      </View>
+      <View style={styles.capacityTrack}>
+        <View
+          style={[
+            styles.capacityFill,
+            {
+              width: fillPercent,
+              backgroundColor: isFull && !myBooking ? Colors.error : primary,
+            },
+          ]}
+        />
+      </View>
+
+      {!myBooking ? (
+        <Pressable
+          style={[styles.bookBtn, { backgroundColor: primary }, isFull && styles.fullBtn]}
+          onPress={isFull ? undefined : handleBook}
+          disabled={isFull}
+        >
+          <Text style={[styles.bookBtnText, isFull && styles.fullBtnText]}>
+            {isFull ? "Join waitlist closed" : "Reserve spot"}
+          </Text>
+        </Pressable>
+      ) : (
+        <Pressable style={styles.bookedBtn} onPress={handleCancel}>
+          <Text style={styles.bookedBtnText}>
+            {myBooking.status === "waitlist" ? "Leave waitlist" : "Cancel booking"}
+          </Text>
+        </Pressable>
+      )}
     </View>
   );
 }
@@ -495,6 +532,7 @@ export default function ScheduleScreen() {
     <SafeAreaView style={styles.container} edges={[]}>
       {/* Header */}
       <View style={styles.header}>
+        <Text style={[styles.eyebrow, { color: primary }]}>BOOK YOUR LANE</Text>
         <Text style={styles.title}>Schedule</Text>
       </View>
 
@@ -599,12 +637,18 @@ const styles = StyleSheet.create({
   // Header
   header: {
     paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 12,
+    paddingTop: 18,
+    paddingBottom: 14,
+  },
+  eyebrow: {
+    fontFamily: Fonts.bodyExtra,
+    fontSize: FontSizes.labelSm,
+    letterSpacing: 1.7,
+    marginBottom: 5,
   },
   title: {
-    fontSize: 28,
-    fontWeight: "800",
+    fontSize: 30,
+    fontFamily: Fonts.display,
     color: Colors.text,
   },
 
@@ -613,8 +657,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     marginHorizontal: 20,
     marginBottom: 14,
-    backgroundColor: Colors.surface,
-    borderRadius: 10,
+    backgroundColor: Colors.surfaceVariant,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: Colors.border,
     padding: 3,
@@ -623,12 +667,12 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 8,
     alignItems: "center",
-    borderRadius: 8,
+    borderRadius: 6,
   },
   segmentBtnActive: {},
   segmentText: {
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: Fonts.bodyBold,
     color: Colors.textSecondary,
   },
   segmentTextActive: {
@@ -647,7 +691,7 @@ const styles = StyleSheet.create({
   },
   dayPill: {
     backgroundColor: Colors.surface,
-    borderRadius: 10,
+    borderRadius: 8,
     paddingHorizontal: 12,
     height: 46,
     alignItems: "center",
@@ -659,14 +703,14 @@ const styles = StyleSheet.create({
   dayPillActive: {},
   dayPillName: {
     fontSize: 10,
-    fontWeight: "700",
+    fontFamily: Fonts.bodyBold,
     color: Colors.textSecondary,
     letterSpacing: 0.5,
     marginBottom: 2,
   },
   dayPillNum: {
     fontSize: 15,
-    fontWeight: "800",
+    fontFamily: Fonts.display,
     color: Colors.text,
   },
   dayPillTextActive: { color: Colors.onPrimary },
@@ -675,7 +719,7 @@ const styles = StyleSheet.create({
   list: { paddingHorizontal: 20, paddingBottom: 40 },
   dayHeader: {
     fontSize: 11,
-    fontWeight: "700",
+    fontFamily: Fonts.bodyExtra,
     color: Colors.textSecondary,
     letterSpacing: 1.5,
     textTransform: "uppercase",
@@ -685,9 +729,9 @@ const styles = StyleSheet.create({
   // Class card
   classCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 14,
+    borderRadius: 8,
     padding: 16,
-    marginBottom: 8,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -696,19 +740,103 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
   },
-  classInfo: { flex: 1, marginRight: 12 },
-  classTime: { fontSize: 22, fontWeight: "800", color: Colors.text, marginBottom: 3 },
-  classCoach: { fontSize: 13, color: Colors.textSecondary },
+  classTopRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  timeBlock: {
+    width: 88,
+    minHeight: 76,
+    borderRadius: 8,
+    borderWidth: 1,
+    backgroundColor: Colors.surfaceVariant,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+  },
+  timeLabel: {
+    fontFamily: Fonts.bodyExtra,
+    fontSize: FontSizes.labelSm,
+    color: Colors.textMuted,
+    letterSpacing: 1,
+    textTransform: "uppercase",
+  },
+  classInfo: { flex: 1, minWidth: 0 },
+  className: {
+    fontSize: FontSizes.titleLg,
+    fontFamily: Fonts.display,
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  classTime: {
+    fontSize: 19,
+    fontFamily: Fonts.display,
+    color: Colors.text,
+    marginBottom: 2,
+    textAlign: "center",
+  },
+  classCoach: { fontSize: 13, fontFamily: Fonts.bodyMed, color: Colors.textSecondary },
   classSpots: { fontSize: 13, color: Colors.textSecondary },
   classFull: { color: Colors.error },
+  movementChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 14,
+  },
+  movementChip: {
+    maxWidth: "48%",
+    backgroundColor: Colors.surfaceVariant,
+    borderRadius: 6,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    fontFamily: Fonts.bodyBold,
+    fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
+  },
+  capacityRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  capacityStatus: {
+    fontFamily: Fonts.bodyExtra,
+    fontSize: FontSizes.labelSm,
+    color: Colors.textSecondary,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+  },
+  capacityCount: {
+    fontFamily: Fonts.display,
+    fontSize: FontSizes.labelMd,
+    color: Colors.text,
+  },
+  capacityTrack: {
+    height: 5,
+    borderRadius: 3,
+    overflow: "hidden",
+    backgroundColor: Colors.surfaceContainerHighest,
+    marginBottom: 12,
+  },
+  capacityFill: {
+    height: 5,
+    borderRadius: 3,
+  },
 
   // Book buttons
   bookBtn: {
-    borderRadius: 8,
+    borderRadius: 6,
     paddingHorizontal: 20,
-    paddingVertical: 9,
+    paddingVertical: 12,
+    alignItems: "center",
   },
-  bookBtnText: { color: Colors.onPrimary, fontWeight: "700", fontSize: 14 },
+  bookBtnText: { color: Colors.onPrimary, fontFamily: Fonts.bodyBold, fontSize: 14 },
   fullBtn: {
     backgroundColor: "transparent",
     borderWidth: 1,
@@ -716,13 +844,15 @@ const styles = StyleSheet.create({
   },
   fullBtnText: { color: Colors.textMuted },
   bookedBtn: {
-    borderRadius: 8,
+    borderRadius: 6,
     paddingHorizontal: 14,
-    paddingVertical: 9,
+    paddingVertical: 12,
     borderWidth: 1,
     borderColor: Colors.border,
+    alignItems: "center",
+    backgroundColor: Colors.surfaceVariant,
   },
-  bookedBtnText: { color: Colors.textSecondary, fontWeight: "600", fontSize: 13 },
+  bookedBtnText: { color: Colors.textSecondary, fontFamily: Fonts.bodySemi, fontSize: 13 },
 
   // Coach picker
   coachPicker: {
@@ -733,7 +863,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     padding: 10,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surface,
@@ -745,7 +875,7 @@ const styles = StyleSheet.create({
   coachAvatar: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 8,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -768,7 +898,7 @@ const styles = StyleSheet.create({
   // Empty
   emptyCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 14,
+    borderRadius: 8,
     padding: 24,
     alignItems: "center",
     borderWidth: 1,
@@ -780,7 +910,7 @@ const styles = StyleSheet.create({
   // Event cards
   eventCard: {
     backgroundColor: Colors.surface,
-    borderRadius: 14,
+    borderRadius: 8,
     padding: 16,
     marginBottom: 10,
     borderWidth: 1,

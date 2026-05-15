@@ -18,7 +18,7 @@ function SharedHeader() {
   const initial = me?.name?.[0]?.toUpperCase() ?? "A";
 
   return (
-    <View style={[hdr.container, { paddingTop: insets.top + 6 }]}>
+    <View style={[hdr.container, { paddingTop: insets.top + 8 }]}>
       <Pressable onPress={() => router.push("/(tabs)/profile")} hitSlop={10}>
         <View style={[hdr.avatar, { borderColor: primary }]}>
           <Text style={[hdr.avatarText, { color: primary }]}>{initial}</Text>
@@ -50,15 +50,18 @@ const hdr = StyleSheet.create({
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingBottom: 10,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
   avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderWidth: 1.5,
+    width: 38,
+    height: 38,
+    borderRadius: 8,
+    borderWidth: 1,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: Colors.surfaceContainerLow,
   },
   avatarText: {
     fontFamily: Fonts.display,
@@ -67,7 +70,7 @@ const hdr = StyleSheet.create({
   brandName: {
     fontFamily: Fonts.display,
     fontSize: 18,
-    letterSpacing: 2,
+    letterSpacing: 1.6,
   },
   logo: {
     height: 28,
@@ -226,12 +229,13 @@ const styles = StyleSheet.create({
   noGymButtonText: {
     fontFamily: Fonts.bodyBold,
     fontSize: 15,
-    color: Colors.background,
+    color: Colors.onPrimary,
   },
   tabBar: {
-    backgroundColor: Colors.surfaceContainerLow,
-    borderTopWidth: 0,
-    paddingTop: 6,
+    backgroundColor: Colors.surfaceVariant,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+    paddingTop: 7,
   },
   tabLabel: {
     fontSize: 10,
